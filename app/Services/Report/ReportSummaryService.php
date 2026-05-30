@@ -36,7 +36,18 @@ class ReportSummaryService
             'remedial_attempts' => AssessmentAttempt::where('status', 'remedial')->count(),
             'activity_answers' => ActivityAnswer::count(),
             'discussions' => Discussion::count(),
+            'discussions_by_type' => [
+                'threads' => Discussion::whereNull('parent_id')->count(),
+                'replies' => Discussion::whereNotNull('parent_id')->count(),
+            ],
             'projects' => Project::count(),
+            'projects_by_status' => Project::query()
+                ->select('status')
+                ->selectRaw('count(*) as total')
+                ->groupBy('status')
+                ->pluck('total', 'status')
+                ->all(),
+            'reviewed_project_average_score' => round((float) Project::where('status', 'reviewed')->whereNotNull('score')->avg('score'), 2),
         ];
     }
 }

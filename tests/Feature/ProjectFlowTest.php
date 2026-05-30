@@ -60,6 +60,8 @@ test('murid can save draft and submit project, then guru can review', function (
         ->test(ManageProjects::class)
         ->call('review', $project->id)
         ->assertSee('Identifikasi masalah')
+        ->assertSee('Masalah energi nyata dijelaskan')
+        ->assertSee('maks. 12')
         ->assertSee('Komunikasi hasil')
         ->set('score', 95.5)
         ->set('feedback', 'Great job!')

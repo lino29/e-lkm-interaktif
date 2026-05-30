@@ -172,9 +172,40 @@ test('guru reports are scoped to their own modules', function () {
         'body' => 'Reply murid pada modul guru',
     ]);
     Discussion::create([
+        'learning_unit_id' => $learningUnit->id,
+        'user_id' => $teacher->id,
+        'parent_id' => $discussion->id,
+        'body' => 'Feedback guru pada diskusi.',
+    ]);
+    Discussion::create([
+        'learning_unit_id' => $learningUnit->id,
+        'user_id' => $student->id,
+        'body' => 'Diskusi belum direspons',
+    ]);
+    Discussion::create([
         'learning_unit_id' => $otherLearningUnit->id,
         'user_id' => $otherStudent->id,
         'body' => 'Diskusi modul lain',
+    ]);
+    Project::create([
+        'module_id' => $module->id,
+        'user_id' => $student->id,
+        'project_title' => 'Project Laporan Submitted',
+        'status' => 'submitted',
+    ]);
+    Project::create([
+        'module_id' => $module->id,
+        'user_id' => $student->id,
+        'project_title' => 'Project Laporan Reviewed',
+        'status' => 'reviewed',
+        'score' => 82,
+    ]);
+    Project::create([
+        'module_id' => $otherModule->id,
+        'user_id' => $otherStudent->id,
+        'project_title' => 'Project Modul Lain',
+        'status' => 'reviewed',
+        'score' => 10,
     ]);
 
     AssessmentAttempt::create([
@@ -196,9 +227,15 @@ test('guru reports are scoped to their own modules', function () {
         ->test(Reports::class)
         ->assertSee($assessment->title)
         ->assertSee('Diskusi milik modul guru')
-        ->assertSee('2 diskusi dan reply')
+        ->assertSee('Direspons guru')
+        ->assertSee('Belum direspons guru')
+        ->assertSee('3 diskusi dan reply')
+        ->assertSee('Rata-rata Nilai Proyek')
+        ->assertSee('82')
+        ->assertSee('Project Laporan Reviewed')
         ->assertDontSee('Assessment Lain')
-        ->assertDontSee('Diskusi modul lain');
+        ->assertDontSee('Diskusi modul lain')
+        ->assertDontSee('Project Modul Lain');
 });
 
 /**

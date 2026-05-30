@@ -13,17 +13,49 @@ class ManageProjects extends Component
     use WithPagination;
 
     /**
-     * @var array<int, string>
+     * @var array<int, array{criterion: string, indicator: string, max_score: int}>
      */
     public array $projectRubric = [
-        'Identifikasi masalah',
-        'Kesesuaian solusi',
-        'Kelengkapan rancangan',
-        'Data pengamatan',
-        'Keselamatan kerja',
-        'Kreativitas',
-        'Kelayakan',
-        'Komunikasi hasil',
+        [
+            'criterion' => 'Identifikasi masalah',
+            'indicator' => 'Masalah energi nyata dijelaskan dengan bukti awal dan konteks lingkungan.',
+            'max_score' => 12,
+        ],
+        [
+            'criterion' => 'Kesesuaian solusi',
+            'indicator' => 'Solusi hemat energi atau energi terbarukan sesuai dengan masalah yang dipilih.',
+            'max_score' => 13,
+        ],
+        [
+            'criterion' => 'Kelengkapan rancangan',
+            'indicator' => 'Tujuan, alat bahan, langkah kerja, dan hasil yang diharapkan ditulis lengkap.',
+            'max_score' => 13,
+        ],
+        [
+            'criterion' => 'Data pengamatan',
+            'indicator' => 'Data yang dikumpulkan relevan, dapat diperiksa, dan dipakai untuk menarik kesimpulan.',
+            'max_score' => 12,
+        ],
+        [
+            'criterion' => 'Keselamatan kerja',
+            'indicator' => 'Rancangan mempertimbangkan risiko alat, bahan, listrik, panas, atau lingkungan kerja.',
+            'max_score' => 12,
+        ],
+        [
+            'criterion' => 'Kreativitas',
+            'indicator' => 'Ada gagasan baru atau adaptasi solusi sederhana yang sesuai kemampuan murid.',
+            'max_score' => 13,
+        ],
+        [
+            'criterion' => 'Kelayakan',
+            'indicator' => 'Proyek realistis dilaksanakan dari sisi waktu, alat, biaya, dan dampak.',
+            'max_score' => 13,
+        ],
+        [
+            'criterion' => 'Komunikasi hasil',
+            'indicator' => 'Kesimpulan, bukti, dan refleksi disampaikan runtut serta mudah dipahami.',
+            'max_score' => 12,
+        ],
     ];
 
     public ?int $reviewingProjectId = null;

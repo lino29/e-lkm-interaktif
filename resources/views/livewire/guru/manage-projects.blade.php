@@ -23,10 +23,13 @@
         <flux:card>
             <flux:heading>Nilai Proyek</flux:heading>
             <div class="mt-3 rounded-lg border border-zinc-200 p-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
-                <div class="font-medium text-zinc-800 dark:text-zinc-100">Rubrik proyek ringkas</div>
+                <div class="font-medium text-zinc-800 dark:text-zinc-100">Rubrik proyek per kriteria</div>
                 <div class="mt-2 grid gap-2 md:grid-cols-2">
                     @foreach ($projectRubric as $criterion)
-                        <div wire:key="project-rubric-{{ \Illuminate\Support\Str::slug($criterion) }}">- {{ $criterion }}</div>
+                        <div wire:key="project-rubric-{{ \Illuminate\Support\Str::slug($criterion['criterion']) }}" class="rounded-md bg-zinc-50 p-2 dark:bg-zinc-900">
+                            <div class="font-medium text-zinc-800 dark:text-zinc-100">{{ $criterion['criterion'] }} <span class="text-xs text-zinc-500">maks. {{ $criterion['max_score'] }}</span></div>
+                            <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ $criterion['indicator'] }}</div>
+                        </div>
                     @endforeach
                 </div>
             </div>

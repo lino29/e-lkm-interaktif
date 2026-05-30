@@ -25,14 +25,31 @@ class Reports extends Component
 
         $tuntasCount = (clone $attemptsQuery)->where('status', 'tuntas')->count();
         $remedialCount = (clone $attemptsQuery)->where('status', 'remedial')->count();
+        $submittedProjectCount = Project::whereIn('module_id', $moduleIds)->where('status', 'submitted')->count();
+        $reviewedProjectCount = Project::whereIn('module_id', $moduleIds)->where('status', 'reviewed')->count();
+        $reviewedProjectAverageScore = Project::whereIn('module_id', $moduleIds)
+            ->where('status', 'reviewed')
+            ->whereNotNull('score')
+            ->avg('score');
+        $discussionThreadsQuery = Discussion::query()
+            ->whereNull('parent_id')
+            ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds));
+        $respondedDiscussionCount = (clone $discussionThreadsQuery)
+            ->whereHas('replies', fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->role('guru')))
+            ->count();
+        $discussionThreadCount = (clone $discussionThreadsQuery)->count();
 
         return view('livewire.guru.reports', [
             'modules' => Module::whereIn('id', $teacherModuleIds)->orderBy('title')->get(),
             'tuntasCount' => $tuntasCount,
             'remedialCount' => $remedialCount,
-            'submittedProjectCount' => Project::whereIn('module_id', $moduleIds)->where('status', 'submitted')->count(),
-            'reviewedProjectCount' => Project::whereIn('module_id', $moduleIds)->where('status', 'reviewed')->count(),
+            'submittedProjectCount' => $submittedProjectCount,
+            'reviewedProjectCount' => $reviewedProjectCount,
+            'reviewedProjectAverageScore' => $reviewedProjectAverageScore === null ? null : round((float) $reviewedProjectAverageScore, 2),
             'discussionCount' => Discussion::whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))->count(),
+            'discussionThreadCount' => $discussionThreadCount,
+            'respondedDiscussionCount' => $respondedDiscussionCount,
+            'unrespondedDiscussionCount' => max(0, $discussionThreadCount - $respondedDiscussionCount),
             'attempts' => (clone $attemptsQuery)
                 ->latest()
                 ->limit(20)
@@ -52,7 +69,8 @@ class Reports extends Component
                 ->latest()
                 ->limit(20)
                 ->get(),
-            'discussions' => Discussion::with('user', 'learningUnit.module')
+            'discussions' => Discussion::with('user', 'learningUnit.module', 'replies.user')
+                ->whereNull('parent_id')
                 ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
                 ->latest()
                 ->limit(10)
@@ -62,9 +80,17 @@ class Reports extends Component
                 ->select('user_id')
                 ->selectRaw('count(*) as total_discussions')
                 ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
+                ->whereHas('user', fn ($query) => $query->role('murid'))
                 ->groupBy('user_id')
                 ->orderByDesc('total_discussions')
                 ->limit(10)
+                ->get(),
+            'projectStatusSummary' => Project::query()
+                ->select('status')
+                ->selectRaw('count(*) as total')
+                ->whereIn('module_id', $moduleIds)
+                ->groupBy('status')
+                ->orderBy('status')
                 ->get(),
         ]);
     }

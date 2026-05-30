@@ -43,11 +43,15 @@ test('admin report summary includes core system activity counts', function () {
     Discussion::create(['learning_unit_id' => $learningUnit->id, 'user_id' => $student->id, 'body' => 'Diskusi report']);
     Progress::create(['user_id' => $student->id, 'module_id' => $module->id, 'learning_unit_id' => $learningUnit->id, 'status' => 'sedang_dikerjakan']);
     Project::create(['module_id' => $module->id, 'user_id' => $student->id, 'project_title' => 'Project Report', 'status' => 'submitted']);
+    Project::create(['module_id' => $module->id, 'user_id' => $student->id, 'project_title' => 'Project Reviewed', 'status' => 'reviewed', 'score' => 90]);
 
     $stats = app(ReportSummaryService::class)->systemSummary();
 
-    expect($stats)->toHaveKeys(['users_total', 'users_by_role', 'classes', 'modules', 'assessments', 'activities', 'progress_records', 'discussions', 'projects'])
-        ->and($stats['users_by_role'])->toHaveKeys(['admin', 'guru', 'murid']);
+    expect($stats)->toHaveKeys(['users_total', 'users_by_role', 'classes', 'modules', 'assessments', 'activities', 'progress_records', 'discussions', 'discussions_by_type', 'projects', 'projects_by_status', 'reviewed_project_average_score'])
+        ->and($stats['users_by_role'])->toHaveKeys(['admin', 'guru', 'murid'])
+        ->and($stats['discussions_by_type'])->toHaveKey('threads')
+        ->and($stats['projects_by_status'])->toHaveKeys(['submitted', 'reviewed'])
+        ->and($stats['reviewed_project_average_score'])->toBe(90.0);
 
     $this->actingAs($admin)
         ->get(route('admin.reports'))

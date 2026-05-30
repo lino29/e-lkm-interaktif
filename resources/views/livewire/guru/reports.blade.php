@@ -33,6 +33,30 @@
         </flux:card>
     </div>
 
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <flux:card>
+            <div class="text-sm text-zinc-500">Diskusi Direspons Guru</div>
+            <div class="text-2xl font-semibold">{{ $respondedDiscussionCount }}/{{ $discussionThreadCount }}</div>
+            <flux:text>{{ $unrespondedDiscussionCount }} thread belum direspons guru</flux:text>
+        </flux:card>
+        <flux:card>
+            <div class="text-sm text-zinc-500">Rata-rata Nilai Proyek</div>
+            <div class="text-2xl font-semibold">{{ $reviewedProjectAverageScore ?? '-' }}</div>
+            <flux:text>Dihitung dari proyek berstatus reviewed</flux:text>
+        </flux:card>
+        <flux:card>
+            <div class="text-sm text-zinc-500">Status Proyek</div>
+            <div class="mt-2 space-y-1 text-sm">
+                @foreach ($projectStatusSummary as $projectStatus)
+                    <div class="flex justify-between" wire:key="project-status-summary-{{ $projectStatus->status }}">
+                        <span class="capitalize text-zinc-500">{{ $projectStatus->status }}</span>
+                        <span class="font-semibold">{{ $projectStatus->total }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </flux:card>
+    </div>
+
     <section class="space-y-3">
         <flux:heading>Attempt Asesmen Terbaru</flux:heading>
         @foreach ($attempts as $attempt)
@@ -60,7 +84,8 @@
     <section class="space-y-3">
         <flux:heading>Diskusi Terbaru</flux:heading>
         @foreach ($discussions as $discussion)
-            <flux:card wire:key="report-discussion-{{ $discussion->id }}"><div class="font-semibold">{{ $discussion->user->name }} - {{ $discussion->learningUnit->title }}</div><p class="mt-2 text-sm">{{ $discussion->body }}</p></flux:card>
+            @php($hasTeacherReply = $discussion->replies->contains(fn ($reply) => $reply->user->hasRole('guru')))
+            <flux:card wire:key="report-discussion-{{ $discussion->id }}"><div class="font-semibold">{{ $discussion->user->name }} - {{ $discussion->learningUnit->title }}</div><flux:badge size="sm" color="{{ $hasTeacherReply ? 'green' : 'yellow' }}">{{ $hasTeacherReply ? 'Direspons guru' : 'Belum direspons guru' }}</flux:badge><p class="mt-2 text-sm">{{ $discussion->body }}</p></flux:card>
         @endforeach
     </section>
     <section class="space-y-3">
