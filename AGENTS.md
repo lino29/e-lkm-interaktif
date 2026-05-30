@@ -213,3 +213,61 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Do NOT delete tests without approval.
 
 </laravel-boost-guidelines>
+
+
+# E-LKM Project Guidelines
+
+## Project Goal
+
+Project ini adalah E-LKM Interaktif Energi Terbarukan berbasis web untuk Projek IPAS kelas X SMK.
+
+## Main Domain
+
+Sistem harus mendukung:
+- Admin
+- Guru
+- Murid
+- Modul pembelajaran
+- Kegiatan belajar
+- Aktivitas Ayo Mengamati
+- Aktivitas Ayo Bertanya
+- Aktivitas Ayo Mencoba
+- Aktivitas Ayo Menalar
+- Aktivitas Ayo Menyimpulkan
+- Forum diskusi/refleksi
+- Asesmen otomatis
+- Remedial
+- Proyek murid
+- Laporan progres dan nilai
+
+## Development Priority
+
+Urutan pengembangan:
+1. Auth dan role
+2. Dashboard sesuai role
+3. Manajemen modul pembelajaran
+4. Manajemen kegiatan belajar
+5. Aktivitas E-LKM
+6. Bank soal dan asesmen
+7. Scoring otomatis
+8. Remedial
+9. Proyek/portofolio
+10. Laporan guru
+
+## Rules for Codex
+
+1. Baca AGENTS.md sebelum mengubah kode.
+2. Gunakan code-review-graph untuk memahami struktur project.
+3. Jangan mengubah file di luar scope task.
+4. Jangan mengubah `.env`.
+5. Jangan menghapus migration lama tanpa instruksi.
+6. Jangan menambah package tanpa izin.
+7. Ikuti convention Laravel, Livewire, Pest, dan Pint.
+8. Setelah perubahan PHP, jalankan formatter.
+9. Setelah perubahan fitur, buat atau update test.
+10. Berikan ringkasan file yang diubah, risiko, dan command test.
+
+## Documentation Rule
+
+Catatan manual project ditulis di `/docs`.
+Folder `.code-review-graph/obsidian` hanya output otomatis dari graph.
