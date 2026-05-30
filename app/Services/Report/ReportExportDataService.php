@@ -113,6 +113,7 @@ class ReportExportDataService
             ),
             'total_discussions' => Discussion::whereHas('learningUnit', fn ($q) => $q->where('module_id', $moduleId))->count(),
             'total_progress_records' => Progress::where('module_id', $moduleId)->count(),
+            'learning_units' => $module->learningUnits->map(fn ($u) => ['id' => $u->id, 'title' => $u->title, 'order' => $u->order])->toArray(),
         ];
 
         return [

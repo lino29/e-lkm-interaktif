@@ -15,6 +15,7 @@ class Activity extends Model
         return [
             'is_required' => 'boolean',
             'order' => 'integer',
+            'answer_schema' => 'array',
         ];
     }
 

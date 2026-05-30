@@ -30,17 +30,20 @@ class ModuleDetail extends Component
             'references',
         ]);
 
+        $completedUnitIds = $module->learningUnits
+            ->filter(fn ($learningUnit): bool => $progressService->isLearningUnitComplete($student, $learningUnit))
+            ->pluck('id')
+            ->all();
+
         return view('livewire.murid.module-detail', [
             'module' => $module,
-            'completedUnitIds' => $module->learningUnits
-                ->filter(fn ($learningUnit): bool => $progressService->isLearningUnitComplete($student, $learningUnit))
-                ->pluck('id')
-                ->all(),
+            'completedUnitIds' => $completedUnitIds,
             'moduleProgressPercentage' => $progressService->moduleCompletionPercentage($student, $module),
             'unlockedUnitIds' => $module->learningUnits
                 ->filter(fn ($learningUnit): bool => $progressService->isLearningUnitUnlocked($student, $learningUnit))
                 ->pluck('id')
                 ->all(),
+            'allUnitsCompleted' => count($completedUnitIds) === $module->learningUnits->count() && $module->learningUnits->count() > 0,
         ]);
     }
 }

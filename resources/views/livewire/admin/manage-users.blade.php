@@ -1,9 +1,52 @@
 <div class="space-y-6">
-    <flux:heading size="xl">Kelola Pengguna</flux:heading>
+    <div class="flex items-center justify-between">
+        <flux:heading size="xl">Kelola Pengguna</flux:heading>
+        <flux:modal.trigger name="import-users-modal">
+            <flux:button variant="subtle" icon="document-arrow-up">Import CSV</flux:button>
+        </flux:modal.trigger>
+    </div>
 
     @if (session('status'))
         <flux:callout variant="success">{{ session('status') }}</flux:callout>
     @endif
+    
+    @if (session('error'))
+        <flux:callout variant="danger">{{ session('error') }}</flux:callout>
+    @endif
+
+    <flux:modal name="import-users-modal" class="md:w-96">
+        <form wire:submit="importCsv" class="space-y-6">
+            <div>
+                <flux:heading size="lg">Import Pengguna dari CSV</flux:heading>
+                <flux:subheading>
+                    Pastikan file CSV memiliki header baris pertama dengan nama kolom: 
+                    <span class="font-mono font-bold text-gray-800 dark:text-gray-200">name, email, password, role</span>.
+                    Kolom dipisahkan dengan koma.
+                </flux:subheading>
+            </div>
+
+            <flux:field>
+                <flux:label>File CSV</flux:label>
+                <input type="file" wire:model="csvFile" accept=".csv,.txt" class="block w-full text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-md file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-zinc-100 file:text-zinc-700
+                  hover:file:bg-zinc-200
+                  dark:file:bg-zinc-800 dark:file:text-zinc-300 dark:hover:file:bg-zinc-700
+                "/>
+                <flux:error name="csvFile" />
+            </flux:field>
+
+            <div class="flex space-x-2">
+                <flux:spacer />
+                <flux:modal.close>
+                    <flux:button variant="ghost">Batal</flux:button>
+                </flux:modal.close>
+                <flux:button type="submit" variant="primary">Upload & Import</flux:button>
+            </div>
+        </form>
+    </flux:modal>
 
     <form wire:submit="save" class="grid gap-4 md:grid-cols-2">
         <flux:field>

@@ -78,7 +78,11 @@
                 <flux:card wire:key="murid-module-assessment-{{ $assessment->id }}">
                     <div class="font-semibold">{{ $assessment->title }}</div>
                     <flux:text>KKTP {{ $assessment->kktp }}. Maks {{ $assessment->max_attempts }} percobaan.</flux:text>
-                    <flux:button class="mt-3" size="sm" variant="primary" :href="route('murid.assessments.show', $assessment)" wire:navigate>Kerjakan</flux:button>
+                    @if ($allUnitsCompleted)
+                        <flux:button class="mt-3" size="sm" variant="primary" :href="route('murid.assessments.show', $assessment)" wire:navigate>Kerjakan</flux:button>
+                    @else
+                        <flux:button class="mt-3" size="sm" variant="primary" disabled>Selesaikan semua KB</flux:button>
+                    @endif
                 </flux:card>
             @empty
                 <flux:text>Belum ada asesmen modul.</flux:text>

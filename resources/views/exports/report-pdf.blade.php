@@ -12,7 +12,7 @@
     </style>
 </head>
 <body>
-    <h1>Laporan Kelas: {{ $module->title }}</h1>
+    <h1>Laporan Kelas: {{ $module['module_title'] }}</h1>
     <p>Tanggal Export: {{ now()->format('d M Y H:i') }}</p>
 
     <table>
@@ -20,8 +20,8 @@
         <tr>
             <th>Nama Murid</th>
             <th>Status</th>
-            @foreach($module->learningUnits as $unit)
-                <th>KB{{ $unit->order }}</th>
+            @foreach($module['learning_units'] as $unit)
+                <th>KB{{ $unit['order'] }}</th>
             @endforeach
             <th>Sumatif</th>
             <th>Proyek</th>
@@ -32,13 +32,13 @@
         @foreach($data as $row)
             <tr>
                 <td>{{ $row['name'] }}</td>
-                <td>{{ Str::headline($row['status']) }}</td>
-                @foreach($module->learningUnits as $unit)
-                    <td>{{ $row['formative_scores'][$unit->id] ?? 0 }}</td>
+                <td>{{ Str::headline($row['module_status']) }}</td>
+                @foreach($module['learning_units'] as $unit)
+                    <td>{{ $row['formative_scores'][$unit['id']]['score'] ?? 0 }}</td>
                 @endforeach
-                <td>{{ $row['final_score'] }}</td>
-                <td>{{ $row['project_score'] }}</td>
-                <td>{{ $row['forum_score'] }}</td>
+                <td>{{ $row['final_assessment']['score'] ?? 0 }}</td>
+                <td>{{ $row['project']['score'] ?? 0 }}</td>
+                <td>{{ $row['forum']['average_participation_score'] ?? 0 }}</td>
             </tr>
         @endforeach
         </tbody>
