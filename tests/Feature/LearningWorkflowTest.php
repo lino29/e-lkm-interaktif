@@ -56,6 +56,16 @@ test('teacher can create module records and student can view published modules',
         ->assertOk()
         ->assertSee('E-LKM Energi Terbarukan');
 
+    $this->actingAs($teacher)
+        ->get(route('guru.modules.show', $module))
+        ->assertOk()
+        ->assertSee('Konsep Energi');
+
+    $this->actingAs($student)
+        ->get(route('murid.modules.show', $module))
+        ->assertOk()
+        ->assertSee('Pendahuluan');
+
     ActivityAnswer::create([
         'activity_id' => $activity->id,
         'user_id' => $student->id,
@@ -64,4 +74,35 @@ test('teacher can create module records and student can view published modules',
     ]);
 
     expect(ActivityAnswer::where('user_id', $student->id)->exists())->toBeTrue();
+});
+
+test('student cannot view draft modules or unpublished assessments', function () {
+    $teacher = User::factory()->create();
+    $teacher->assignRole('guru');
+    $student = User::factory()->create();
+    $student->assignRole('murid');
+    $subject = Subject::create(['name' => 'IPAS', 'code' => 'IPAS-DRAFT']);
+
+    $module = Module::create([
+        'subject_id' => $subject->id,
+        'created_by' => $teacher->id,
+        'title' => 'Draft Energi',
+        'slug' => 'draft-energi',
+        'status' => 'draft',
+    ]);
+    $assessment = Assessment::create([
+        'module_id' => $module->id,
+        'title' => 'Asesmen Draft',
+        'is_published' => false,
+    ]);
+
+    $this->actingAs($student)
+        ->get(route('murid.modules.show', $module))
+        ->assertNotFound();
+
+    $module->update(['status' => 'published']);
+
+    $this->actingAs($student)
+        ->get(route('murid.assessments.show', $assessment))
+        ->assertNotFound();
 });

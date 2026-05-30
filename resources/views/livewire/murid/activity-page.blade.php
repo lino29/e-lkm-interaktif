@@ -20,6 +20,13 @@
                 <flux:error name="answer_json_text" />
             </flux:field>
         @endif
+        @if ($activity->input_type === 'file')
+            <flux:field>
+                <flux:label>Upload file</flux:label>
+                <flux:input type="file" wire:model="file" />
+                <flux:error name="file" />
+            </flux:field>
+        @endif
         <flux:button type="submit" variant="primary">Kirim Jawaban</flux:button>
     </form>
 </div>

@@ -11,7 +11,7 @@ use Livewire\Component;
 
 class AssessmentPage extends Component
 {
-    public Assessment $assessment;
+    public Assessment $currentAssessment;
 
     /**
      * @var array<int, mixed>
@@ -22,8 +22,11 @@ class AssessmentPage extends Component
 
     public function mount(string|int $assessment): void
     {
-        $this->assessment = Assessment::with('questions.keywords', 'questions.rubrics', 'module')->findOrFail($assessment);
-        $this->latestAttempt = AssessmentAttempt::where('assessment_id', $this->assessment->id)
+        $this->currentAssessment = Assessment::with('questions.keywords', 'questions.rubrics', 'module')
+            ->where('is_published', true)
+            ->whereHas('module', fn ($query) => $query->where('status', 'published'))
+            ->findOrFail($assessment);
+        $this->latestAttempt = AssessmentAttempt::where('assessment_id', $this->currentAssessment->id)
             ->where('student_id', auth()->id())
             ->latest()
             ->first();
@@ -31,18 +34,18 @@ class AssessmentPage extends Component
 
     public function submit(AssessmentScoringService $scoring): void
     {
-        $attemptNumber = AssessmentAttempt::where('assessment_id', $this->assessment->id)
+        $attemptNumber = AssessmentAttempt::where('assessment_id', $this->currentAssessment->id)
             ->where('student_id', auth()->id())
             ->count() + 1;
 
-        if ($attemptNumber > $this->assessment->max_attempts) {
+        if ($attemptNumber > $this->currentAssessment->max_attempts) {
             session()->flash('status', 'Batas percobaan asesmen sudah tercapai.');
 
             return;
         }
 
         $attempt = AssessmentAttempt::create([
-            'assessment_id' => $this->assessment->id,
+            'assessment_id' => $this->currentAssessment->id,
             'student_id' => auth()->id(),
             'attempt_number' => $attemptNumber,
             'started_at' => now(),
@@ -51,7 +54,7 @@ class AssessmentPage extends Component
         $totalScore = 0.0;
         $maxScore = 0.0;
 
-        foreach ($this->assessment->questions as $question) {
+        foreach ($this->currentAssessment->questions as $question) {
             $answer = $this->normalizeAnswer($question->id, $question->question_type);
             $result = $scoring->scoreQuestion($question, $answer);
             $totalScore += $result['score'];
@@ -71,7 +74,7 @@ class AssessmentPage extends Component
             ]);
         }
 
-        $status = $scoring->determineStatus($totalScore, $maxScore, $this->assessment->kktp);
+        $status = $scoring->determineStatus($totalScore, $maxScore, $this->currentAssessment->kktp);
         $attempt->update([
             'total_score' => $totalScore,
             'max_score' => $maxScore,
@@ -80,14 +83,16 @@ class AssessmentPage extends Component
             'feedback' => $status === 'tuntas' ? 'Nilai sudah mencapai KKTP.' : 'Nilai belum mencapai KKTP, lakukan remedial.',
         ]);
 
-        app(ProgressService::class)->recordAssessment(auth()->user(), $this->assessment, $totalScore, $status);
+        app(ProgressService::class)->recordAssessment(auth()->user(), $this->currentAssessment, $totalScore, $status);
         $this->latestAttempt = $attempt->fresh();
         session()->flash('status', 'Asesmen berhasil dinilai otomatis.');
     }
 
     public function render()
     {
-        return view('livewire.murid.assessment-page');
+        return view('livewire.murid.assessment-page', [
+            'assessment' => $this->currentAssessment,
+        ]);
     }
 
     private function normalizeAnswer(int $questionId, string $type): mixed

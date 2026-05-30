@@ -16,11 +16,13 @@ use App\Livewire\Guru\ManageModules;
 use App\Livewire\Guru\ManageProjects;
 use App\Livewire\Guru\ManageQuestions;
 use App\Livewire\Guru\ManageRubrics;
+use App\Livewire\Guru\ModuleDetail as GuruModuleDetail;
 use App\Livewire\Guru\Reports as GuruReports;
 use App\Livewire\Murid\ActivityPage;
 use App\Livewire\Murid\AssessmentPage;
 use App\Livewire\Murid\Dashboard as MuridDashboard;
 use App\Livewire\Murid\LearningUnitPage;
+use App\Livewire\Murid\ModuleDetail as MuridModuleDetail;
 use App\Livewire\Murid\MyModules;
 use App\Livewire\Murid\MyProject;
 use App\Livewire\Murid\MyScores;
@@ -62,6 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:guru')->prefix('guru')->name('guru.')->group(function () {
         Route::view('dashboard', 'dashboard.page', ['livewireComponent' => GuruDashboard::class, 'title' => 'Dashboard Guru'])->name('dashboard');
         Route::view('modules', 'dashboard.page', ['livewireComponent' => ManageModules::class, 'title' => 'Kelola Modul'])->name('modules');
+        Route::view('modules/{module}', 'dashboard.page', ['livewireComponent' => GuruModuleDetail::class, 'title' => 'Detail Modul'])->name('modules.show');
         Route::view('learning-units', 'dashboard.page', ['livewireComponent' => ManageLearningUnits::class, 'title' => 'Kelola Kegiatan Belajar'])->name('learning-units');
         Route::view('materials', 'dashboard.page', ['livewireComponent' => ManageMaterials::class, 'title' => 'Kelola Materi'])->name('materials');
         Route::view('activities', 'dashboard.page', ['livewireComponent' => ManageActivities::class, 'title' => 'Kelola Aktivitas'])->name('activities');
@@ -76,6 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:murid')->prefix('murid')->name('murid.')->group(function () {
         Route::view('dashboard', 'dashboard.page', ['livewireComponent' => MuridDashboard::class, 'title' => 'Dashboard Murid'])->name('dashboard');
         Route::view('modules', 'dashboard.page', ['livewireComponent' => MyModules::class, 'title' => 'Modul Saya'])->name('modules');
+        Route::view('modules/{module}', 'dashboard.page', ['livewireComponent' => MuridModuleDetail::class, 'title' => 'Detail Modul'])->name('modules.show');
         Route::view('learning-units/{learningUnit}', 'dashboard.page', ['livewireComponent' => LearningUnitPage::class, 'title' => 'Kegiatan Belajar'])->name('learning-units.show');
         Route::view('activities/{activity}', 'dashboard.page', ['livewireComponent' => ActivityPage::class, 'title' => 'Aktivitas'])->name('activities.show');
         Route::view('assessments/{assessment}', 'dashboard.page', ['livewireComponent' => AssessmentPage::class, 'title' => 'Asesmen'])->name('assessments.show');
