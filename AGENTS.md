@@ -214,7 +214,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 </laravel-boost-guidelines>
 
-
 # E-LKM Project Guidelines
 
 ## Project Goal

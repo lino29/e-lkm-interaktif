@@ -8,6 +8,9 @@
                 <flux:select.option value="{{ $module->id }}">{{ $module->title }}</flux:select.option>
             @endforeach
         </flux:select>
+        
+        <flux:button wire:click="exportExcel" icon="document-text" variant="primary">Export Excel</flux:button>
+        <flux:button wire:click="exportPdf" icon="document-arrow-down">Export PDF</flux:button>
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-5">
