@@ -85,4 +85,32 @@
             @endforelse
         </div>
     </section>
+
+    @if ($module->glossaries->isNotEmpty())
+        <section class="space-y-4">
+            <flux:heading>Glosarium</flux:heading>
+            <div class="grid gap-3 md:grid-cols-2">
+                @foreach ($module->glossaries as $glossary)
+                    <flux:card wire:key="glossary-{{ $glossary->id }}">
+                        <div class="font-semibold">{{ $glossary->term }}</div>
+                        <flux:text>{{ $glossary->definition }}</flux:text>
+                    </flux:card>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
+    @if ($module->references->isNotEmpty())
+        <section class="space-y-4">
+            <flux:heading>Referensi</flux:heading>
+            <div class="grid gap-3 md:grid-cols-2">
+                @foreach ($module->references as $reference)
+                    <flux:card wire:key="reference-{{ $reference->id }}">
+                        <div class="font-semibold">{{ $reference->title }}</div>
+                        <flux:text>{{ $reference->author }} ({{ $reference->year }}). {{ $reference->source }}</flux:text>
+                    </flux:card>
+                @endforeach
+            </div>
+        </section>
+    @endif
 </div>
