@@ -1,14 +1,17 @@
 <div class="space-y-6">
     <div>
         <flux:heading size="xl">{{ $assessment->title }}</flux:heading>
-        <flux:text>KKTP {{ $assessment->kktp }} · Maks {{ $assessment->max_attempts }} percobaan</flux:text>
+        <flux:text>KKTP {{ $assessment->kktp }} - Maks {{ $assessment->max_attempts }} percobaan</flux:text>
     </div>
     @if (session('status')) <flux:callout>{{ session('status') }}</flux:callout> @endif
     @if ($latestAttempt)
         <flux:card>
             <div class="font-semibold">Attempt terakhir: {{ $latestAttempt->total_score }}/{{ $latestAttempt->max_score }}</div>
-            <flux:text>Status {{ $latestAttempt->status }} · {{ $latestAttempt->feedback }}</flux:text>
+            <flux:text>Status {{ $latestAttempt->status }} - {{ $latestAttempt->feedback }}</flux:text>
         </flux:card>
+    @endif
+    @if ($currentAttempt === null)
+        <flux:callout>Batas percobaan asesmen sudah tercapai atau asesmen sudah tuntas.</flux:callout>
     @endif
     <form wire:submit="submit" class="space-y-4">
         @foreach ($assessment->questions as $question)
@@ -27,6 +30,6 @@
                 </flux:field>
             </flux:card>
         @endforeach
-        <flux:button type="submit" variant="primary">Kirim dan Nilai Otomatis</flux:button>
+        <flux:button type="submit" variant="primary" :disabled="$currentAttempt === null">Kirim dan Nilai Otomatis</flux:button>
     </form>
 </div>

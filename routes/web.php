@@ -10,6 +10,7 @@ use App\Livewire\Admin\Reports as AdminReports;
 use App\Livewire\Guru\Dashboard as GuruDashboard;
 use App\Livewire\Guru\ManageActivities;
 use App\Livewire\Guru\ManageAssessments;
+use App\Livewire\Guru\ManageDiscussions;
 use App\Livewire\Guru\ManageLearningUnits;
 use App\Livewire\Guru\ManageMaterials;
 use App\Livewire\Guru\ManageModules;

@@ -20,39 +20,58 @@ class AssessmentPage extends Component
 
     public ?AssessmentAttempt $latestAttempt = null;
 
+    public ?AssessmentAttempt $currentAttempt = null;
+
     public function mount(string|int $assessment): void
     {
         $this->currentAssessment = Assessment::with('questions.keywords', 'questions.rubrics', 'module')
             ->where('is_published', true)
             ->whereHas('module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($assessment);
+
         $this->latestAttempt = AssessmentAttempt::where('assessment_id', $this->currentAssessment->id)
             ->where('student_id', auth()->id())
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at')
+            ->first();
+
+        $this->currentAttempt = AssessmentAttempt::where('assessment_id', $this->currentAssessment->id)
+            ->where('student_id', auth()->id())
+            ->whereNull('submitted_at')
+            ->where('status', 'sedang_dikerjakan')
             ->latest()
             ->first();
+
+        if ($this->currentAttempt === null && $this->canStartNewAttempt()) {
+            $this->currentAttempt = AssessmentAttempt::create([
+                'assessment_id' => $this->currentAssessment->id,
+                'student_id' => auth()->id(),
+                'attempt_number' => $this->nextAttemptNumber(),
+                'started_at' => now(),
+            ]);
+        }
     }
 
     public function submit(AssessmentScoringService $scoring): void
     {
-        $attemptNumber = AssessmentAttempt::where('assessment_id', $this->currentAssessment->id)
-            ->where('student_id', auth()->id())
-            ->count() + 1;
+        $attempt = $this->currentAttempt?->fresh();
 
-        if ($attemptNumber > $this->currentAssessment->max_attempts) {
+        if ($attempt === null) {
             session()->flash('status', 'Batas percobaan asesmen sudah tercapai.');
 
             return;
         }
 
-        $attempt = AssessmentAttempt::create([
-            'assessment_id' => $this->currentAssessment->id,
-            'student_id' => auth()->id(),
-            'attempt_number' => $attemptNumber,
-            'started_at' => now(),
-        ]);
+        if ($attempt->submitted_at !== null || $attempt->status !== 'sedang_dikerjakan') {
+            session()->flash('status', 'Attempt asesmen ini sudah dikirim.');
+
+            return;
+        }
 
         $totalScore = 0.0;
         $maxScore = 0.0;
+
+        $attempt->studentAnswers()->delete();
 
         foreach ($this->currentAssessment->questions as $question) {
             $answer = $this->normalizeAnswer($question->id, $question->question_type);
@@ -85,6 +104,7 @@ class AssessmentPage extends Component
 
         app(ProgressService::class)->recordAssessment(auth()->user(), $this->currentAssessment, $totalScore, $status);
         $this->latestAttempt = $attempt->fresh();
+        $this->currentAttempt = $this->latestAttempt;
         session()->flash('status', 'Asesmen berhasil dinilai otomatis.');
     }
 
@@ -106,5 +126,26 @@ class AssessmentPage extends Component
         }
 
         return $answer;
+    }
+
+    private function canStartNewAttempt(): bool
+    {
+        if ($this->latestAttempt?->status === 'tuntas') {
+            return false;
+        }
+
+        return $this->submittedAndActiveAttemptCount() < $this->currentAssessment->max_attempts;
+    }
+
+    private function nextAttemptNumber(): int
+    {
+        return $this->submittedAndActiveAttemptCount() + 1;
+    }
+
+    private function submittedAndActiveAttemptCount(): int
+    {
+        return AssessmentAttempt::where('assessment_id', $this->currentAssessment->id)
+            ->where('student_id', auth()->id())
+            ->count();
     }
 }
