@@ -22,6 +22,8 @@ test('demo learning seeder creates complete renewable energy module', function (
             ->and($learningUnit->materials)->toHaveCount(1)
             ->and($learningUnit->materials->first()->content)->not->toContain('placeholder')
             ->and($learningUnit->media)->toHaveCount(1)
+            ->and($learningUnit->media->first()->file_path)->toStartWith('demo/media/energi-terbarukan/')
+            ->and($learningUnit->media->first()->url)->toBeNull()
             ->and($learningUnit->assessments)->not->toBeEmpty();
 
         $phases = $learningUnit->activities->pluck('phase')->all();
@@ -32,6 +34,10 @@ test('demo learning seeder creates complete renewable energy module', function (
             ->toContain('ayo_menalar')
             ->toContain('ayo_menyimpulkan')
             ->toContain('forum_diskusi');
+
+        expect($learningUnit->activities->pluck('prompt')->implode(' '))
+            ->not->toContain('Tuliskan hasil')
+            ->and($learningUnit->activities->firstWhere('phase', 'ayo_mencoba')->prompt)->toContain('tabel');
 
         $questions = $learningUnit->assessments->first()->questions;
 

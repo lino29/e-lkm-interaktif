@@ -143,21 +143,26 @@ class DemoLearningSeeder extends Seeder
                 ],
             );
 
-            Media::firstOrCreate(
+            $media = $this->mediaDescriptorFor($order, $data['title']);
+
+            Media::updateOrCreate(
                 [
                     'learning_unit_id' => $unit->id,
-                    'title' => 'Media ilustrasi '.$data['title'],
+                    'order' => 1,
                 ],
                 [
                     'material_id' => $material->id,
-                    'type' => 'link',
-                    'url' => 'https://example.com/media/'.Str::slug($data['title']),
-                    'order' => 1,
+                    'title' => $media['title'],
+                    'type' => 'image',
+                    'url' => null,
+                    'file_path' => $media['file_path'],
                 ],
             );
 
+            $activityPrompts = $this->activityPromptsFor($order);
+
             foreach (['ayo_mengamati', 'ayo_bertanya', 'ayo_mencoba', 'ayo_menalar', 'ayo_menyimpulkan', 'forum_diskusi'] as $activityOrder => $phase) {
-                Activity::firstOrCreate(
+                Activity::updateOrCreate(
                     [
                         'learning_unit_id' => $unit->id,
                         'phase' => $phase,
@@ -165,9 +170,7 @@ class DemoLearningSeeder extends Seeder
                     ],
                     [
                         'title' => Str::headline($phase),
-                        'prompt' => $phase === 'forum_diskusi'
-                            ? 'Diskusikan temuan dan pertanyaan utama dari kegiatan belajar ini.'
-                            : 'Tuliskan hasil '.$phase.' berdasarkan materi dan lingkungan sekitar.',
+                        'prompt' => $activityPrompts[$phase],
                         'input_type' => $phase === 'forum_diskusi' ? 'discussion' : ($phase === 'ayo_mencoba' ? 'table' : 'essay'),
                         'is_required' => true,
                     ],
@@ -226,6 +229,66 @@ class DemoLearningSeeder extends Seeder
         QuestionKeyword::firstOrCreate(['question_id' => $essay->id, 'keyword' => 'terus menerus'], ['weight' => 1]);
         QuestionKeyword::firstOrCreate(['question_id' => $essay->id, 'keyword' => 'bahan bakar fosil'], ['weight' => 1]);
         Rubric::firstOrCreate(['question_id' => $essay->id, 'criterion' => 'Ketepatan konsep'], ['score' => 80]);
+    }
+
+    /**
+     * @return array{title: string, file_path: string}
+     */
+    private function mediaDescriptorFor(int $order, string $title): array
+    {
+        return [
+            'title' => 'Ilustrasi '.$title,
+            'file_path' => 'demo/media/energi-terbarukan/kb'.$order.'-'.Str::slug($title).'.png',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function activityPromptsFor(int $order): array
+    {
+        return match ($order) {
+            1 => [
+                'ayo_mengamati' => 'Amati tiga penggunaan energi di kelas atau rumah. Catat bentuk energi awal, bentuk energi akhir, dan alat yang mengubah energi tersebut.',
+                'ayo_bertanya' => 'Susun dua pertanyaan tentang asal sumber energi yang kamu amati dan alasan sumber tersebut termasuk terbarukan atau tidak terbarukan.',
+                'ayo_mencoba' => 'Buat tabel dengan kolom alat, sumber energi, bentuk perubahan energi, manfaat, dan catatan penggunaan harian.',
+                'ayo_menalar' => 'Bandingkan hasil pengamatanmu. Jelaskan pola perubahan energi yang paling sering muncul dan alasan sumber energinya dipilih.',
+                'ayo_menyimpulkan' => 'Rumuskan kesimpulan tentang konsep energi dan contoh sumber energi yang paling dekat dengan kehidupan sehari-hari.',
+                'forum_diskusi' => 'Bagikan satu contoh penggunaan energi di sekitarmu, lalu tanggapi contoh teman dengan menyebutkan sumber energinya.',
+            ],
+            2 => [
+                'ayo_mengamati' => 'Amati berita, foto, atau kondisi sekitar tentang penggunaan bahan bakar fosil. Catat dampak yang terlihat pada udara, biaya, atau kesehatan.',
+                'ayo_bertanya' => 'Tulis dua pertanyaan penyebab dan dampak ketergantungan energi fosil yang perlu dijawab melalui diskusi kelas.',
+                'ayo_mencoba' => 'Buat tabel dengan kolom sumber fosil, contoh penggunaan, emisi atau polutan, dampak lingkungan, dan alternatif pengurangan.',
+                'ayo_menalar' => 'Jelaskan hubungan antara pembakaran energi fosil, emisi gas rumah kaca, dan kebutuhan transisi energi.',
+                'ayo_menyimpulkan' => 'Simpulkan alasan ilmiah dan sosial mengapa penggunaan energi fosil perlu dikurangi secara bertahap.',
+                'forum_diskusi' => 'Diskusikan kebiasaan di sekolah yang masih bergantung pada energi fosil dan usulkan satu perubahan yang realistis.',
+            ],
+            3 => [
+                'ayo_mengamati' => 'Amati potensi energi surya, angin, air, biomassa, atau panas bumi di lingkungan sekitar. Catat potensi yang paling mungkin dimanfaatkan.',
+                'ayo_bertanya' => 'Buat dua pertanyaan tentang kelebihan, keterbatasan, dan syarat lokasi untuk salah satu jenis energi terbarukan.',
+                'ayo_mencoba' => 'Buat tabel perbandingan dengan kolom jenis energi, sumber alam, contoh teknologi, kelebihan, keterbatasan, dan peluang di daerahmu.',
+                'ayo_menalar' => 'Analisis jenis energi terbarukan yang paling sesuai untuk sekolahmu dengan mempertimbangkan sumber daya dan kebutuhan energi.',
+                'ayo_menyimpulkan' => 'Tuliskan kesimpulan tentang pengertian energi terbarukan dan jenis yang paling relevan untuk lingkunganmu.',
+                'forum_diskusi' => 'Pilih satu jenis energi terbarukan yang menurutmu paling mungkin diterapkan di sekolah dan beri alasan.',
+            ],
+            4 => [
+                'ayo_mengamati' => 'Amati contoh panel surya, turbin angin, mikrohidro, atau biodigester melalui media yang tersedia. Catat komponen utama dan fungsi tiap komponen.',
+                'ayo_bertanya' => 'Susun dua pertanyaan tentang cara kerja teknologi energi terbarukan dan faktor yang memengaruhi efisiensinya.',
+                'ayo_mencoba' => 'Buat tabel STEM dengan kolom teknologi, konsep sains, komponen teknologi, prinsip rekayasa, data matematika, dan contoh penerapan.',
+                'ayo_menalar' => 'Jelaskan bagaimana sains, teknologi, rekayasa, dan matematika saling berhubungan dalam satu teknologi yang kamu pilih.',
+                'ayo_menyimpulkan' => 'Simpulkan manfaat pendekatan STEM dalam merancang atau memilih teknologi energi terbarukan.',
+                'forum_diskusi' => 'Diskusikan teknologi energi terbarukan yang paling cocok untuk sekolah beserta kendala teknisnya.',
+            ],
+            default => [
+                'ayo_mengamati' => 'Amati masalah penggunaan energi di kelas, bengkel, kantin, atau rumah. Catat bukti masalah dan siapa yang terdampak.',
+                'ayo_bertanya' => 'Tulis dua pertanyaan proyek tentang penyebab masalah energi dan data yang harus dikumpulkan sebelum merancang aksi.',
+                'ayo_mencoba' => 'Buat tabel rancangan proyek dengan kolom masalah, tujuan, alat dan bahan, langkah kerja, data yang dikumpulkan, hasil yang diharapkan, dan risiko keselamatan.',
+                'ayo_menalar' => 'Nilai kelayakan rancangan aksimu berdasarkan data, waktu, alat, keselamatan, dan dampak yang mungkin dicapai.',
+                'ayo_menyimpulkan' => 'Rangkum rancangan aksi sederhana energi terbarukan atau hemat energi yang paling realistis untuk dilaksanakan.',
+                'forum_diskusi' => 'Presentasikan rancangan aksi kelompokmu dan beri masukan terhadap rancangan kelompok lain secara spesifik.',
+            ],
+        };
     }
 
     /**

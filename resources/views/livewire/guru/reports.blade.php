@@ -63,4 +63,10 @@
             <flux:card wire:key="report-discussion-{{ $discussion->id }}"><div class="font-semibold">{{ $discussion->user->name }} - {{ $discussion->learningUnit->title }}</div><p class="mt-2 text-sm">{{ $discussion->body }}</p></flux:card>
         @endforeach
     </section>
+    <section class="space-y-3">
+        <flux:heading>Partisipasi Diskusi</flux:heading>
+        @foreach ($discussionParticipation as $participant)
+            <flux:card wire:key="discussion-participation-{{ $participant->user_id }}"><div class="font-semibold">{{ $participant->user->name }}</div><flux:text>{{ $participant->total_discussions }} diskusi dan reply</flux:text></flux:card>
+        @endforeach
+    </section>
 </div>

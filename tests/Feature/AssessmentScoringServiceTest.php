@@ -59,6 +59,39 @@ test('scores complex choice with penalty', function () {
     expect($score)->toBe(3.0);
 });
 
+test('scores complex choice full wrong and empty answers', function () {
+    $question = Question::create([
+        'assessment_id' => $this->assessment->id,
+        'question_text' => 'Pilih semua energi terbarukan',
+        'question_type' => 'complex_multiple_choice',
+        'correct_answer' => ['A', 'C', 'D'],
+        'weight' => 9,
+    ]);
+
+    $service = app(AssessmentScoringService::class);
+
+    expect($service->scoreQuestion($question, ['A', 'C', 'D'])['score'])->toBe(9.0)
+        ->and($service->scoreQuestion($question, ['B'])['score'])->toBe(0.0)
+        ->and($service->scoreQuestion($question, [])['score'])->toBe(0.0);
+});
+
+test('scores matching full partial wrong and empty answers', function () {
+    $question = Question::create([
+        'assessment_id' => $this->assessment->id,
+        'question_text' => 'Jodohkan',
+        'question_type' => 'matching',
+        'correct_answer' => ['surya' => 'matahari', 'angin' => 'turbin'],
+        'weight' => 10,
+    ]);
+
+    $service = app(AssessmentScoringService::class);
+
+    expect($service->scoreQuestion($question, ['surya' => 'matahari', 'angin' => 'turbin'])['score'])->toBe(10.0)
+        ->and($service->scoreQuestion($question, ['surya' => 'matahari', 'angin' => 'matahari'])['score'])->toBe(5.0)
+        ->and($service->scoreQuestion($question, ['surya' => 'turbin', 'angin' => 'matahari'])['score'])->toBe(0.0)
+        ->and($service->scoreQuestion($question, [])['score'])->toBe(0.0);
+});
+
 test('scores matching short answer and essay', function () {
     $matching = Question::create([
         'assessment_id' => $this->assessment->id,

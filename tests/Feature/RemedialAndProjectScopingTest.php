@@ -6,6 +6,7 @@ use App\Livewire\Murid\MyProject;
 use App\Livewire\Murid\RemedialPage;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
+use App\Models\Discussion;
 use App\Models\LearningUnit;
 use App\Models\Module;
 use App\Models\Project;
@@ -148,10 +149,32 @@ test('guru reports are scoped to their own modules', function () {
         'slug' => 'modul-report-lain',
         'status' => 'published',
     ]);
+    $learningUnit = $module->learningUnits()->firstOrFail();
+    $otherLearningUnit = LearningUnit::create([
+        'module_id' => $otherModule->id,
+        'title' => 'KB Report Lain',
+        'slug' => 'kb-report-lain',
+    ]);
     $otherAssessment = Assessment::create([
         'module_id' => $otherModule->id,
         'title' => 'Assessment Lain',
         'is_published' => true,
+    ]);
+    $discussion = Discussion::create([
+        'learning_unit_id' => $learningUnit->id,
+        'user_id' => $student->id,
+        'body' => 'Diskusi milik modul guru',
+    ]);
+    Discussion::create([
+        'learning_unit_id' => $learningUnit->id,
+        'user_id' => $student->id,
+        'parent_id' => $discussion->id,
+        'body' => 'Reply murid pada modul guru',
+    ]);
+    Discussion::create([
+        'learning_unit_id' => $otherLearningUnit->id,
+        'user_id' => $otherStudent->id,
+        'body' => 'Diskusi modul lain',
     ]);
 
     AssessmentAttempt::create([
@@ -172,7 +195,10 @@ test('guru reports are scoped to their own modules', function () {
     Livewire::actingAs($teacher)
         ->test(Reports::class)
         ->assertSee($assessment->title)
-        ->assertDontSee('Assessment Lain');
+        ->assertSee('Diskusi milik modul guru')
+        ->assertSee('2 diskusi dan reply')
+        ->assertDontSee('Assessment Lain')
+        ->assertDontSee('Diskusi modul lain');
 });
 
 /**

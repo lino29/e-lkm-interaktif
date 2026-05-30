@@ -57,6 +57,15 @@ class Reports extends Component
                 ->latest()
                 ->limit(10)
                 ->get(),
+            'discussionParticipation' => Discussion::query()
+                ->with('user')
+                ->select('user_id')
+                ->selectRaw('count(*) as total_discussions')
+                ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
+                ->groupBy('user_id')
+                ->orderByDesc('total_discussions')
+                ->limit(10)
+                ->get(),
         ]);
     }
 }
