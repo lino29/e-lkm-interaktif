@@ -4,14 +4,18 @@ namespace App\Providers;
 
 use App\Models\Activity;
 use App\Models\Assessment;
+use App\Models\Discussion;
 use App\Models\LearningUnit;
 use App\Models\Module;
+use App\Models\Progress;
 use App\Models\Project;
 use App\Models\StudentAnswer;
 use App\Policies\ActivityPolicy;
 use App\Policies\AssessmentPolicy;
+use App\Policies\DiscussionPolicy;
 use App\Policies\LearningUnitPolicy;
 use App\Policies\ModulePolicy;
+use App\Policies\ProgressPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\StudentAnswerPolicy;
 use Carbon\CarbonImmutable;
@@ -48,7 +52,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(LearningUnit::class, LearningUnitPolicy::class);
         Gate::policy(Activity::class, ActivityPolicy::class);
         Gate::policy(Assessment::class, AssessmentPolicy::class);
+        Gate::policy(Discussion::class, DiscussionPolicy::class);
         Gate::policy(Project::class, ProjectPolicy::class);
+        Gate::policy(Progress::class, ProgressPolicy::class);
         Gate::policy(StudentAnswer::class, StudentAnswerPolicy::class);
 
         Date::use(CarbonImmutable::class);

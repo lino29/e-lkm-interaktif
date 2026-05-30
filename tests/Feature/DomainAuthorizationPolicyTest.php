@@ -3,8 +3,10 @@
 use App\Models\Activity;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
+use App\Models\Discussion;
 use App\Models\LearningUnit;
 use App\Models\Module;
+use App\Models\Progress;
 use App\Models\Project;
 use App\Models\Question;
 use App\Models\StudentAnswer;
@@ -17,7 +19,7 @@ beforeEach(function () {
 });
 
 test('admin can manage domain records', function () {
-    [$admin, $teacher, $student, $module, $learningUnit, $activity, $assessment, $project, $studentAnswer] = createPolicyFixture($this);
+    [$admin, $teacher, $student, $module, $learningUnit, $activity, $assessment, $project, $studentAnswer, $discussion, $progress] = createPolicyFixture($this);
 
     expect($admin->can('update', $module))->toBeTrue()
         ->and($admin->can('update', $learningUnit))->toBeTrue()
@@ -25,12 +27,14 @@ test('admin can manage domain records', function () {
         ->and($admin->can('update', $assessment))->toBeTrue()
         ->and($admin->can('update', $project))->toBeTrue()
         ->and($admin->can('view', $studentAnswer))->toBeTrue()
+        ->and($admin->can('update', $discussion))->toBeTrue()
+        ->and($admin->can('update', $progress))->toBeTrue()
         ->and($teacher->can('update', $module))->toBeTrue()
         ->and($student->can('view', $module))->toBeTrue();
 });
 
 test('guru can only manage modules and descendants they own', function () {
-    [, $teacher, , $module, $learningUnit, $activity, $assessment, $project, $studentAnswer] = createPolicyFixture($this);
+    [, $teacher, , $module, $learningUnit, $activity, $assessment, $project, $studentAnswer, $discussion, $progress] = createPolicyFixture($this);
     $otherTeacher = User::factory()->create();
     $otherTeacher->assignRole('guru');
 
@@ -40,16 +44,20 @@ test('guru can only manage modules and descendants they own', function () {
         ->and($teacher->can('update', $assessment))->toBeTrue()
         ->and($teacher->can('update', $project))->toBeTrue()
         ->and($teacher->can('view', $studentAnswer))->toBeTrue()
+        ->and($teacher->can('update', $discussion))->toBeTrue()
+        ->and($teacher->can('view', $progress))->toBeTrue()
         ->and($otherTeacher->can('update', $module))->toBeFalse()
         ->and($otherTeacher->can('update', $learningUnit))->toBeFalse()
         ->and($otherTeacher->can('update', $activity))->toBeFalse()
         ->and($otherTeacher->can('update', $assessment))->toBeFalse()
         ->and($otherTeacher->can('update', $project))->toBeFalse()
-        ->and($otherTeacher->can('view', $studentAnswer))->toBeFalse();
+        ->and($otherTeacher->can('view', $studentAnswer))->toBeFalse()
+        ->and($otherTeacher->can('update', $discussion))->toBeFalse()
+        ->and($otherTeacher->can('view', $progress))->toBeFalse();
 });
 
 test('murid can only view published learning data and their own records', function () {
-    [, , $student, $module, , , $assessment, $project, $studentAnswer] = createPolicyFixture($this);
+    [, , $student, $module, , , $assessment, $project, $studentAnswer, $discussion, $progress] = createPolicyFixture($this);
     $otherStudent = User::factory()->create();
     $otherStudent->assignRole('murid');
 
@@ -72,12 +80,15 @@ test('murid can only view published learning data and their own records', functi
         ->and($student->can('view', $draftAssessment))->toBeFalse()
         ->and($student->can('view', $project))->toBeTrue()
         ->and($student->can('view', $studentAnswer))->toBeTrue()
+        ->and($student->can('view', $discussion))->toBeTrue()
+        ->and($student->can('view', $progress))->toBeTrue()
         ->and($otherStudent->can('view', $project))->toBeFalse()
-        ->and($otherStudent->can('view', $studentAnswer))->toBeFalse();
+        ->and($otherStudent->can('view', $studentAnswer))->toBeFalse()
+        ->and($otherStudent->can('view', $progress))->toBeFalse();
 });
 
 /**
- * @return array{0: User, 1: User, 2: User, 3: Module, 4: LearningUnit, 5: Activity, 6: Assessment, 7: Project, 8: StudentAnswer}
+ * @return array{0: User, 1: User, 2: User, 3: Module, 4: LearningUnit, 5: Activity, 6: Assessment, 7: Project, 8: StudentAnswer, 9: Discussion, 10: Progress}
  */
 function createPolicyFixture(object $testCase): array
 {
@@ -137,6 +148,18 @@ function createPolicyFixture(object $testCase): array
         'project_title' => 'Project Policy',
         'status' => 'submitted',
     ]);
+    $discussion = Discussion::create([
+        'learning_unit_id' => $learningUnit->id,
+        'user_id' => $student->id,
+        'title' => 'Discussion Policy',
+        'body' => 'Diskusi policy',
+    ]);
+    $progress = Progress::create([
+        'user_id' => $student->id,
+        'module_id' => $module->id,
+        'learning_unit_id' => $learningUnit->id,
+        'status' => 'sedang_dikerjakan',
+    ]);
 
-    return [$admin, $teacher, $student, $module, $learningUnit, $activity, $assessment, $project, $studentAnswer];
+    return [$admin, $teacher, $student, $module, $learningUnit, $activity, $assessment, $project, $studentAnswer, $discussion, $progress];
 }
