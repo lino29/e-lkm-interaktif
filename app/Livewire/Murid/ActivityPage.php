@@ -4,9 +4,11 @@ namespace App\Livewire\Murid;
 
 use App\Models\Activity;
 use App\Models\ActivityAnswer;
-use App\Models\Discussion;
+use App\Services\Learning\ActivityAnswerService;
+use App\Services\Learning\ActivityDiscussionService;
+use App\Services\Learning\ActivitySchemaValidator;
 use App\Services\Learning\ProgressService;
-use Illuminate\Support\Facades\Storage;
+use App\Services\Learning\ProjectDraftService;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -74,70 +76,68 @@ class ActivityPage extends Component
         }
     }
 
-    public function saveDraft(): void
-    {
-        $this->storeAnswer('draft');
-        session()->flash('status', 'Draft berhasil disimpan.');
-    }
-
     public function submit(): void
     {
+        $this->processSubmit('submitted');
+    }
+
+    public function saveDraft(): void
+    {
+        $this->processSubmit('draft');
+    }
+
+    private function processSubmit(string $status): void
+    {
+        $this->validateBaseInput();
+
+        $schemaValidation = app(ActivitySchemaValidator::class)
+            ->validate($this->currentActivity, $this->answer_json, $this->answer_text);
+
+        if (! $schemaValidation['valid']) {
+            $this->addError('activity', implode("\n", $schemaValidation['errors']));
+
+            return;
+        }
+
         try {
-            $this->storeAnswer('submitted');
+            $answer = app(ActivityAnswerService::class)->save(
+                activity: $this->currentActivity,
+                user: auth()->user(),
+                answerText: $this->answer_text,
+                answerJson: $this->answer_json,
+                file: $this->file,
+                status: $status
+            );
+
+            $this->existingAnswer = $answer;
 
             if ($this->currentActivity->phase === 'forum_diskusi' || $this->currentActivity->input_type === 'discussion') {
-                Discussion::create([
-                    'learning_unit_id' => $this->currentActivity->learning_unit_id,
-                    'user_id' => auth()->id(),
-                    'title' => $this->currentActivity->title,
-                    'body' => $this->answer_text ?: 'Mengirim refleksi diskusi.',
-                    'type' => 'reflection',
-                ]);
+                app(ActivityDiscussionService::class)->sync($answer);
+            }
+
+            if ($this->currentActivity->input_type === 'project_form') {
+                app(ProjectDraftService::class)->syncFromActivityAnswer($answer);
             }
 
             app(ProgressService::class)->refreshLearningUnitProgress(auth()->user(), $this->currentActivity->learningUnit);
 
-            session()->flash('status', 'Jawaban berhasil disubmit.');
+            $msg = $status === 'submitted' ? 'Jawaban berhasil disubmit.' : 'Draft berhasil disimpan.';
+            session()->flash('status', $msg);
         } catch (\Throwable $e) {
             dd($e->getMessage(), $e->getTraceAsString());
         }
     }
 
-    private function storeAnswer(string $status): void
+    private function validateBaseInput(): void
     {
-        if ($this->existingAnswer?->status === 'reviewed') {
-            return; // cannot edit reviewed answer
-        }
-
-        $validated = $this->validate([
+        $this->validate([
             'answer_text' => ['nullable', 'string'],
             'table_data' => ['nullable', 'array'],
             'file' => ['nullable', 'file', 'max:10240'],
         ]);
 
-        $filePath = $this->existingAnswer?->file_path;
-
-        if ($this->file) {
-            if ($filePath) {
-                Storage::disk('public')->delete($filePath);
-            }
-            $filePath = $this->file->store('activity-answers', 'public');
-            $this->reset(['file']);
-        }
-
-        $this->existingAnswer = ActivityAnswer::updateOrCreate(
-            [
-                'activity_id' => $this->currentActivity->id,
-                'user_id' => auth()->id(),
-            ],
-            [
-                'answer_text' => $validated['answer_text'],
-                'answer_json' => $this->currentActivity->input_type === 'table' ? $validated['table_data'] : null,
-                'file_path' => $filePath,
-                'status' => $status,
-                'submitted_at' => $status === 'submitted' ? now() : null,
-            ],
-        );
+        // table_data holds the raw data bound to frontend, map to answer_json for the service
+        $this->answer_json = $this->table_data;
     }
 
     public function render()
