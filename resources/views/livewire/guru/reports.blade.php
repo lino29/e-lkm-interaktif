@@ -33,11 +33,16 @@
         </flux:card>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
         <flux:card>
             <div class="text-sm text-zinc-500">Diskusi Direspons Guru</div>
             <div class="text-2xl font-semibold">{{ $respondedDiscussionCount }}/{{ $discussionThreadCount }}</div>
             <flux:text>{{ $unrespondedDiscussionCount }} thread belum direspons guru</flux:text>
+        </flux:card>
+        <flux:card>
+            <div class="text-sm text-zinc-500">Rata-rata Partisipasi</div>
+            <div class="text-2xl font-semibold">{{ $averageParticipationScore ?? '-' }}</div>
+            <flux:text>Dari diskusi yang sudah dinilai</flux:text>
         </flux:card>
         <flux:card>
             <div class="text-sm text-zinc-500">Rata-rata Nilai Proyek</div>
@@ -78,7 +83,18 @@
     <section class="space-y-3">
         <flux:heading>Proyek Masuk</flux:heading>
         @foreach ($projects as $project)
-            <flux:card wire:key="report-project-{{ $project->id }}"><div class="font-semibold">{{ $project->user->name }} - {{ $project->project_title }}</div><flux:text>{{ $project->module->title }} - {{ $project->status }} - Nilai {{ $project->score ?? '-' }}</flux:text></flux:card>
+            <flux:card wire:key="report-project-{{ $project->id }}"><div class="font-semibold">{{ $project->user->name }} - {{ $project->project_title }}</div><flux:text>{{ $project->module->title }} - {{ $project->status }} - Nilai {{ $project->score ?? '-' }}</flux:text>
+                @if ($project->rubricScores->isNotEmpty())
+                    <div class="mt-2 grid gap-2 text-xs md:grid-cols-2">
+                        @foreach ($project->rubricScores as $rubricScore)
+                            <div wire:key="report-project-rubric-{{ $rubricScore->id }}" class="flex justify-between rounded bg-zinc-50 px-2 py-1 dark:bg-zinc-800">
+                                <span>{{ $rubricScore->criterion }}</span>
+                                <span class="font-medium">{{ $rubricScore->score }}/{{ $rubricScore->max_score }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </flux:card>
         @endforeach
     </section>
     <section class="space-y-3">
@@ -91,7 +107,7 @@
     <section class="space-y-3">
         <flux:heading>Partisipasi Diskusi</flux:heading>
         @foreach ($discussionParticipation as $participant)
-            <flux:card wire:key="discussion-participation-{{ $participant->user_id }}"><div class="font-semibold">{{ $participant->user->name }}</div><flux:text>{{ $participant->total_discussions }} diskusi dan reply</flux:text></flux:card>
+            <flux:card wire:key="discussion-participation-{{ $participant->user_id }}"><div class="font-semibold">{{ $participant->user->name }}</div><flux:text>{{ $participant->total_discussions }} diskusi dan reply - rata-rata skor {{ $participant->average_participation_score ? round((float) $participant->average_participation_score, 2) : '-' }}</flux:text></flux:card>
         @endforeach
     </section>
 </div>

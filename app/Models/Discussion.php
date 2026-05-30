@@ -14,6 +14,8 @@ class Discussion extends Model
     {
         return [
             'is_pinned' => 'boolean',
+            'reviewed_at' => 'datetime',
+            'participation_score' => 'integer',
         ];
     }
 
@@ -35,5 +37,10 @@ class Discussion extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 }

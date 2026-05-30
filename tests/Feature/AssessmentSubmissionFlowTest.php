@@ -169,6 +169,44 @@ test('essay scoring stores rubric keyword and similarity scores', function () {
         ->and((float) AssessmentAttempt::firstOrFail()->total_score)->toBeGreaterThan(0.0);
 });
 
+test('complex and matching answers can be submitted as arrays', function () {
+    $assessment = Assessment::create([
+        'module_id' => $this->module->id,
+        'learning_unit_id' => $this->learningUnit->id,
+        'title' => 'Asesmen Struktur',
+        'kktp' => 75,
+        'max_attempts' => 2,
+        'is_published' => true,
+    ]);
+    $complex = Question::create([
+        'assessment_id' => $assessment->id,
+        'question_text' => 'Pilih energi terbarukan.',
+        'question_type' => 'complex_multiple_choice',
+        'options' => ['A' => 'Surya', 'B' => 'Angin', 'C' => 'Batu bara'],
+        'correct_answer' => ['A', 'B'],
+        'weight' => 10,
+    ]);
+    $matching = Question::create([
+        'assessment_id' => $assessment->id,
+        'question_text' => 'Jodohkan sumber energi.',
+        'question_type' => 'matching',
+        'options' => ['surya' => 'Matahari', 'angin' => 'Turbin'],
+        'correct_answer' => ['surya' => 'Matahari', 'angin' => 'Turbin'],
+        'weight' => 10,
+    ]);
+
+    Livewire::actingAs($this->student)
+        ->test(AssessmentPage::class, ['assessment' => $assessment->id])
+        ->set("answers.{$complex->id}", ['A', 'B'])
+        ->set("answers.{$matching->id}", ['surya' => 'Matahari', 'angin' => 'Turbin'])
+        ->call('submit')
+        ->assertHasNoErrors();
+
+    expect((float) AssessmentAttempt::where('assessment_id', $assessment->id)->firstOrFail()->total_score)->toBe(20.0)
+        ->and(StudentAnswer::where('question_id', $complex->id)->firstOrFail()->answer_json)->toBe(['A', 'B'])
+        ->and(StudentAnswer::where('question_id', $matching->id)->firstOrFail()->answer_json)->toBe(['surya' => 'Matahari', 'angin' => 'Turbin']);
+});
+
 /**
  * @return array{0: Assessment, 1: Question}
  */

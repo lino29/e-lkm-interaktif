@@ -42,7 +42,15 @@
                     @elseif ($question->question_type === 'matching')
                         <div class="space-y-2">
                             <flux:text class="mb-2 text-sm text-zinc-500">Ketikkan pasangan jawaban yang benar (misal jika A cocok dengan 1, ketikkan 1 pada isian A)</flux:text>
-                            @foreach ($question->options as $key => $option)
+                            @php
+                                $matchingOptions = (array) $question->options;
+                                $matchingLeftItems = isset($matchingOptions['left']) ? array_combine($matchingOptions['left'], $matchingOptions['left']) : $matchingOptions;
+                                $matchingRightItems = $matchingOptions['right'] ?? array_values((array) $question->correct_answer);
+                            @endphp
+                            <div class="rounded-md bg-zinc-50 p-2 text-xs text-zinc-500 dark:bg-zinc-800">
+                                Pilihan pasangan: {{ collect($matchingRightItems)->join(', ') }}
+                            </div>
+                            @foreach ($matchingLeftItems as $key => $option)
                                 <flux:field>
                                     <flux:label>{{ $key }}. {{ $option }}</flux:label>
                                     <flux:input wire:model="answers.{{ $question->id }}.{{ $key }}" placeholder="Jawaban untuk {{ $key }}" />

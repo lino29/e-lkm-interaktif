@@ -32,6 +32,11 @@
                     @if($discussion->is_pinned)
                         <flux:badge size="sm" color="blue" class="mt-1">Pinned</flux:badge>
                     @endif
+                    @if($discussion->reviewed_at)
+                        <flux:badge size="sm" color="green" class="mt-1">Reviewed - {{ $discussion->participation_score }}/100</flux:badge>
+                    @else
+                        <flux:badge size="sm" color="yellow" class="mt-1">Belum direview</flux:badge>
+                    @endif
                 </div>
                 <div class="flex gap-2">
                     <flux:button size="sm" wire:click="togglePinned({{ $discussion->id }})">{{ $discussion->is_pinned ? 'Lepas Pin' : 'Pin' }}</flux:button>
@@ -40,6 +45,12 @@
             </div>
             
             <p class="mt-4 text-sm whitespace-pre-wrap">{{ $discussion->body }}</p>
+            @if($discussion->participation_feedback)
+                <div class="mt-3 rounded-md bg-zinc-50 p-3 text-sm dark:bg-zinc-800">
+                    <div class="font-medium">Feedback partisipasi</div>
+                    <div class="mt-1 text-zinc-600 dark:text-zinc-400">{{ $discussion->participation_feedback }}</div>
+                </div>
+            @endif
 
             <div class="mt-4 space-y-3">
                 @foreach ($discussion->replies as $reply)
@@ -59,6 +70,22 @@
                     <flux:error name="replyBodies.{{ $discussion->id }}" />
                 </flux:field>
                 <flux:button type="submit" size="sm" variant="primary">Kirim Balasan</flux:button>
+            </form>
+
+            <form wire:submit="reviewParticipation({{ $discussion->id }})" class="mt-4 grid gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800 md:grid-cols-[160px_1fr_auto]">
+                <flux:field>
+                    <flux:label>Skor partisipasi</flux:label>
+                    <flux:input type="number" min="0" max="100" wire:model="participationScores.{{ $discussion->id }}" />
+                    <flux:error name="participationScores.{{ $discussion->id }}" />
+                </flux:field>
+                <flux:field>
+                    <flux:label>Catatan kualitas refleksi</flux:label>
+                    <flux:input wire:model="participationFeedbacks.{{ $discussion->id }}" placeholder="Contoh: argumen sudah berbasis data pengamatan." />
+                    <flux:error name="participationFeedbacks.{{ $discussion->id }}" />
+                </flux:field>
+                <div class="flex items-end">
+                    <flux:button type="submit" size="sm">Simpan Nilai</flux:button>
+                </div>
             </form>
         </flux:card>
     @empty

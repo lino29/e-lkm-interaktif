@@ -94,9 +94,14 @@ test('guru can filter and moderate discussions from owned modules', function () 
         ->call('togglePinned', $discussion->id)
         ->set("replyBodies.{$discussion->id}", 'Feedback guru: cek kembali data pengamatan.')
         ->call('replyToDiscussion', $discussion->id)
+        ->set("participationScores.{$discussion->id}", 85)
+        ->set("participationFeedbacks.{$discussion->id}", 'Refleksi sudah memakai data pengamatan.')
+        ->call('reviewParticipation', $discussion->id)
         ->assertHasNoErrors();
 
     expect($discussion->fresh()->is_pinned)->toBeTrue()
+        ->and($discussion->fresh()->participation_score)->toBe(85)
+        ->and($discussion->fresh()->participation_feedback)->toBe('Refleksi sudah memakai data pengamatan.')
         ->and($discussion->replies()->where('body', 'Feedback guru: cek kembali data pengamatan.')->exists())->toBeTrue();
 
     Livewire::actingAs($student)

@@ -130,6 +130,10 @@ class AssessmentPage extends Component
         $answer = $this->answers[$questionId] ?? '';
 
         if (in_array($type, ['complex_multiple_choice', 'matching'], true)) {
+            if (is_array($answer)) {
+                return array_filter($answer, fn ($value) => $value !== null && $value !== '');
+            }
+
             $decoded = json_decode((string) $answer, true);
 
             return is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', (string) $answer)));

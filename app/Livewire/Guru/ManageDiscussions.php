@@ -16,6 +16,10 @@ class ManageDiscussions extends Component
 
     public array $replyBodies = [];
 
+    public array $participationScores = [];
+
+    public array $participationFeedbacks = [];
+
     public function togglePinned(int $discussionId): void
     {
         $discussion = $this->teacherDiscussionQuery()->findOrFail($discussionId);
@@ -53,6 +57,25 @@ class ManageDiscussions extends Component
         session()->flash('status', 'Balasan berhasil dikirim.');
     }
 
+    public function reviewParticipation(int $discussionId): void
+    {
+        $this->validate([
+            "participationScores.{$discussionId}" => ['required', 'integer', 'min:0', 'max:100'],
+            "participationFeedbacks.{$discussionId}" => ['nullable', 'string'],
+        ]);
+
+        $discussion = $this->teacherDiscussionQuery()->findOrFail($discussionId);
+
+        $discussion->update([
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+            'participation_score' => $this->participationScores[$discussionId],
+            'participation_feedback' => $this->participationFeedbacks[$discussionId] ?? null,
+        ]);
+
+        session()->flash('status', 'Partisipasi diskusi berhasil dinilai.');
+    }
+
     public function render()
     {
         $moduleIds = $this->teacherModuleIds();
@@ -60,15 +83,22 @@ class ManageDiscussions extends Component
 
         $this->validateOnlyFilters($moduleIds, $learningUnits->pluck('id')->all());
 
+        $discussions = $this->teacherDiscussionQuery()
+            ->when($this->module_id, fn ($query) => $query->whereHas('learningUnit', fn ($unitQuery) => $unitQuery->where('module_id', $this->module_id)))
+            ->when($this->learning_unit_id, fn ($query) => $query->where('learning_unit_id', $this->learning_unit_id))
+            ->withCount('replies')
+            ->latest()
+            ->get();
+
+        foreach ($discussions as $discussion) {
+            $this->participationScores[$discussion->id] ??= $discussion->participation_score;
+            $this->participationFeedbacks[$discussion->id] ??= $discussion->participation_feedback;
+        }
+
         return view('livewire.guru.manage-discussions', [
             'modules' => Module::whereIn('id', $moduleIds)->orderBy('title')->get(),
             'learningUnits' => $learningUnits,
-            'discussions' => $this->teacherDiscussionQuery()
-                ->when($this->module_id, fn ($query) => $query->whereHas('learningUnit', fn ($unitQuery) => $unitQuery->where('module_id', $this->module_id)))
-                ->when($this->learning_unit_id, fn ($query) => $query->where('learning_unit_id', $this->learning_unit_id))
-                ->withCount('replies')
-                ->latest()
-                ->get(),
+            'discussions' => $discussions,
         ]);
     }
 

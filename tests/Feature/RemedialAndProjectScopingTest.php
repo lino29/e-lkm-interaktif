@@ -126,7 +126,14 @@ test('guru only sees and reviews projects from their modules', function () {
         ->assertSee('Project Milik Guru')
         ->assertDontSee('Project Guru Lain')
         ->call('review', $ownProject->id)
-        ->set('score', 88)
+        ->set('rubricScores.identifikasi_masalah', 11)
+        ->set('rubricScores.kesesuaian_solusi', 11)
+        ->set('rubricScores.kelengkapan_rancangan', 11)
+        ->set('rubricScores.data_pengamatan', 11)
+        ->set('rubricScores.keselamatan_kerja', 11)
+        ->set('rubricScores.kreativitas', 11)
+        ->set('rubricScores.kelayakan', 11)
+        ->set('rubricScores.komunikasi_hasil', 11)
         ->set('feedback', 'Proyek sudah baik.')
         ->call('saveReview')
         ->assertHasNoErrors();
@@ -134,7 +141,8 @@ test('guru only sees and reviews projects from their modules', function () {
     expect($ownProject->fresh())
         ->status->toBe('reviewed')
         ->score->toBe('88.00')
-        ->feedback->toBe('Proyek sudah baik.');
+        ->feedback->toBe('Proyek sudah baik.')
+        ->rubricScores->toHaveCount(8);
 });
 
 test('guru reports are scoped to their own modules', function () {
@@ -164,6 +172,10 @@ test('guru reports are scoped to their own modules', function () {
         'learning_unit_id' => $learningUnit->id,
         'user_id' => $student->id,
         'body' => 'Diskusi milik modul guru',
+        'reviewed_by' => $teacher->id,
+        'reviewed_at' => now(),
+        'participation_score' => 80,
+        'participation_feedback' => 'Refleksi sudah baik.',
     ]);
     Discussion::create([
         'learning_unit_id' => $learningUnit->id,
@@ -230,6 +242,7 @@ test('guru reports are scoped to their own modules', function () {
         ->assertSee('Direspons guru')
         ->assertSee('Belum direspons guru')
         ->assertSee('3 diskusi dan reply')
+        ->assertSee('rata-rata skor 80')
         ->assertSee('Rata-rata Nilai Proyek')
         ->assertSee('82')
         ->assertSee('Project Laporan Reviewed')

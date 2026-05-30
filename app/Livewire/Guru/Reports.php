@@ -38,6 +38,9 @@ class Reports extends Component
             ->whereHas('replies', fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->role('guru')))
             ->count();
         $discussionThreadCount = (clone $discussionThreadsQuery)->count();
+        $averageParticipationScore = (clone $discussionThreadsQuery)
+            ->whereNotNull('participation_score')
+            ->avg('participation_score');
 
         return view('livewire.guru.reports', [
             'modules' => Module::whereIn('id', $teacherModuleIds)->orderBy('title')->get(),
@@ -50,6 +53,7 @@ class Reports extends Component
             'discussionThreadCount' => $discussionThreadCount,
             'respondedDiscussionCount' => $respondedDiscussionCount,
             'unrespondedDiscussionCount' => max(0, $discussionThreadCount - $respondedDiscussionCount),
+            'averageParticipationScore' => $averageParticipationScore === null ? null : round((float) $averageParticipationScore, 2),
             'attempts' => (clone $attemptsQuery)
                 ->latest()
                 ->limit(20)
@@ -59,7 +63,7 @@ class Reports extends Component
                 ->latest()
                 ->limit(20)
                 ->get(),
-            'projects' => Project::with('user', 'module')
+            'projects' => Project::with('user', 'module', 'rubricScores')
                 ->whereIn('module_id', $moduleIds)
                 ->latest()
                 ->limit(20)
@@ -79,6 +83,7 @@ class Reports extends Component
                 ->with('user')
                 ->select('user_id')
                 ->selectRaw('count(*) as total_discussions')
+                ->selectRaw('avg(participation_score) as average_participation_score')
                 ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
                 ->whereHas('user', fn ($query) => $query->role('murid'))
                 ->groupBy('user_id')

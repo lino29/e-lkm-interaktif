@@ -24,17 +24,21 @@
             <flux:heading>Nilai Proyek</flux:heading>
             <div class="mt-3 rounded-lg border border-zinc-200 p-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
                 <div class="font-medium text-zinc-800 dark:text-zinc-100">Rubrik proyek per kriteria</div>
-                <div class="mt-2 grid gap-2 md:grid-cols-2">
+                <div class="mt-2 grid gap-3 md:grid-cols-2">
                     @foreach ($projectRubric as $criterion)
-                        <div wire:key="project-rubric-{{ \Illuminate\Support\Str::slug($criterion['criterion']) }}" class="rounded-md bg-zinc-50 p-2 dark:bg-zinc-900">
+                        <div wire:key="project-rubric-{{ $criterion['key'] }}" class="rounded-md bg-zinc-50 p-2 dark:bg-zinc-900">
                             <div class="font-medium text-zinc-800 dark:text-zinc-100">{{ $criterion['criterion'] }} <span class="text-xs text-zinc-500">maks. {{ $criterion['max_score'] }}</span></div>
                             <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ $criterion['indicator'] }}</div>
+                            <flux:field class="mt-2">
+                                <flux:input type="number" min="0" max="{{ $criterion['max_score'] }}" step="0.01" wire:model="rubricScores.{{ $criterion['key'] }}" />
+                                <flux:error name="rubricScores.{{ $criterion['key'] }}" />
+                            </flux:field>
                         </div>
                     @endforeach
                 </div>
             </div>
             <div class="mt-4 grid gap-4 md:grid-cols-2">
-                <flux:field><flux:label>Skor</flux:label><flux:input type="number" min="0" max="100" step="0.01" wire:model="score" /></flux:field>
+                <flux:field><flux:label>Total skor</flux:label><flux:input type="text" value="Otomatis dari rubrik" disabled /></flux:field>
                 <flux:field><flux:label>Feedback</flux:label><flux:textarea wire:model="feedback" /></flux:field>
             </div>
             <div class="mt-4 flex gap-2">
@@ -98,6 +102,16 @@
                     <div class="mt-4 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
                         <div class="font-medium">Nilai Diberikan: {{ $project->score }}</div>
                         <div class="text-sm mt-1">Feedback: {{ $project->feedback ?? '-' }}</div>
+                        @if ($project->relationLoaded('rubricScores') && $project->rubricScores->isNotEmpty())
+                            <div class="mt-3 grid gap-2 text-xs md:grid-cols-2">
+                                @foreach ($project->rubricScores as $rubricScore)
+                                    <div wire:key="project-rubric-score-{{ $rubricScore->id }}" class="flex justify-between rounded bg-white px-2 py-1 dark:bg-zinc-900">
+                                        <span>{{ $rubricScore->criterion }}</span>
+                                        <span class="font-medium">{{ $rubricScore->score }}/{{ $rubricScore->max_score }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 @endif
             </flux:card>

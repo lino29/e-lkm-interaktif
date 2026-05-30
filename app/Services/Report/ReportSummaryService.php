@@ -8,9 +8,11 @@ use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
 use App\Models\ClassRoom;
 use App\Models\Discussion;
+use App\Models\LearningUnit;
 use App\Models\Module;
 use App\Models\Progress;
 use App\Models\Project;
+use App\Models\ProjectRubricScore;
 use App\Models\User;
 
 class ReportSummaryService
@@ -29,6 +31,7 @@ class ReportSummaryService
             ],
             'classes' => ClassRoom::count(),
             'modules' => Module::count(),
+            'learning_units' => LearningUnit::count(),
             'assessments' => Assessment::count(),
             'activities' => Activity::count(),
             'progress_records' => Progress::count(),
@@ -39,7 +42,9 @@ class ReportSummaryService
             'discussions_by_type' => [
                 'threads' => Discussion::whereNull('parent_id')->count(),
                 'replies' => Discussion::whereNotNull('parent_id')->count(),
+                'reviewed' => Discussion::whereNotNull('reviewed_at')->count(),
             ],
+            'average_participation_score' => round((float) Discussion::whereNotNull('participation_score')->avg('participation_score'), 2),
             'projects' => Project::count(),
             'projects_by_status' => Project::query()
                 ->select('status')
@@ -47,6 +52,7 @@ class ReportSummaryService
                 ->groupBy('status')
                 ->pluck('total', 'status')
                 ->all(),
+            'project_rubric_scores' => ProjectRubricScore::count(),
             'reviewed_project_average_score' => round((float) Project::where('status', 'reviewed')->whereNotNull('score')->avg('score'), 2),
         ];
     }

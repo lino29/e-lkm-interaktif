@@ -63,14 +63,22 @@ test('murid can save draft and submit project, then guru can review', function (
         ->assertSee('Masalah energi nyata dijelaskan')
         ->assertSee('maks. 12')
         ->assertSee('Komunikasi hasil')
-        ->set('score', 95.5)
+        ->set('rubricScores.identifikasi_masalah', 12)
+        ->set('rubricScores.kesesuaian_solusi', 12.5)
+        ->set('rubricScores.kelengkapan_rancangan', 12.5)
+        ->set('rubricScores.data_pengamatan', 11.5)
+        ->set('rubricScores.keselamatan_kerja', 11.5)
+        ->set('rubricScores.kreativitas', 12.5)
+        ->set('rubricScores.kelayakan', 12.5)
+        ->set('rubricScores.komunikasi_hasil', 10.5)
         ->set('feedback', 'Great job!')
         ->call('saveReview');
 
     $project->refresh();
     expect($project->status)->toBe('reviewed')
         ->and($project->score)->toEqual(95.5)
-        ->and($project->feedback)->toBe('Great job!');
+        ->and($project->feedback)->toBe('Great job!')
+        ->and($project->rubricScores)->toHaveCount(8);
 
     $this->actingAs($murid)
         ->get(route('murid.portfolio'))

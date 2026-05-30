@@ -4,12 +4,14 @@ namespace Database\Seeders;
 
 use App\Models\Activity;
 use App\Models\Assessment;
+use App\Models\Glossary;
 use App\Models\LearningUnit;
 use App\Models\Material;
 use App\Models\Media;
 use App\Models\Module;
 use App\Models\Question;
 use App\Models\QuestionKeyword;
+use App\Models\Reference;
 use App\Models\Rubric;
 use App\Models\Subject;
 use App\Models\User;
@@ -52,7 +54,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'title' => 'KB1 Konsep Energi dan Sumber Energi',
                 'objectives' => 'Murid mampu menjelaskan konsep energi, mengidentifikasi sumber energi di lingkungan sekitar, dan membedakan sumber energi berdasarkan ketersediaannya.',
-                'content' => 'Energi adalah kemampuan untuk melakukan usaha atau menyebabkan perubahan. Dalam kehidupan sehari-hari, energi muncul sebagai cahaya, panas, gerak, listrik, dan bunyi. Sumber energi dapat berasal dari matahari, angin, air, biomassa, bahan bakar fosil, dan panas bumi. Pada kegiatan ini murid mengamati penggunaan energi di sekolah lalu mengelompokkan sumber energi berdasarkan contoh nyata.',
+                'content' => 'Energi adalah kemampuan untuk melakukan usaha atau menyebabkan perubahan. Dalam kehidupan sehari-hari, energi muncul sebagai cahaya, panas, gerak, listrik, dan bunyi. Sumber energi dapat berasal dari matahari, angin, air, biomassa, bahan bakar fosil, dan panas bumi. Energi tidak hilang, tetapi berubah bentuk, misalnya listrik berubah menjadi cahaya pada lampu atau gerak pada kipas. Pada kegiatan ini murid mengamati penggunaan energi di sekolah lalu mengelompokkan sumber energi berdasarkan contoh nyata, bentuk perubahan energi, manfaat, dan dampaknya.',
                 'question' => 'Contoh sumber energi yang tersedia terus-menerus dari alam adalah ...',
                 'options' => ['A' => 'Batu bara', 'B' => 'Matahari', 'C' => 'Minyak bumi', 'D' => 'Gas alam'],
                 'answer' => 'B',
@@ -65,7 +67,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'title' => 'KB2 Masalah Energi Fosil',
                 'objectives' => 'Murid mampu menjelaskan dampak penggunaan energi fosil terhadap lingkungan, kesehatan, dan keberlanjutan sumber daya.',
-                'content' => 'Energi fosil seperti batu bara, minyak bumi, dan gas alam terbentuk dalam waktu sangat lama sehingga jumlahnya terbatas. Pembakaran energi fosil menghasilkan emisi gas rumah kaca dan polutan udara. Dampaknya dapat terlihat pada peningkatan suhu bumi, kualitas udara yang menurun, dan biaya energi yang semakin tidak stabil.',
+                'content' => 'Energi fosil seperti batu bara, minyak bumi, dan gas alam terbentuk dalam waktu sangat lama sehingga jumlahnya terbatas. Pembakaran energi fosil menghasilkan emisi gas rumah kaca dan polutan udara. Dampaknya dapat terlihat pada peningkatan suhu bumi, kualitas udara yang menurun, gangguan kesehatan pernapasan, dan biaya energi yang semakin tidak stabil. Murid diajak membaca masalah energi fosil dari aktivitas harian, seperti kendaraan, listrik, dan proses industri, lalu menilai kebiasaan yang bisa dikurangi.',
                 'question' => 'Masalah utama dari pembakaran energi fosil adalah ...',
                 'options' => ['A' => 'Tidak menghasilkan panas', 'B' => 'Menghasilkan emisi', 'C' => 'Selalu tersedia cepat', 'D' => 'Tidak dapat digunakan'],
                 'answer' => 'B',
@@ -78,7 +80,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'title' => 'KB3 Pengertian dan Jenis Energi Terbarukan',
                 'objectives' => 'Murid mampu mendefinisikan energi terbarukan dan membandingkan contoh energi surya, angin, air, biomassa, dan panas bumi.',
-                'content' => 'Energi terbarukan adalah energi yang berasal dari proses alam yang terus berlangsung dan dapat diperbarui dalam skala waktu manusia. Contohnya energi surya dari matahari, energi angin dari pergerakan udara, energi air dari aliran sungai, biomassa dari bahan organik, dan panas bumi dari energi termal bumi.',
+                'content' => 'Energi terbarukan adalah energi yang berasal dari proses alam yang terus berlangsung dan dapat diperbarui dalam skala waktu manusia. Contohnya energi surya dari matahari, energi angin dari pergerakan udara, energi air dari aliran sungai, biomassa dari bahan organik, dan panas bumi dari energi termal bumi. Setiap jenis energi memiliki kelebihan, keterbatasan, dan syarat lokasi. Karena itu murid perlu membandingkan potensi lingkungan sekitar sebelum memilih teknologi atau aksi yang paling tepat.',
                 'question' => 'Energi terbarukan disebut berkelanjutan karena ...',
                 'options' => ['A' => 'Dapat diperbarui oleh proses alam', 'B' => 'Hanya ada di tambang', 'C' => 'Tidak membutuhkan teknologi', 'D' => 'Selalu berbentuk bahan bakar cair'],
                 'answer' => 'A',
@@ -91,7 +93,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'title' => 'KB4 Teknologi Energi Terbarukan Berbasis STEM',
                 'objectives' => 'Murid mampu menghubungkan konsep sains, teknologi, rekayasa, dan matematika pada panel surya, turbin angin, mikrohidro, dan biodigester sederhana.',
-                'content' => 'Teknologi energi terbarukan memanfaatkan prinsip STEM. Panel surya mengubah cahaya menjadi listrik, turbin angin mengubah energi gerak udara menjadi putaran generator, mikrohidro memakai aliran air, dan biodigester menghasilkan biogas dari bahan organik. Murid menganalisis cara kerja teknologi dan faktor yang memengaruhi efisiensinya.',
+                'content' => 'Teknologi energi terbarukan memanfaatkan prinsip STEM. Panel surya mengubah cahaya menjadi listrik, turbin angin mengubah energi gerak udara menjadi putaran generator, mikrohidro memakai aliran air, dan biodigester menghasilkan biogas dari bahan organik. Sains membantu memahami sumber energi, teknologi menyediakan alat, rekayasa mengatur rancangan, dan matematika dipakai untuk menghitung kebutuhan daya, biaya, serta efisiensi. Murid menganalisis cara kerja teknologi dan faktor yang memengaruhi keberhasilannya.',
                 'question' => 'Komponen teknologi yang mengubah cahaya matahari menjadi listrik adalah ...',
                 'options' => ['A' => 'Panel surya', 'B' => 'Kompresor', 'C' => 'Boiler batu bara', 'D' => 'Karburator'],
                 'answer' => 'A',
@@ -104,7 +106,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'title' => 'KB5 Merancang Aksi Sederhana Energi Terbarukan',
                 'objectives' => 'Murid mampu merancang aksi sederhana hemat energi atau pemanfaatan energi terbarukan di sekolah berdasarkan masalah yang ditemukan.',
-                'content' => 'Aksi sederhana energi terbarukan dimulai dari menemukan masalah nyata, menetapkan tujuan, memilih alat dan bahan, menyusun langkah kerja, mengumpulkan data, lalu menyimpulkan hasilnya. Contoh aksi adalah audit penggunaan listrik kelas, kampanye lampu hemat energi, atau model sederhana panel surya untuk mengisi perangkat kecil.',
+                'content' => 'Aksi sederhana energi terbarukan dimulai dari menemukan masalah nyata, menetapkan tujuan, memilih alat dan bahan, menyusun langkah kerja, mengumpulkan data, lalu menyimpulkan hasilnya. Contoh aksi adalah audit penggunaan listrik kelas, kampanye lampu hemat energi, briket biomassa, atau model sederhana panel surya untuk mengisi perangkat kecil. Rancangan proyek perlu mempertimbangkan keselamatan kerja, ketersediaan alat, pembagian tugas, bukti foto atau video, dan cara mengukur dampak sebelum disimpulkan.',
                 'question' => 'Langkah awal merancang proyek energi terbarukan adalah ...',
                 'options' => ['A' => 'Menentukan nilai akhir', 'B' => 'Menemukan masalah nyata', 'C' => 'Menghapus data', 'D' => 'Langsung membuat laporan'],
                 'answer' => 'B',
@@ -156,6 +158,7 @@ class DemoLearningSeeder extends Seeder
                     'type' => 'image',
                     'url' => null,
                     'file_path' => $media['file_path'],
+                    'embed_code' => $media['caption'],
                 ],
             );
 
@@ -196,6 +199,9 @@ class DemoLearningSeeder extends Seeder
             $this->seedFormativeQuestions($assessment, $data);
         }
 
+        $this->seedModuleExtras($module);
+        $this->seedFinalAssessment($module);
+
         $essayAssessment = Assessment::firstOrCreate(
             [
                 'module_id' => $module->id,
@@ -232,14 +238,72 @@ class DemoLearningSeeder extends Seeder
     }
 
     /**
-     * @return array{title: string, file_path: string}
+     * @return array{title: string, file_path: string, caption: string}
      */
     private function mediaDescriptorFor(int $order, string $title): array
     {
         return [
             'title' => 'Ilustrasi '.$title,
             'file_path' => 'demo/media/energi-terbarukan/kb'.$order.'-'.Str::slug($title).'.png',
+            'caption' => 'Caption: media demo untuk mengamati konsep utama '.$title.' pada konteks sekolah dan rumah.',
         ];
+    }
+
+    private function seedModuleExtras(Module $module): void
+    {
+        foreach ([
+            ['Energi', 'Kemampuan untuk melakukan usaha atau menyebabkan perubahan pada benda atau sistem.'],
+            ['Energi terbarukan', 'Energi dari proses alam yang dapat diperbarui dalam skala waktu manusia, seperti surya, angin, air, biomassa, dan panas bumi.'],
+            ['Energi fosil', 'Energi dari batu bara, minyak bumi, dan gas alam yang terbentuk sangat lama dan menghasilkan emisi saat dibakar.'],
+            ['STEM', 'Pendekatan belajar yang menghubungkan sains, teknologi, rekayasa, dan matematika untuk menyelesaikan masalah.'],
+            ['KKTP', 'Kriteria Ketercapaian Tujuan Pembelajaran yang menjadi batas ketuntasan asesmen.'],
+        ] as $index => [$term, $definition]) {
+            Glossary::updateOrCreate(
+                ['module_id' => $module->id, 'term' => $term],
+                ['definition' => $definition, 'order' => $index + 1],
+            );
+        }
+
+        foreach ([
+            ['Energi Terbarukan: Konsep dan Pemanfaatannya', 'Kementerian ESDM', 'Bahan ajar energi terbarukan', 2023],
+            ['Projek IPAS SMK Kelas X', 'Kemdikbudristek', 'Capaian pembelajaran Projek IPAS', 2022],
+            ['Renewable Energy Education Toolkit', 'IRENA', 'Referensi pembelajaran energi bersih', 2021],
+        ] as $index => [$title, $author, $source, $year]) {
+            Reference::updateOrCreate(
+                ['module_id' => $module->id, 'title' => $title],
+                ['author' => $author, 'source' => $source, 'year' => $year, 'order' => $index + 1],
+            );
+        }
+    }
+
+    private function seedFinalAssessment(Module $module): void
+    {
+        $assessment = Assessment::updateOrCreate(
+            [
+                'module_id' => $module->id,
+                'learning_unit_id' => null,
+                'title' => 'Asesmen Akhir Modul Energi Terbarukan',
+            ],
+            [
+                'type' => 'final',
+                'description' => 'Asesmen akhir untuk mengukur pemahaman utuh tentang konsep energi, energi fosil, energi terbarukan, teknologi STEM, dan rancangan aksi sederhana.',
+                'kktp' => 75,
+                'max_attempts' => 2,
+                'is_published' => true,
+                'order' => 100,
+            ],
+        );
+
+        $this->seedFormativeQuestions($assessment, [
+            'question' => 'Tujuan utama transisi dari energi fosil ke energi terbarukan adalah ...',
+            'options' => ['A' => 'Meningkatkan emisi', 'B' => 'Mengurangi dampak lingkungan dan menjaga keberlanjutan energi', 'C' => 'Menghapus kebutuhan data', 'D' => 'Menghindari teknologi'],
+            'answer' => 'B',
+            'true_false' => 'Rancangan aksi energi terbarukan perlu didasarkan pada masalah nyata dan data pengamatan.',
+            'short_question' => 'Sebutkan satu teknologi energi terbarukan dan sumber energi yang dimanfaatkannya.',
+            'keywords' => ['panel surya', 'matahari', 'turbin angin', 'angin', 'mikrohidro', 'air', 'biomassa'],
+            'essay_question' => 'Jelaskan hubungan antara masalah energi fosil, energi terbarukan, dan rancangan aksi sederhana di sekolah.',
+            'reference_answer' => 'Energi fosil berdampak pada emisi dan keterbatasan sumber daya. Energi terbarukan seperti surya, angin, air, biomassa, dan panas bumi dapat menjadi alternatif. Rancangan aksi sederhana di sekolah perlu dimulai dari masalah nyata, data pengamatan, tujuan, alat bahan, langkah kerja, dan evaluasi hasil.',
+        ]);
     }
 
     /**
@@ -296,6 +360,8 @@ class DemoLearningSeeder extends Seeder
      */
     private function seedFormativeQuestions(Assessment $assessment, array $data): void
     {
+        $contextTitle = $assessment->learningUnit?->title ?? $assessment->module->title;
+
         Question::updateOrCreate(
             [
                 'assessment_id' => $assessment->id,
@@ -370,7 +436,7 @@ class DemoLearningSeeder extends Seeder
                 'order' => 5,
             ],
             [
-                'question_text' => 'Pilih dua konsep yang paling sesuai dengan '.$assessment->learningUnit->title.'.',
+                'question_text' => 'Pilih dua konsep yang paling sesuai dengan '.$contextTitle.'.',
                 'question_type' => 'complex_multiple_choice',
                 'options' => [
                     'A' => $data['keywords'][0],
@@ -392,12 +458,12 @@ class DemoLearningSeeder extends Seeder
                 'question_text' => 'Jodohkan konsep energi berikut dengan karakteristik yang tepat.',
                 'question_type' => 'matching',
                 'options' => [
-                    'left' => ['Energi terbarukan', 'Energi fosil'],
-                    'right' => ['Diperbarui proses alam', 'Sumber terbatas'],
+                    'A' => 'Energi terbarukan',
+                    'B' => 'Energi fosil',
                 ],
                 'correct_answer' => [
-                    'Energi terbarukan' => 'Diperbarui proses alam',
-                    'Energi fosil' => 'Sumber terbatas',
+                    'A' => 'Diperbarui proses alam',
+                    'B' => 'Sumber terbatas',
                 ],
                 'weight' => 10,
             ],
