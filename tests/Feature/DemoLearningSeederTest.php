@@ -39,7 +39,9 @@ test('demo learning seeder creates complete renewable energy module', function (
             ->toContain('multiple_choice')
             ->toContain('true_false')
             ->toContain('short_answer')
-            ->toContain('essay');
+            ->toContain('essay')
+            ->toContain('complex_multiple_choice')
+            ->toContain('matching');
 
         $essay = $questions->firstWhere('question_type', 'essay');
         $shortAnswer = $questions->firstWhere('question_type', 'short_answer');

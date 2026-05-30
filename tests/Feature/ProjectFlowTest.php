@@ -59,6 +59,8 @@ test('murid can save draft and submit project, then guru can review', function (
     Livewire::actingAs($guru)
         ->test(ManageProjects::class)
         ->call('review', $project->id)
+        ->assertSee('Identifikasi masalah')
+        ->assertSee('Komunikasi hasil')
         ->set('score', 95.5)
         ->set('feedback', 'Great job!')
         ->call('saveReview');
@@ -67,6 +69,13 @@ test('murid can save draft and submit project, then guru can review', function (
     expect($project->status)->toBe('reviewed')
         ->and($project->score)->toEqual(95.5)
         ->and($project->feedback)->toBe('Great job!');
+
+    $this->actingAs($murid)
+        ->get(route('murid.portfolio'))
+        ->assertOk()
+        ->assertSee('My Awesome Project')
+        ->assertSee('reviewed')
+        ->assertSee('Great job!');
 
     // Murid cannot edit after reviewed (should abort 403)
     Livewire::actingAs($murid)

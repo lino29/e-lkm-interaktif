@@ -12,6 +12,20 @@ class ManageProjects extends Component
 {
     use WithPagination;
 
+    /**
+     * @var array<int, string>
+     */
+    public array $projectRubric = [
+        'Identifikasi masalah',
+        'Kesesuaian solusi',
+        'Kelengkapan rancangan',
+        'Data pengamatan',
+        'Keselamatan kerja',
+        'Kreativitas',
+        'Kelayakan',
+        'Komunikasi hasil',
+    ];
+
     public ?int $reviewingProjectId = null;
 
     public ?float $score = null;
@@ -79,6 +93,7 @@ class ManageProjects extends Component
         return view('livewire.guru.manage-projects', [
             'projects' => $query->latest()->paginate(10),
             'modules' => $modules,
+            'projectRubric' => $this->projectRubric,
         ]);
     }
 

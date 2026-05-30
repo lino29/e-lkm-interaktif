@@ -300,6 +300,45 @@ class DemoLearningSeeder extends Seeder
                 'score' => 85,
             ],
         );
+
+        Question::updateOrCreate(
+            [
+                'assessment_id' => $assessment->id,
+                'order' => 5,
+            ],
+            [
+                'question_text' => 'Pilih dua konsep yang paling sesuai dengan '.$assessment->learningUnit->title.'.',
+                'question_type' => 'complex_multiple_choice',
+                'options' => [
+                    'A' => $data['keywords'][0],
+                    'B' => $data['keywords'][1] ?? $data['keywords'][0],
+                    'C' => 'batu bara',
+                    'D' => 'jawaban tanpa data',
+                ],
+                'correct_answer' => ['A', 'B'],
+                'weight' => 10,
+            ],
+        );
+
+        Question::updateOrCreate(
+            [
+                'assessment_id' => $assessment->id,
+                'order' => 6,
+            ],
+            [
+                'question_text' => 'Jodohkan konsep energi berikut dengan karakteristik yang tepat.',
+                'question_type' => 'matching',
+                'options' => [
+                    'left' => ['Energi terbarukan', 'Energi fosil'],
+                    'right' => ['Diperbarui proses alam', 'Sumber terbatas'],
+                ],
+                'correct_answer' => [
+                    'Energi terbarukan' => 'Diperbarui proses alam',
+                    'Energi fosil' => 'Sumber terbatas',
+                ],
+                'weight' => 10,
+            ],
+        );
     }
 
     private function seedKeyword(Question $question, string $keyword, int $weight): void

@@ -56,6 +56,12 @@ test('learning unit one is open and next unit is locked until previous unit is c
         ->assertOk()
         ->assertSee('50%')
         ->assertSee('Tuntas');
+
+    $this->actingAs($student)
+        ->get(route('murid.dashboard'))
+        ->assertOk()
+        ->assertSee('Progress Rata-rata')
+        ->assertSee('50%');
 });
 
 test('failed formative assessment marks the learning unit as remedial and keeps next unit locked', function () {

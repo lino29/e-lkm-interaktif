@@ -15,6 +15,11 @@
                 @if ($project->conclusion)
                     <p class="mt-2 text-sm">{{ $project->conclusion }}</p>
                 @endif
+                @if ($project->feedback)
+                    <div class="mt-3 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-800">
+                        <span class="font-medium">Feedback guru:</span> {{ $project->feedback }}
+                    </div>
+                @endif
             </flux:card>
         @endforeach
     </section>
