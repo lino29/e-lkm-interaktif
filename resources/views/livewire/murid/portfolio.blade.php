@@ -9,7 +9,13 @@
     <section class="space-y-3">
         <flux:heading>Proyek</flux:heading>
         @foreach ($projects as $project)
-            <flux:card wire:key="portfolio-project-{{ $project->id }}"><div class="font-semibold">{{ $project->project_title }}</div><flux:text>{{ $project->module->title }} · {{ $project->status }}</flux:text></flux:card>
+            <flux:card wire:key="portfolio-project-{{ $project->id }}">
+                <div class="font-semibold">{{ $project->project_title }}</div>
+                <flux:text>{{ $project->module->title }} - {{ $project->status }} - Nilai {{ $project->score ?? '-' }}</flux:text>
+                @if ($project->conclusion)
+                    <p class="mt-2 text-sm">{{ $project->conclusion }}</p>
+                @endif
+            </flux:card>
         @endforeach
     </section>
 </div>

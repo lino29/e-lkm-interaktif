@@ -1,0 +1,212 @@
+<?php
+
+use App\Livewire\Guru\ManageProjects;
+use App\Livewire\Guru\Reports;
+use App\Livewire\Murid\MyProject;
+use App\Livewire\Murid\RemedialPage;
+use App\Models\Assessment;
+use App\Models\AssessmentAttempt;
+use App\Models\LearningUnit;
+use App\Models\Module;
+use App\Models\Project;
+use App\Models\Subject;
+use App\Models\User;
+use Database\Seeders\RoleSeeder;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->seed(RoleSeeder::class);
+});
+
+test('murid sees only their own remedial list with remaining attempts', function () {
+    [$teacher, $student, $otherStudent, $module, $assessment] = createRemedialProjectFixture();
+
+    AssessmentAttempt::create([
+        'assessment_id' => $assessment->id,
+        'student_id' => $student->id,
+        'attempt_number' => 1,
+        'total_score' => 40,
+        'max_score' => 100,
+        'status' => 'remedial',
+        'submitted_at' => now(),
+    ]);
+    AssessmentAttempt::create([
+        'assessment_id' => $assessment->id,
+        'student_id' => $otherStudent->id,
+        'attempt_number' => 1,
+        'total_score' => 20,
+        'max_score' => 100,
+        'status' => 'remedial',
+        'submitted_at' => now(),
+    ]);
+
+    Livewire::actingAs($student)
+        ->test(RemedialPage::class)
+        ->assertSee($assessment->title)
+        ->assertSee('Sisa percobaan: 1')
+        ->assertDontSee($otherStudent->name)
+        ->assertSee('Ulangi Asesmen');
+
+    expect($teacher->can('view', $module))->toBeTrue();
+});
+
+test('murid cannot retry remedial when attempts are exhausted', function () {
+    [, $student, , , $assessment] = createRemedialProjectFixture(['max_attempts' => 1]);
+
+    AssessmentAttempt::create([
+        'assessment_id' => $assessment->id,
+        'student_id' => $student->id,
+        'attempt_number' => 1,
+        'total_score' => 40,
+        'max_score' => 100,
+        'status' => 'remedial',
+        'submitted_at' => now(),
+    ]);
+
+    Livewire::actingAs($student)
+        ->test(RemedialPage::class)
+        ->assertSee('Sisa percobaan: 0')
+        ->assertSee('Batas percobaan sudah habis')
+        ->assertDontSee('Ulangi Asesmen');
+});
+
+test('murid can submit complete project data only for published modules', function () {
+    [, $student, , $module] = createRemedialProjectFixture();
+
+    Livewire::actingAs($student)
+        ->test(MyProject::class)
+        ->set('module_id', $module->id)
+        ->set('project_title', 'Aksi Hemat Energi')
+        ->set('problem', 'Pemakaian listrik kelas terlalu tinggi.')
+        ->set('objective', 'Mengurangi konsumsi listrik.')
+        ->set('tools_materials', 'Kertas, alat ukur, lampu LED.')
+        ->set('procedure', 'Observasi, ukur, rancang aksi.')
+        ->set('collected_data', 'Data pemakaian listrik harian.')
+        ->set('expected_result', 'Penggunaan listrik menurun.')
+        ->set('conclusion', 'Aksi sederhana dapat membantu penghematan.')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $project = Project::where('user_id', $student->id)->firstOrFail();
+
+    expect($project->status)->toBe('submitted')
+        ->and($project->tools_materials)->toContain('Kertas')
+        ->and($project->expected_result)->toContain('menurun');
+});
+
+test('guru only sees and reviews projects from their modules', function () {
+    [$teacher, $student, $otherStudent, $module] = createRemedialProjectFixture();
+    $otherTeacher = User::factory()->create();
+    $otherTeacher->assignRole('guru');
+    $otherSubject = Subject::create(['name' => 'IPAS Other Project', 'code' => 'IPAS-OTHER-PROJECT']);
+    $otherModule = Module::create([
+        'subject_id' => $otherSubject->id,
+        'created_by' => $otherTeacher->id,
+        'title' => 'Modul Guru Lain',
+        'slug' => 'modul-guru-lain-project',
+        'status' => 'published',
+    ]);
+
+    $ownProject = Project::create([
+        'module_id' => $module->id,
+        'user_id' => $student->id,
+        'project_title' => 'Project Milik Guru',
+        'status' => 'submitted',
+    ]);
+    Project::create([
+        'module_id' => $otherModule->id,
+        'user_id' => $otherStudent->id,
+        'project_title' => 'Project Guru Lain',
+        'status' => 'submitted',
+    ]);
+
+    Livewire::actingAs($teacher)
+        ->test(ManageProjects::class)
+        ->assertSee('Project Milik Guru')
+        ->assertDontSee('Project Guru Lain')
+        ->call('review', $ownProject->id)
+        ->set('score', 88)
+        ->set('feedback', 'Proyek sudah baik.')
+        ->call('saveReview')
+        ->assertHasNoErrors();
+
+    expect($ownProject->fresh())
+        ->status->toBe('reviewed')
+        ->score->toBe('88.00')
+        ->feedback->toBe('Proyek sudah baik.');
+});
+
+test('guru reports are scoped to their own modules', function () {
+    [$teacher, $student, $otherStudent, $module, $assessment] = createRemedialProjectFixture();
+    $otherTeacher = User::factory()->create();
+    $otherTeacher->assignRole('guru');
+    $otherSubject = Subject::create(['name' => 'IPAS Other Report', 'code' => 'IPAS-OTHER-REPORT']);
+    $otherModule = Module::create([
+        'subject_id' => $otherSubject->id,
+        'created_by' => $otherTeacher->id,
+        'title' => 'Modul Report Lain',
+        'slug' => 'modul-report-lain',
+        'status' => 'published',
+    ]);
+    $otherAssessment = Assessment::create([
+        'module_id' => $otherModule->id,
+        'title' => 'Assessment Lain',
+        'is_published' => true,
+    ]);
+
+    AssessmentAttempt::create([
+        'assessment_id' => $assessment->id,
+        'student_id' => $student->id,
+        'attempt_number' => 1,
+        'status' => 'remedial',
+        'submitted_at' => now(),
+    ]);
+    AssessmentAttempt::create([
+        'assessment_id' => $otherAssessment->id,
+        'student_id' => $otherStudent->id,
+        'attempt_number' => 1,
+        'status' => 'remedial',
+        'submitted_at' => now(),
+    ]);
+
+    Livewire::actingAs($teacher)
+        ->test(Reports::class)
+        ->assertSee($assessment->title)
+        ->assertDontSee('Assessment Lain');
+});
+
+/**
+ * @return array{0: User, 1: User, 2: User, 3: Module, 4: Assessment}
+ */
+function createRemedialProjectFixture(array $assessmentOverrides = []): array
+{
+    $teacher = User::factory()->create();
+    $teacher->assignRole('guru');
+    $student = User::factory()->create();
+    $student->assignRole('murid');
+    $otherStudent = User::factory()->create();
+    $otherStudent->assignRole('murid');
+    $subject = Subject::create(['name' => 'IPAS Remedial Project', 'code' => 'IPAS-REMEDIAL-PROJECT']);
+    $module = Module::create([
+        'subject_id' => $subject->id,
+        'created_by' => $teacher->id,
+        'title' => 'Modul Remedial Project',
+        'slug' => 'modul-remedial-project',
+        'status' => 'published',
+    ]);
+    $learningUnit = LearningUnit::create([
+        'module_id' => $module->id,
+        'title' => 'KB Remedial Project',
+        'slug' => 'kb-remedial-project',
+    ]);
+    $assessment = Assessment::create(array_merge([
+        'module_id' => $module->id,
+        'learning_unit_id' => $learningUnit->id,
+        'title' => 'Assessment Remedial Project',
+        'kktp' => 75,
+        'max_attempts' => 2,
+        'is_published' => true,
+    ], $assessmentOverrides));
+
+    return [$teacher, $student, $otherStudent, $module, $assessment];
+}

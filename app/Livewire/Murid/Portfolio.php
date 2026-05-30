@@ -15,7 +15,11 @@ class Portfolio extends Component
                 ->where('user_id', auth()->id())
                 ->latest()
                 ->get(),
-            'projects' => Project::with('module')->where('user_id', auth()->id())->latest()->get(),
+            'projects' => Project::with('module')
+                ->where('user_id', auth()->id())
+                ->whereIn('status', ['submitted', 'reviewed'])
+                ->latest()
+                ->get(),
         ]);
     }
 }
