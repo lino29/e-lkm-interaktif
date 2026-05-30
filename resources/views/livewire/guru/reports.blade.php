@@ -1,5 +1,26 @@
 <div class="space-y-6">
     <flux:heading size="xl">Laporan Guru</flux:heading>
+
+    <div class="flex items-center space-x-4">
+        <flux:select wire:model.live="module_id" placeholder="Semua Modul" class="max-w-xs">
+            <flux:select.option value="">Semua Modul</flux:select.option>
+            @foreach($modules as $module)
+                <flux:select.option value="{{ $module->id }}">{{ $module->title }}</flux:select.option>
+            @endforeach
+        </flux:select>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <flux:card>
+            <div class="text-sm text-zinc-500">Total Siswa Tuntas</div>
+            <div class="text-2xl font-semibold">{{ $tuntasCount }}</div>
+        </flux:card>
+        <flux:card>
+            <div class="text-sm text-zinc-500">Total Siswa Remedial</div>
+            <div class="text-2xl font-semibold">{{ $remedialCount }}</div>
+        </flux:card>
+    </div>
+
     <section class="space-y-3">
         <flux:heading>Attempt Asesmen Terbaru</flux:heading>
         @foreach ($attempts as $attempt)

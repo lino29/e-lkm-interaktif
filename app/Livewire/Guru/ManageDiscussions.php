@@ -14,6 +14,8 @@ class ManageDiscussions extends Component
 
     public ?int $learning_unit_id = null;
 
+    public array $replyBodies = [];
+
     public function togglePinned(int $discussionId): void
     {
         $discussion = $this->teacherDiscussionQuery()->findOrFail($discussionId);
@@ -23,7 +25,32 @@ class ManageDiscussions extends Component
 
     public function delete(int $discussionId): void
     {
-        $this->teacherDiscussionQuery()->findOrFail($discussionId)->delete();
+        // Also delete replies if it's a parent, handled by DB cascade
+        $discussion = Discussion::whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $this->teacherModuleIds()))
+            ->findOrFail($discussionId);
+        $discussion->delete();
+    }
+
+    public function replyToDiscussion(int $discussionId): void
+    {
+        $body = $this->replyBodies[$discussionId] ?? '';
+        $this->validate([
+            "replyBodies.{$discussionId}" => ['required', 'string', 'min:3'],
+        ]);
+
+        $parent = $this->teacherDiscussionQuery()->findOrFail($discussionId);
+
+        Discussion::create([
+            'learning_unit_id' => $parent->learning_unit_id,
+            'user_id' => auth()->id(),
+            'parent_id' => $parent->id,
+            'title' => 'Balasan guru',
+            'body' => $body,
+            'type' => 'reply',
+        ]);
+
+        unset($this->replyBodies[$discussionId]);
+        session()->flash('status', 'Balasan berhasil dikirim.');
     }
 
     public function render()
@@ -47,7 +74,8 @@ class ManageDiscussions extends Component
 
     private function teacherDiscussionQuery()
     {
-        return Discussion::with('learningUnit.module', 'user')
+        return Discussion::with(['learningUnit.module', 'user', 'replies.user'])
+            ->whereNull('parent_id')
             ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $this->teacherModuleIds()));
     }
 

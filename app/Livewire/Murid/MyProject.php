@@ -33,6 +33,41 @@ class MyProject extends Component
 
     public mixed $file = null;
 
+    public ?string $existing_file_path = null;
+
+    public function updatedModuleId($value)
+    {
+        $this->resetForm();
+        if ($value) {
+            $project = Project::where('module_id', $value)->where('user_id', auth()->id())->first();
+            if ($project) {
+                $this->project_title = $project->project_title;
+                $this->problem = $project->problem;
+                $this->objective = $project->objective;
+                $this->tools_materials = $project->tools_materials;
+                $this->procedure = $project->procedure;
+                $this->collected_data = $project->collected_data;
+                $this->expected_result = $project->expected_result;
+                $this->conclusion = $project->conclusion;
+                $this->existing_file_path = $project->file_path;
+            }
+        }
+    }
+
+    public function resetForm()
+    {
+        $this->project_title = '';
+        $this->problem = null;
+        $this->objective = null;
+        $this->tools_materials = null;
+        $this->procedure = null;
+        $this->collected_data = null;
+        $this->expected_result = null;
+        $this->conclusion = null;
+        $this->file = null;
+        $this->existing_file_path = null;
+    }
+
     public function save(string $status = 'submitted'): void
     {
         $status = in_array($status, ['draft', 'submitted'], true) ? $status : 'submitted';
@@ -55,7 +90,7 @@ class MyProject extends Component
             ->first();
 
         if ($project && auth()->user()->cannot('update', $project)) {
-            abort(403);
+            abort(403, 'Proyek sudah direview atau anda tidak memiliki akses.');
         }
 
         $filePath = $project?->file_path;
@@ -64,7 +99,6 @@ class MyProject extends Component
             if ($filePath) {
                 Storage::disk('public')->delete($filePath);
             }
-
             $filePath = $this->file->store('projects', 'public');
         }
 
@@ -82,14 +116,29 @@ class MyProject extends Component
         );
 
         $this->reset(['file']);
+        $this->updatedModuleId($this->module_id);
+
         session()->flash('status', $status === 'draft' ? 'Draft proyek berhasil disimpan.' : 'Proyek berhasil dikirim.');
+    }
+
+    public function downloadExistingFile()
+    {
+        if ($this->existing_file_path && Storage::disk('public')->exists($this->existing_file_path)) {
+            return Storage::disk('public')->download($this->existing_file_path);
+        }
     }
 
     public function render()
     {
+        $currentProject = null;
+        if ($this->module_id) {
+            $currentProject = Project::where('module_id', $this->module_id)->where('user_id', auth()->id())->first();
+        }
+
         return view('livewire.murid.my-project', [
             'modules' => Module::where('status', 'published')->orderBy('title')->get(),
             'projects' => Project::with('module')->where('user_id', auth()->id())->latest()->get(),
+            'currentProject' => $currentProject,
         ]);
     }
 }

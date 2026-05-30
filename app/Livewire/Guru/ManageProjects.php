@@ -4,15 +4,23 @@ namespace App\Livewire\Guru;
 
 use App\Models\Module;
 use App\Models\Project;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class ManageProjects extends Component
 {
+    use WithPagination;
+
     public ?int $reviewingProjectId = null;
 
     public ?float $score = null;
 
     public ?string $feedback = null;
+
+    public $filterModule = '';
+
+    public $filterStatus = '';
 
     public function review(int $projectId): void
     {
@@ -43,10 +51,34 @@ class ManageProjects extends Component
         session()->flash('status', 'Proyek berhasil dinilai.');
     }
 
+    public function downloadFile(int $projectId)
+    {
+        $project = $this->teacherProjectQuery()->findOrFail($projectId);
+
+        if ($project->file_path && Storage::disk('public')->exists($project->file_path)) {
+            return Storage::disk('public')->download($project->file_path);
+        }
+
+        session()->flash('error', 'File tidak ditemukan.');
+    }
+
     public function render()
     {
+        $modules = Module::where('created_by', auth()->id())->get();
+
+        $query = $this->teacherProjectQuery();
+
+        if ($this->filterModule !== '') {
+            $query->where('module_id', $this->filterModule);
+        }
+
+        if ($this->filterStatus !== '') {
+            $query->where('status', $this->filterStatus);
+        }
+
         return view('livewire.guru.manage-projects', [
-            'projects' => $this->teacherProjectQuery()->latest()->get(),
+            'projects' => $query->latest()->paginate(10),
+            'modules' => $modules,
         ]);
     }
 

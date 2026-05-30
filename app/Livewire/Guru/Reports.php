@@ -11,13 +11,24 @@ use Livewire\Component;
 
 class Reports extends Component
 {
+    public ?int $module_id = null;
+
     public function render()
     {
-        $moduleIds = Module::where('created_by', auth()->id())->pluck('id');
+        $teacherModuleIds = Module::where('created_by', auth()->id())->pluck('id');
+        $moduleIds = $this->module_id ? [$this->module_id] : $teacherModuleIds;
+
+        $attemptsQuery = AssessmentAttempt::with('student', 'assessment.module')
+            ->whereHas('assessment', fn ($query) => $query->whereIn('module_id', $moduleIds));
+
+        $tuntasCount = (clone $attemptsQuery)->where('status', 'tuntas')->count();
+        $remedialCount = (clone $attemptsQuery)->where('status', 'remedial')->count();
 
         return view('livewire.guru.reports', [
-            'attempts' => AssessmentAttempt::with('student', 'assessment.module')
-                ->whereHas('assessment', fn ($query) => $query->whereIn('module_id', $moduleIds))
+            'modules' => Module::whereIn('id', $teacherModuleIds)->orderBy('title')->get(),
+            'tuntasCount' => $tuntasCount,
+            'remedialCount' => $remedialCount,
+            'attempts' => (clone $attemptsQuery)
                 ->latest()
                 ->limit(20)
                 ->get(),
@@ -31,9 +42,8 @@ class Reports extends Component
                 ->latest()
                 ->limit(20)
                 ->get(),
-            'remedialAttempts' => AssessmentAttempt::with('student', 'assessment.module')
+            'remedialAttempts' => (clone $attemptsQuery)
                 ->where('status', 'remedial')
-                ->whereHas('assessment', fn ($query) => $query->whereIn('module_id', $moduleIds))
                 ->latest()
                 ->limit(20)
                 ->get(),

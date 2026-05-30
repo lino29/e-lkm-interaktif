@@ -16,12 +16,17 @@ use App\Models\User;
 class ReportSummaryService
 {
     /**
-     * @return array<string, int>
+     * @return array<string, mixed>
      */
     public function systemSummary(): array
     {
         return [
-            'users' => User::count(),
+            'users_total' => User::count(),
+            'users_by_role' => [
+                'admin' => User::role('admin')->count(),
+                'guru' => User::role('guru')->count(),
+                'murid' => User::role('murid')->count(),
+            ],
             'classes' => ClassRoom::count(),
             'modules' => Module::count(),
             'assessments' => Assessment::count(),
