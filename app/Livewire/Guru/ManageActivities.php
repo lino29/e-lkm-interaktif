@@ -35,19 +35,26 @@ class ManageActivities extends Component
 
     public bool $requires_teacher_review = false;
 
-    public function updatedPhase(string $value): void
+    public function applyTemplate(): void
     {
+        $learningUnitOrder = null;
+        if ($this->learning_unit_id) {
+            $learningUnitOrder = LearningUnit::find($this->learning_unit_id)?->order;
+        }
+
         $templateService = app(ActivityTemplateService::class);
-        $template = $templateService->getTemplateForPhase($value);
+        $template = $templateService->templateFor($this->phase, $learningUnitOrder);
 
         if ($template) {
-            $this->title = $template['title'];
-            $this->prompt = $template['prompt'];
-            $this->input_type = $template['input_type'];
-            $this->requires_teacher_review = $template['requires_teacher_review'];
+            $this->title = $template['title'] ?? $this->title;
+            $this->prompt = $template['prompt'] ?? $this->prompt;
+            $this->input_type = $template['input_type'] ?? $this->input_type;
+            $this->requires_teacher_review = $template['requires_teacher_review'] ?? false;
             $this->answer_schema = $template['answer_schema'] ? json_encode($template['answer_schema'], JSON_PRETTY_PRINT) : null;
             $this->display_config = $template['display_config'] ? json_encode($template['display_config'], JSON_PRETTY_PRINT) : null;
             $this->validation_rules = $template['validation_rules'] ? json_encode($template['validation_rules'], JSON_PRETTY_PRINT) : null;
+
+            session()->flash('status', 'Template berhasil diterapkan pada form.');
         }
     }
 
@@ -59,7 +66,7 @@ class ManageActivities extends Component
             'title' => ['required', 'string', 'max:255'],
             'phase' => ['required', Rule::in(['ayo_mengamati', 'ayo_bertanya', 'ayo_mencoba', 'ayo_menalar', 'ayo_menyimpulkan', 'forum_diskusi'])],
             'prompt' => ['nullable', 'string'],
-            'input_type' => ['required', Rule::in(['short_text', 'essay', 'table', 'file', 'discussion'])],
+            'input_type' => ['required', Rule::in(['short_text', 'essay', 'table', 'file', 'discussion', 'project_form'])],
             'is_required' => ['boolean'],
             'order' => ['required', 'integer', 'min:1'],
             'answer_schema' => ['nullable', 'string'],

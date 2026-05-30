@@ -34,7 +34,7 @@
         <flux:field>
             <flux:label>Tipe materi</flux:label>
             <flux:select wire:model="material_type">
-                @foreach (['text', 'image', 'video', 'simulation', 'file', 'link'] as $type)
+                @foreach (['text', 'image', 'video', 'simulation', 'file', 'link', 'youtube', 'embed'] as $type)
                     <flux:select.option value="{{ $type }}">{{ \Illuminate\Support\Str::headline($type) }}</flux:select.option>
                 @endforeach
             </flux:select>

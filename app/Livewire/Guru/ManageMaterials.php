@@ -37,7 +37,7 @@ class ManageMaterials extends Component
             'learning_unit_id' => ['required', Rule::in($unitIds)],
             'title' => ['required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
-            'material_type' => ['required', Rule::in(['text', 'image', 'video', 'simulation', 'file', 'link'])],
+            'material_type' => ['required', Rule::in(['text', 'image', 'video', 'simulation', 'file', 'link', 'youtube', 'embed'])],
             'file' => ['nullable', 'file', 'max:10240'],
             'order' => ['required', 'integer', 'min:1'],
         ]);

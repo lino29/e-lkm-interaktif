@@ -33,18 +33,25 @@
 
         <flux:field>
             <flux:label>Fase E-LKM</flux:label>
-            <flux:select wire:model.live="phase">
-                @foreach (['ayo_mengamati', 'ayo_bertanya', 'ayo_mencoba', 'ayo_menalar', 'ayo_menyimpulkan', 'forum_diskusi'] as $phaseOption)
-                    <flux:select.option value="{{ $phaseOption }}">{{ \Illuminate\Support\Str::headline($phaseOption) }}</flux:select.option>
-                @endforeach
-            </flux:select>
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <flux:select wire:model.live="phase">
+                        @foreach (['ayo_mengamati', 'ayo_bertanya', 'ayo_mencoba', 'ayo_menalar', 'ayo_menyimpulkan', 'forum_diskusi'] as $phaseOption)
+                            <flux:select.option value="{{ $phaseOption }}">{{ \Illuminate\Support\Str::headline($phaseOption) }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                </div>
+                <flux:button type="button" variant="secondary" wire:click="applyTemplate">
+                    Gunakan Template
+                </flux:button>
+            </div>
             <flux:error name="phase" />
         </flux:field>
 
         <flux:field>
             <flux:label>Tipe input murid</flux:label>
             <flux:select wire:model="input_type">
-                @foreach (['short_text', 'essay', 'table', 'file', 'discussion'] as $inputOption)
+                @foreach (['short_text', 'essay', 'table', 'file', 'discussion', 'project_form'] as $inputOption)
                     <flux:select.option value="{{ $inputOption }}">{{ \Illuminate\Support\Str::headline($inputOption) }}</flux:select.option>
                 @endforeach
             </flux:select>

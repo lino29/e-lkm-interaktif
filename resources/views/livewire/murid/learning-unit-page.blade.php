@@ -10,13 +10,36 @@
     <section class="space-y-3">
         <flux:heading>Materi</flux:heading>
         @foreach ($learningUnit->materials as $material)
-            <flux:card wire:key="unit-material-{{ $material->id }}"><div class="font-semibold">{{ $material->title }}</div><p class="mt-2 text-sm leading-6">{{ $material->content }}</p></flux:card>
+            <flux:card wire:key="unit-material-{{ $material->id }}">
+                <div class="font-semibold">{{ $material->title }}</div>
+                @if($material->content)
+                    <p class="mt-2 text-sm leading-6">{{ $material->content }}</p>
+                @endif
+                @if($material->material_type !== 'text')
+                    <div class="mt-4">
+                        <x-learning.media-renderer 
+                            :type="$material->material_type"
+                            :url="$material->url"
+                            :file-path="$material->file_path"
+                            :embed-code="$material->embed_code"
+                            title="" 
+                        />
+                    </div>
+                @endif
+            </flux:card>
         @endforeach
     </section>
     <section class="space-y-3">
         <flux:heading>Media</flux:heading>
         @forelse ($learningUnit->media as $media)
-            <flux:card wire:key="unit-media-{{ $media->id }}"><div class="font-semibold">{{ $media->title }}</div><flux:text>{{ $media->type }} - {{ $media->url ?? $media->file_path ?? 'Placeholder tersedia' }}</flux:text></flux:card>
+            <x-learning.media-renderer 
+                wire:key="unit-media-{{ $media->id }}"
+                :type="$media->type"
+                :url="$media->url"
+                :file-path="$media->file_path"
+                :embed-code="$media->embed_code"
+                :title="$media->title" 
+            />
         @empty
             <flux:text>Belum ada media untuk kegiatan ini.</flux:text>
         @endforelse
