@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Murid;
 
+use App\Models\ActivityAnswer;
 use App\Models\Discussion;
 use App\Models\LearningUnit;
 use App\Services\Learning\ProgressService;
@@ -20,7 +21,7 @@ class LearningUnitPage extends Component
 
     public function mount(string|int $learningUnit): void
     {
-        $this->currentLearningUnit = LearningUnit::with('module', 'materials', 'media', 'activities', 'assessments')
+        $this->currentLearningUnit = LearningUnit::with(['module', 'materials', 'media', 'activities' => fn ($q) => $q->orderBy('order'), 'assessments'])
             ->whereHas('module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($learningUnit);
 
@@ -29,6 +30,34 @@ class LearningUnitPage extends Component
         abort_unless($progressService->isLearningUnitUnlocked(auth()->user(), $this->currentLearningUnit), 403);
 
         $progressService->markStarted(auth()->user(), $this->currentLearningUnit->module, $this->currentLearningUnit);
+    }
+
+    private function getActivityStatuses(): array
+    {
+        $answers = ActivityAnswer::where('user_id', auth()->id())
+            ->whereIn('activity_id', $this->currentLearningUnit->activities->pluck('id'))
+            ->get()
+            ->keyBy('activity_id');
+
+        $statuses = [];
+        $isLocked = false;
+
+        foreach ($this->currentLearningUnit->activities as $activity) {
+            $answer = $answers->get($activity->id);
+            $status = $answer ? $answer->status : 'belum_mulai';
+
+            $statuses[$activity->id] = [
+                'status' => $status,
+                'is_locked' => $isLocked,
+                'answer' => $answer,
+            ];
+
+            if ($activity->is_required && ! in_array($status, ['submitted', 'reviewed'])) {
+                $isLocked = true; // Lock subsequent activities
+            }
+        }
+
+        return $statuses;
     }
 
     public function submitDiscussion(): void
@@ -77,6 +106,7 @@ class LearningUnitPage extends Component
     {
         return view('livewire.murid.learning-unit-page', [
             'learningUnit' => $this->currentLearningUnit,
+            'activityStatuses' => $this->getActivityStatuses(),
             'discussions' => Discussion::with('user', 'replies.user')
                 ->where('learning_unit_id', $this->currentLearningUnit->id)
                 ->whereNull('parent_id')

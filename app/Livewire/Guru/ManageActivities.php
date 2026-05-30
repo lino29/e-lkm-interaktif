@@ -5,6 +5,7 @@ namespace App\Livewire\Guru;
 use App\Models\Activity;
 use App\Models\LearningUnit;
 use App\Models\Module;
+use App\Services\Learning\ActivityTemplateService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -26,7 +27,31 @@ class ManageActivities extends Component
 
     public int $order = 1;
 
-    public function save(): void
+    public ?string $answer_schema = null;
+
+    public ?string $display_config = null;
+
+    public ?string $validation_rules = null;
+
+    public bool $requires_teacher_review = false;
+
+    public function updatedPhase(string $value): void
+    {
+        $templateService = app(ActivityTemplateService::class);
+        $template = $templateService->getTemplateForPhase($value);
+
+        if ($template) {
+            $this->title = $template['title'];
+            $this->prompt = $template['prompt'];
+            $this->input_type = $template['input_type'];
+            $this->requires_teacher_review = $template['requires_teacher_review'];
+            $this->answer_schema = $template['answer_schema'] ? json_encode($template['answer_schema'], JSON_PRETTY_PRINT) : null;
+            $this->display_config = $template['display_config'] ? json_encode($template['display_config'], JSON_PRETTY_PRINT) : null;
+            $this->validation_rules = $template['validation_rules'] ? json_encode($template['validation_rules'], JSON_PRETTY_PRINT) : null;
+        }
+    }
+
+    public function save(ActivityTemplateService $templateService): void
     {
         $unitIds = $this->teacherUnitIds();
         $validated = $this->validate([
@@ -37,7 +62,31 @@ class ManageActivities extends Component
             'input_type' => ['required', Rule::in(['short_text', 'essay', 'table', 'file', 'discussion'])],
             'is_required' => ['boolean'],
             'order' => ['required', 'integer', 'min:1'],
+            'answer_schema' => ['nullable', 'string'],
+            'display_config' => ['nullable', 'string'],
+            'validation_rules' => ['nullable', 'string'],
+            'requires_teacher_review' => ['boolean'],
         ]);
+
+        if (! $templateService->isValidSchema($this->answer_schema)) {
+            $this->addError('answer_schema', 'Format JSON pada Answer Schema tidak valid.');
+
+            return;
+        }
+        if (! $templateService->isValidSchema($this->display_config)) {
+            $this->addError('display_config', 'Format JSON pada Display Config tidak valid.');
+
+            return;
+        }
+        if (! $templateService->isValidSchema($this->validation_rules)) {
+            $this->addError('validation_rules', 'Format JSON pada Validation Rules tidak valid.');
+
+            return;
+        }
+
+        $validated['answer_schema'] = $this->answer_schema ? json_decode($this->answer_schema, true) : null;
+        $validated['display_config'] = $this->display_config ? json_decode($this->display_config, true) : null;
+        $validated['validation_rules'] = $this->validation_rules ? json_decode($this->validation_rules, true) : null;
 
         $wasEditing = filled($this->editingActivityId);
         $activity = $wasEditing
@@ -62,6 +111,10 @@ class ManageActivities extends Component
         $this->input_type = $activity->input_type;
         $this->is_required = $activity->is_required;
         $this->order = $activity->order;
+        $this->answer_schema = $activity->answer_schema ? json_encode($activity->answer_schema, JSON_PRETTY_PRINT) : null;
+        $this->display_config = $activity->display_config ? json_encode($activity->display_config, JSON_PRETTY_PRINT) : null;
+        $this->validation_rules = $activity->validation_rules ? json_encode($activity->validation_rules, JSON_PRETTY_PRINT) : null;
+        $this->requires_teacher_review = $activity->requires_teacher_review;
     }
 
     public function delete(int $activityId): void
@@ -86,10 +139,11 @@ class ManageActivities extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['editingActivityId', 'learning_unit_id', 'title', 'prompt']);
+        $this->reset(['editingActivityId', 'learning_unit_id', 'title', 'prompt', 'answer_schema', 'display_config', 'validation_rules']);
         $this->phase = 'ayo_mengamati';
         $this->input_type = 'essay';
         $this->is_required = true;
+        $this->requires_teacher_review = false;
         $this->order = 1;
     }
 

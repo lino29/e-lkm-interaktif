@@ -127,6 +127,7 @@ function completeDemoLearningUnit(User $student, $learningUnit): void
             ],
             [
                 'answer_text' => 'Jawaban demo untuk menyelesaikan aktivitas.',
+                'status' => 'submitted',
                 'submitted_at' => now(),
             ],
         );

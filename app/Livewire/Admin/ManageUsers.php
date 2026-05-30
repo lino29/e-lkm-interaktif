@@ -7,11 +7,12 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Spatie\Permission\Models\Role;
 
 class ManageUsers extends Component
 {
-    use \Livewire\WithFileUploads;
+    use WithFileUploads;
 
     public string $name = '';
 

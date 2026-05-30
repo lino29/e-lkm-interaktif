@@ -24,13 +24,60 @@
     <section class="space-y-3">
         <flux:heading>Aktivitas Interaktif</flux:heading>
         @foreach ($learningUnit->activities as $activity)
-            <flux:card wire:key="unit-activity-{{ $activity->id }}"><div class="font-semibold">{{ $activity->title }}</div><flux:text>{{ \Illuminate\Support\Str::headline($activity->phase) }}</flux:text><flux:button class="mt-3" size="sm" :href="route('murid.activities.show', $activity)" wire:navigate>Kerjakan</flux:button></flux:card>
+            @php
+                $statusData = $activityStatuses[$activity->id] ?? ['status' => 'belum_mulai', 'is_locked' => true];
+                $isLocked = $statusData['is_locked'];
+                $status = $statusData['status'];
+            @endphp
+            <flux:card wire:key="unit-activity-{{ $activity->id }}">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="font-semibold">{{ $activity->title }}</div>
+                        <flux:text>{{ \Illuminate\Support\Str::headline($activity->phase) }}</flux:text>
+                        <div class="mt-1">
+                            @if($status === 'submitted')
+                                <flux:badge color="blue" size="sm">Menunggu Review</flux:badge>
+                            @elseif($status === 'reviewed')
+                                <flux:badge color="green" size="sm">Telah Dinilai</flux:badge>
+                            @elseif($status === 'draft')
+                                <flux:badge color="zinc" size="sm">Draft</flux:badge>
+                            @elseif(!$isLocked)
+                                <flux:badge color="zinc" size="sm">Belum Mulai</flux:badge>
+                            @endif
+                        </div>
+                    </div>
+                    <div>
+                        @if($isLocked)
+                            <flux:button size="sm" disabled>Terkunci</flux:button>
+                        @elseif($status === 'reviewed')
+                            <flux:button size="sm" variant="ghost" :href="route('murid.activities.show', $activity)" wire:navigate>Lihat Hasil</flux:button>
+                        @else
+                            <flux:button size="sm" variant="primary" :href="route('murid.activities.show', $activity)" wire:navigate>Kerjakan</flux:button>
+                        @endif
+                    </div>
+                </div>
+            </flux:card>
         @endforeach
     </section>
     <section class="space-y-3">
         <flux:heading>Asesmen Formatif</flux:heading>
         @foreach ($learningUnit->assessments as $assessment)
-            <flux:card wire:key="unit-assessment-{{ $assessment->id }}"><div class="font-semibold">{{ $assessment->title }}</div><flux:text>KKTP {{ $assessment->kktp }} - Maks {{ $assessment->max_attempts }} percobaan</flux:text><flux:button class="mt-3" size="sm" :href="route('murid.assessments.show', $assessment)" wire:navigate>Kerjakan Asesmen</flux:button></flux:card>
+            @php
+                $allActivitiesDone = collect($activityStatuses)->every(function($s, $activityId) use ($learningUnit) {
+                    $activity = $learningUnit->activities->firstWhere('id', $activityId);
+                    if (!$activity || !$activity->is_required) return true;
+                    return in_array($s['status'], ['submitted', 'reviewed']);
+                });
+            @endphp
+            <flux:card wire:key="unit-assessment-{{ $assessment->id }}">
+                <div class="font-semibold">{{ $assessment->title }}</div>
+                <flux:text>KKTP {{ $assessment->kktp }} - Maks {{ $assessment->max_attempts }} percobaan</flux:text>
+                @if($allActivitiesDone)
+                    <flux:button class="mt-3" size="sm" :href="route('murid.assessments.show', $assessment)" wire:navigate>Kerjakan Asesmen</flux:button>
+                @else
+                    <flux:button class="mt-3" size="sm" disabled>Selesaikan Semua Aktivitas Wajib</flux:button>
+                @endif
+            </flux:card>
         @endforeach
     </section>
     <section class="space-y-4">

@@ -32,6 +32,7 @@ test('learning unit one is open and next unit is locked until previous unit is c
         'activity_id' => $activity->id,
         'user_id' => $student->id,
         'answer_text' => 'Jawaban aktivitas lengkap.',
+        'status' => 'submitted',
         'submitted_at' => now(),
     ]);
     AssessmentAttempt::create([
@@ -71,6 +72,7 @@ test('failed formative assessment marks the learning unit as remedial and keeps 
         'activity_id' => $activity->id,
         'user_id' => $student->id,
         'answer_text' => 'Jawaban aktivitas lengkap.',
+        'status' => 'submitted',
         'submitted_at' => now(),
     ]);
     AssessmentAttempt::create([

@@ -16,6 +16,10 @@ class Activity extends Model
             'is_required' => 'boolean',
             'order' => 'integer',
             'answer_schema' => 'array',
+            'display_config' => 'array',
+            'validation_rules' => 'array',
+            'sample_answer' => 'array',
+            'requires_teacher_review' => 'boolean',
         ];
     }
 

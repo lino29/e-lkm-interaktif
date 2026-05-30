@@ -16,9 +16,11 @@ class ActivityPage extends Component
 
     public Activity $currentActivity;
 
+    public ?ActivityAnswer $existingAnswer = null;
+
     public string $answer_text = '';
 
-    public string $answer_json_text = '';
+    public array $table_data = [];
 
     public mixed $file = null;
 
@@ -29,73 +31,120 @@ class ActivityPage extends Component
             ->findOrFail($activity);
 
         abort_unless(app(ProgressService::class)->isLearningUnitUnlocked(auth()->user(), $this->currentActivity->learningUnit), 403);
+
+        $this->existingAnswer = ActivityAnswer::where('activity_id', $this->currentActivity->id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if ($this->existingAnswer) {
+            $this->answer_text = $this->existingAnswer->answer_text ?? '';
+            $this->table_data = $this->existingAnswer->answer_json ?? [];
+        } else {
+            // Initialize table rows if it's a table
+            if ($this->currentActivity->input_type === 'table') {
+                $minRows = data_get($this->currentActivity->answer_schema, 'min_rows', 1);
+                $columns = data_get($this->currentActivity->answer_schema, 'columns', []);
+                for ($i = 0; $i < $minRows; $i++) {
+                    $row = [];
+                    foreach ($columns as $col) {
+                        $row[$col['name']] = '';
+                    }
+                    $this->table_data[] = $row;
+                }
+            }
+        }
+    }
+
+    public function addTableRow(): void
+    {
+        $columns = data_get($this->currentActivity->answer_schema, 'columns', []);
+        $row = [];
+        foreach ($columns as $col) {
+            $row[$col['name']] = '';
+        }
+        $this->table_data[] = $row;
+    }
+
+    public function removeTableRow(int $index): void
+    {
+        $minRows = data_get($this->currentActivity->answer_schema, 'min_rows', 1);
+        if (count($this->table_data) > $minRows) {
+            unset($this->table_data[$index]);
+            $this->table_data = array_values($this->table_data);
+        }
+    }
+
+    public function saveDraft(): void
+    {
+        $this->storeAnswer('draft');
+        session()->flash('status', 'Draft berhasil disimpan.');
     }
 
     public function submit(): void
     {
+        try {
+            $this->storeAnswer('submitted');
+
+            if ($this->currentActivity->phase === 'forum_diskusi' || $this->currentActivity->input_type === 'discussion') {
+                Discussion::create([
+                    'learning_unit_id' => $this->currentActivity->learning_unit_id,
+                    'user_id' => auth()->id(),
+                    'title' => $this->currentActivity->title,
+                    'body' => $this->answer_text ?: 'Mengirim refleksi diskusi.',
+                    'type' => 'reflection',
+                ]);
+            }
+
+            app(ProgressService::class)->refreshLearningUnitProgress(auth()->user(), $this->currentActivity->learningUnit);
+
+            session()->flash('status', 'Jawaban berhasil disubmit.');
+        } catch (\Throwable $e) {
+            dd($e->getMessage(), $e->getTraceAsString());
+        }
+    }
+
+    private function storeAnswer(string $status): void
+    {
+        if ($this->existingAnswer?->status === 'reviewed') {
+            return; // cannot edit reviewed answer
+        }
+
         $validated = $this->validate([
             'answer_text' => ['nullable', 'string'],
-            'answer_json_text' => ['nullable', 'string'],
+            'table_data' => ['nullable', 'array'],
             'file' => ['nullable', 'file', 'max:10240'],
         ]);
 
-        $existingAnswer = ActivityAnswer::where('activity_id', $this->currentActivity->id)
-            ->where('user_id', auth()->id())
-            ->first();
-        $filePath = $existingAnswer?->file_path;
+        $filePath = $this->existingAnswer?->file_path;
 
         if ($this->file) {
             if ($filePath) {
                 Storage::disk('public')->delete($filePath);
             }
-
             $filePath = $this->file->store('activity-answers', 'public');
+            $this->reset(['file']);
         }
 
-        ActivityAnswer::updateOrCreate(
+        $this->existingAnswer = ActivityAnswer::updateOrCreate(
             [
                 'activity_id' => $this->currentActivity->id,
                 'user_id' => auth()->id(),
             ],
             [
                 'answer_text' => $validated['answer_text'],
-                'answer_json' => $this->decodeJson($validated['answer_json_text']),
+                'answer_json' => $this->currentActivity->input_type === 'table' ? $validated['table_data'] : null,
                 'file_path' => $filePath,
-                'submitted_at' => now(),
+                'status' => $status,
+                'submitted_at' => $status === 'submitted' ? now() : null,
             ],
         );
-
-        if ($this->currentActivity->phase === 'forum_diskusi' || $this->currentActivity->input_type === 'discussion') {
-            Discussion::create([
-                'learning_unit_id' => $this->currentActivity->learning_unit_id,
-                'user_id' => auth()->id(),
-                'title' => $this->currentActivity->title,
-                'body' => $validated['answer_text'] ?: 'Mengirim refleksi diskusi.',
-                'type' => 'reflection',
-            ]);
-        }
-
-        app(ProgressService::class)->refreshLearningUnitProgress(auth()->user(), $this->currentActivity->learningUnit);
-
-        $this->reset(['file']);
-        session()->flash('status', 'Jawaban aktivitas berhasil disimpan.');
     }
 
     public function render()
     {
         return view('livewire.murid.activity-page', [
             'activity' => $this->currentActivity,
+            'answer' => $this->existingAnswer,
         ]);
-    }
-
-    private function decodeJson(?string $json): ?array
-    {
-        if (blank($json)) {
-            return null;
-        }
-
-        $decoded = json_decode((string) $json, true);
-
-        return is_array($decoded) ? $decoded : null;
     }
 }

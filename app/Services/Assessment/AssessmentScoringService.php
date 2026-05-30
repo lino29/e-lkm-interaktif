@@ -15,7 +15,6 @@ class AssessmentScoringService
     ) {}
 
     /**
-     * @param  mixed  $answer
      * @return array{score: float, max_score: float, feedback: string, rubric_score?: float, keyword_score?: float, similarity_score?: float}
      */
     public function scoreQuestion(Question $question, mixed $answer): array

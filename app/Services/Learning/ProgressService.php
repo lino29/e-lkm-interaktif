@@ -70,7 +70,7 @@ class ProgressService
         if ($requiredActivityIds->isNotEmpty()) {
             $submittedActivityCount = ActivityAnswer::where('user_id', $student->id)
                 ->whereIn('activity_id', $requiredActivityIds)
-                ->whereNotNull('submitted_at')
+                ->whereIn('status', ['submitted', 'reviewed'])
                 ->distinct('activity_id')
                 ->count('activity_id');
 

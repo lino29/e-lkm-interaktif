@@ -33,7 +33,7 @@
 
         <flux:field>
             <flux:label>Fase E-LKM</flux:label>
-            <flux:select wire:model="phase">
+            <flux:select wire:model.live="phase">
                 @foreach (['ayo_mengamati', 'ayo_bertanya', 'ayo_mencoba', 'ayo_menalar', 'ayo_menyimpulkan', 'forum_diskusi'] as $phaseOption)
                     <flux:select.option value="{{ $phaseOption }}">{{ \Illuminate\Support\Str::headline($phaseOption) }}</flux:select.option>
                 @endforeach
@@ -61,11 +61,34 @@
             <flux:checkbox wire:model="is_required" label="Wajib dikerjakan murid" />
             <flux:error name="is_required" />
         </flux:field>
+        
+        <flux:field>
+            <flux:checkbox wire:model="requires_teacher_review" label="Wajib direview guru" />
+            <flux:error name="requires_teacher_review" />
+        </flux:field>
 
         <flux:field class="md:col-span-2">
             <flux:label>Instruksi</flux:label>
             <flux:textarea wire:model="prompt" rows="5" />
             <flux:error name="prompt" />
+        </flux:field>
+        
+        <flux:field class="md:col-span-2">
+            <flux:label>Answer Schema (JSON)</flux:label>
+            <flux:textarea wire:model="answer_schema" rows="6" placeholder='{"columns": [{"name": "alat", "label": "Nama Alat", "type": "text"}], "min_rows": 1, "allow_add": true}' />
+            <flux:error name="answer_schema" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>Display Config (JSON)</flux:label>
+            <flux:textarea wire:model="display_config" rows="4" placeholder="{}" />
+            <flux:error name="display_config" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>Validation Rules (JSON)</flux:label>
+            <flux:textarea wire:model="validation_rules" rows="4" placeholder="{}" />
+            <flux:error name="validation_rules" />
         </flux:field>
 
         <div class="md:col-span-2">

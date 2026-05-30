@@ -13,8 +13,10 @@ class ActivityAnswer extends Model
     {
         return [
             'answer_json' => 'array',
+            'metadata' => 'array',
             'score' => 'decimal:2',
             'submitted_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -26,5 +28,10 @@ class ActivityAnswer extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 }

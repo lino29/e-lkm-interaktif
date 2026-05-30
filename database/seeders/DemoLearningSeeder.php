@@ -15,6 +15,7 @@ use App\Models\Reference;
 use App\Models\Rubric;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\Learning\ActivityTemplateService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -163,8 +164,82 @@ class DemoLearningSeeder extends Seeder
             );
 
             $activityPrompts = $this->activityPromptsFor($order);
+            $templateService = app(ActivityTemplateService::class);
 
             foreach (['ayo_mengamati', 'ayo_bertanya', 'ayo_mencoba', 'ayo_menalar', 'ayo_menyimpulkan', 'forum_diskusi'] as $activityOrder => $phase) {
+                $template = $templateService->getTemplateForPhase($phase);
+
+                // Override answer schema specifically for Ayo Mencoba based on KB order
+                $answerSchema = $template['answer_schema'];
+
+                if ($phase === 'ayo_mencoba') {
+                    if ($order === 1) {
+                        $answerSchema = [
+                            'columns' => [
+                                ['name' => 'no', 'label' => 'No', 'type' => 'text'],
+                                ['name' => 'alat', 'label' => 'Nama Alat/Mesin', 'type' => 'text'],
+                                ['name' => 'energi_masuk', 'label' => 'Energi Masuk', 'type' => 'text'],
+                                ['name' => 'energi_keluar', 'label' => 'Energi Keluar', 'type' => 'text'],
+                                ['name' => 'sumber_energi', 'label' => 'Sumber Energi', 'type' => 'text'],
+                            ],
+                            'min_rows' => 10,
+                            'allow_add' => true,
+                        ];
+                    } elseif ($order === 2) {
+                        $answerSchema = [
+                            'columns' => [
+                                ['name' => 'tahap', 'label' => 'Tahap/Aspek', 'type' => 'text'],
+                                ['name' => 'uraian', 'label' => 'Uraian Masalah', 'type' => 'text'],
+                                ['name' => 'dampak', 'label' => 'Dampak', 'type' => 'text'],
+                            ],
+                            'min_rows' => 3,
+                            'allow_add' => true,
+                        ];
+                    } elseif ($order === 3) {
+                        $answerSchema = [
+                            'columns' => [
+                                ['name' => 'kondisi_lingkungan', 'label' => 'Kondisi Lingkungan', 'type' => 'text'],
+                                ['name' => 'energi_terbarukan_cocok', 'label' => 'Energi Terbarukan yang Cocok', 'type' => 'text'],
+                                ['name' => 'alasan', 'label' => 'Alasan/Pertimbangan', 'type' => 'text'],
+                            ],
+                            'min_rows' => 3,
+                            'allow_add' => true,
+                        ];
+                    } elseif ($order === 4) {
+                        $answerSchema = [
+                            'columns' => [
+                                ['name' => 'gelas', 'label' => 'Gelas', 'type' => 'text'],
+                                ['name' => 'warna', 'label' => 'Warna', 'type' => 'text'],
+                                ['name' => 'suhu_awal', 'label' => 'Suhu Awal (°C)', 'type' => 'number'],
+                                ['name' => 'suhu_akhir', 'label' => 'Suhu Akhir (°C)', 'type' => 'number'],
+                                ['name' => 'perubahan_suhu', 'label' => 'Perubahan Suhu', 'type' => 'number'],
+                                ['name' => 'catatan', 'label' => 'Catatan', 'type' => 'text'],
+                            ],
+                            'min_rows' => 2,
+                            'allow_add' => false,
+                        ];
+                    } elseif ($order === 5) {
+                        $answerSchema = [
+                            'columns' => [
+                                ['name' => 'komponen', 'label' => 'Komponen Rancangan', 'type' => 'text'],
+                                ['name' => 'isi', 'label' => 'Isi/Deskripsi', 'type' => 'text'],
+                            ],
+                            'min_rows' => 8,
+                            'allow_add' => true,
+                            'default_rows' => [
+                                ['komponen' => 'Nama Proyek', 'isi' => ''],
+                                ['komponen' => 'Masalah yang Ditemukan', 'isi' => ''],
+                                ['komponen' => 'Tujuan Proyek', 'isi' => ''],
+                                ['komponen' => 'Alat dan Bahan', 'isi' => ''],
+                                ['komponen' => 'Langkah Kerja', 'isi' => ''],
+                                ['komponen' => 'Data yang Dikumpulkan', 'isi' => ''],
+                                ['komponen' => 'Hasil yang Diharapkan', 'isi' => ''],
+                                ['komponen' => 'Cara Mengomunikasikan', 'isi' => ''],
+                            ],
+                        ];
+                    }
+                }
+
                 Activity::updateOrCreate(
                     [
                         'learning_unit_id' => $unit->id,
@@ -173,9 +248,13 @@ class DemoLearningSeeder extends Seeder
                     ],
                     [
                         'title' => Str::headline($phase),
-                        'prompt' => $activityPrompts[$phase],
-                        'input_type' => $phase === 'forum_diskusi' ? 'discussion' : ($phase === 'ayo_mencoba' ? 'table' : 'essay'),
+                        'prompt' => $activityPrompts[$phase] ?? $template['prompt'],
+                        'input_type' => $template['input_type'],
                         'is_required' => true,
+                        'answer_schema' => $answerSchema,
+                        'display_config' => $template['display_config'],
+                        'validation_rules' => $template['validation_rules'],
+                        'requires_teacher_review' => $template['requires_teacher_review'],
                     ],
                 );
             }

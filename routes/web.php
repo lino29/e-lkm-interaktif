@@ -19,6 +19,7 @@ use App\Livewire\Guru\ManageQuestions;
 use App\Livewire\Guru\ManageRubrics;
 use App\Livewire\Guru\ModuleDetail as GuruModuleDetail;
 use App\Livewire\Guru\Reports as GuruReports;
+use App\Livewire\Guru\ReviewActivityAnswers;
 use App\Livewire\Murid\ActivityPage;
 use App\Livewire\Murid\AssessmentPage;
 use App\Livewire\Murid\Dashboard as MuridDashboard;
@@ -75,6 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('rubrics', 'dashboard.page', ['livewireComponent' => ManageRubrics::class, 'title' => 'Kelola Rubrik'])->name('rubrics');
         Route::view('projects', 'dashboard.page', ['livewireComponent' => ManageProjects::class, 'title' => 'Kelola Proyek'])->name('projects');
         Route::view('reports', 'dashboard.page', ['livewireComponent' => GuruReports::class, 'title' => 'Laporan Guru'])->name('reports');
+        Route::view('activity-reviews', 'dashboard.page', ['livewireComponent' => ReviewActivityAnswers::class, 'title' => 'Review Jawaban Aktivitas'])->name('activity-reviews');
     });
 
     Route::middleware('role:murid')->prefix('murid')->name('murid.')->group(function () {

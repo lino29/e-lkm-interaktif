@@ -1,0 +1,74 @@
+<?php
+
+use App\Livewire\Murid\ActivityPage;
+use App\Models\Activity;
+use App\Models\LearningUnit;
+use App\Models\Module;
+use App\Models\Subject;
+use App\Models\User;
+use Database\Seeders\RoleSeeder;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->seed(RoleSeeder::class);
+});
+
+test('murid can save draft and it is not considered submitted', function () {
+    $teacher = User::factory()->create();
+    $teacher->assignRole('guru');
+
+    $student = User::factory()->create();
+    $student->assignRole('murid');
+
+    $subject = Subject::create(['name' => 'IPAS', 'code' => 'IPAS-TEST']);
+    $module = Module::create([
+        'subject_id' => $subject->id,
+        'created_by' => $teacher->id,
+        'title' => 'Modul Test',
+        'slug' => 'modul-test',
+        'status' => 'published',
+    ]);
+
+    $learningUnit = LearningUnit::create([
+        'module_id' => $module->id,
+        'title' => 'KB Test',
+        'slug' => 'kb-test',
+        'order' => 1,
+    ]);
+
+    $activity = Activity::create([
+        'learning_unit_id' => $learningUnit->id,
+        'title' => 'Menalar',
+        'phase' => 'ayo_menalar',
+        'is_required' => true,
+        'order' => 1,
+    ]);
+
+    Livewire::actingAs($student)
+        ->test(ActivityPage::class, ['activity' => $activity->id])
+        ->set('answer_text', 'Draft saya')
+        ->call('saveDraft')
+        ->assertHasNoErrors();
+
+    $this->assertDatabaseHas('activity_answers', [
+        'activity_id' => $activity->id,
+        'user_id' => $student->id,
+        'status' => 'draft',
+        'answer_text' => 'Draft saya',
+        'submitted_at' => null,
+    ]);
+
+    // Submitting it later
+    Livewire::actingAs($student)
+        ->test(ActivityPage::class, ['activity' => $activity->id])
+        ->set('answer_text', 'Final submit')
+        ->call('submit')
+        ->assertHasNoErrors();
+
+    $this->assertDatabaseHas('activity_answers', [
+        'activity_id' => $activity->id,
+        'user_id' => $student->id,
+        'status' => 'submitted',
+        'answer_text' => 'Final submit',
+    ]);
+});
