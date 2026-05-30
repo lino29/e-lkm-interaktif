@@ -22,6 +22,9 @@
     @if ($reviewingProjectId)
         <flux:card>
             <flux:heading>Nilai Proyek</flux:heading>
+            <div class="mt-3 rounded-lg border border-zinc-200 p-3 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
+                Rubrik ringkas: 30% ketepatan masalah dan tujuan, 30% rancangan alat-bahan serta prosedur, 25% kualitas data dan hasil, 15% kesimpulan serta refleksi.
+            </div>
             <div class="mt-4 grid gap-4 md:grid-cols-2">
                 <flux:field><flux:label>Skor</flux:label><flux:input type="number" min="0" max="100" step="0.01" wire:model="score" /></flux:field>
                 <flux:field><flux:label>Feedback</flux:label><flux:textarea wire:model="feedback" /></flux:field>

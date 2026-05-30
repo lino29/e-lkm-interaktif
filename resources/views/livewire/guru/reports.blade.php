@@ -10,7 +10,7 @@
         </flux:select>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-5">
         <flux:card>
             <div class="text-sm text-zinc-500">Total Siswa Tuntas</div>
             <div class="text-2xl font-semibold">{{ $tuntasCount }}</div>
@@ -18,6 +18,18 @@
         <flux:card>
             <div class="text-sm text-zinc-500">Total Siswa Remedial</div>
             <div class="text-2xl font-semibold">{{ $remedialCount }}</div>
+        </flux:card>
+        <flux:card>
+            <div class="text-sm text-zinc-500">Proyek Masuk</div>
+            <div class="text-2xl font-semibold">{{ $submittedProjectCount }}</div>
+        </flux:card>
+        <flux:card>
+            <div class="text-sm text-zinc-500">Proyek Reviewed</div>
+            <div class="text-2xl font-semibold">{{ $reviewedProjectCount }}</div>
+        </flux:card>
+        <flux:card>
+            <div class="text-sm text-zinc-500">Diskusi</div>
+            <div class="text-2xl font-semibold">{{ $discussionCount }}</div>
         </flux:card>
     </div>
 

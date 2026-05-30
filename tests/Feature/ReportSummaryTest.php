@@ -46,7 +46,8 @@ test('admin report summary includes core system activity counts', function () {
 
     $stats = app(ReportSummaryService::class)->systemSummary();
 
-    expect($stats)->toHaveKeys(['users', 'classes', 'modules', 'assessments', 'activities', 'progress_records', 'discussions', 'projects']);
+    expect($stats)->toHaveKeys(['users_total', 'users_by_role', 'classes', 'modules', 'assessments', 'activities', 'progress_records', 'discussions', 'projects'])
+        ->and($stats['users_by_role'])->toHaveKeys(['admin', 'guru', 'murid']);
 
     $this->actingAs($admin)
         ->get(route('admin.reports'))

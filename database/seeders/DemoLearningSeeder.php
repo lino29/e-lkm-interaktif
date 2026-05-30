@@ -56,6 +56,11 @@ class DemoLearningSeeder extends Seeder
                 'question' => 'Contoh sumber energi yang tersedia terus-menerus dari alam adalah ...',
                 'options' => ['A' => 'Batu bara', 'B' => 'Matahari', 'C' => 'Minyak bumi', 'D' => 'Gas alam'],
                 'answer' => 'B',
+                'true_false' => 'Matahari termasuk sumber energi yang dapat diperbarui oleh proses alam.',
+                'short_question' => 'Sebutkan satu sumber energi terbarukan yang mudah ditemukan di Indonesia.',
+                'keywords' => ['matahari', 'air', 'angin'],
+                'essay_question' => 'Jelaskan perbedaan energi terbarukan dan energi tidak terbarukan dengan contoh.',
+                'reference_answer' => 'Energi terbarukan berasal dari proses alam yang dapat diperbarui seperti matahari, air, dan angin, sedangkan energi tidak terbarukan seperti batu bara dan minyak bumi jumlahnya terbatas.',
             ],
             [
                 'title' => 'KB2 Masalah Energi Fosil',
@@ -64,6 +69,11 @@ class DemoLearningSeeder extends Seeder
                 'question' => 'Masalah utama dari pembakaran energi fosil adalah ...',
                 'options' => ['A' => 'Tidak menghasilkan panas', 'B' => 'Menghasilkan emisi', 'C' => 'Selalu tersedia cepat', 'D' => 'Tidak dapat digunakan'],
                 'answer' => 'B',
+                'true_false' => 'Pembakaran energi fosil dapat menghasilkan emisi gas rumah kaca.',
+                'short_question' => 'Sebutkan satu dampak penggunaan energi fosil bagi lingkungan.',
+                'keywords' => ['emisi', 'polusi', 'pemanasan global'],
+                'essay_question' => 'Jelaskan mengapa ketergantungan pada energi fosil perlu dikurangi.',
+                'reference_answer' => 'Ketergantungan pada energi fosil perlu dikurangi karena sumbernya terbatas dan pembakarannya menghasilkan emisi serta polusi yang memperburuk pemanasan global dan kualitas udara.',
             ],
             [
                 'title' => 'KB3 Pengertian dan Jenis Energi Terbarukan',
@@ -72,6 +82,11 @@ class DemoLearningSeeder extends Seeder
                 'question' => 'Energi terbarukan disebut berkelanjutan karena ...',
                 'options' => ['A' => 'Dapat diperbarui oleh proses alam', 'B' => 'Hanya ada di tambang', 'C' => 'Tidak membutuhkan teknologi', 'D' => 'Selalu berbentuk bahan bakar cair'],
                 'answer' => 'A',
+                'true_false' => 'Energi angin, air, biomassa, panas bumi, dan surya termasuk energi terbarukan.',
+                'short_question' => 'Tuliskan dua jenis energi terbarukan.',
+                'keywords' => ['surya', 'angin', 'air', 'biomassa', 'panas bumi'],
+                'essay_question' => 'Jelaskan alasan energi terbarukan dinilai lebih berkelanjutan daripada energi fosil.',
+                'reference_answer' => 'Energi terbarukan dinilai lebih berkelanjutan karena sumbernya berasal dari proses alam yang terus berlangsung dan emisinya lebih rendah dibandingkan pembakaran energi fosil.',
             ],
             [
                 'title' => 'KB4 Teknologi Energi Terbarukan Berbasis STEM',
@@ -80,6 +95,11 @@ class DemoLearningSeeder extends Seeder
                 'question' => 'Komponen teknologi yang mengubah cahaya matahari menjadi listrik adalah ...',
                 'options' => ['A' => 'Panel surya', 'B' => 'Kompresor', 'C' => 'Boiler batu bara', 'D' => 'Karburator'],
                 'answer' => 'A',
+                'true_false' => 'Panel surya mengubah energi cahaya matahari menjadi energi listrik.',
+                'short_question' => 'Sebutkan satu teknologi energi terbarukan berbasis STEM.',
+                'keywords' => ['panel surya', 'turbin angin', 'mikrohidro', 'biodigester'],
+                'essay_question' => 'Jelaskan contoh penerapan konsep STEM pada teknologi energi terbarukan.',
+                'reference_answer' => 'Konsep STEM tampak pada panel surya yang memakai sains cahaya, teknologi sel surya, rekayasa pemasangan, dan matematika untuk menghitung kebutuhan energi serta efisiensi.',
             ],
             [
                 'title' => 'KB5 Merancang Aksi Sederhana Energi Terbarukan',
@@ -88,6 +108,11 @@ class DemoLearningSeeder extends Seeder
                 'question' => 'Langkah awal merancang proyek energi terbarukan adalah ...',
                 'options' => ['A' => 'Menentukan nilai akhir', 'B' => 'Menemukan masalah nyata', 'C' => 'Menghapus data', 'D' => 'Langsung membuat laporan'],
                 'answer' => 'B',
+                'true_false' => 'Rancangan aksi energi terbarukan sebaiknya dimulai dari masalah nyata di lingkungan sekitar.',
+                'short_question' => 'Sebutkan satu data yang perlu dikumpulkan saat membuat proyek hemat energi.',
+                'keywords' => ['penggunaan listrik', 'waktu pemakaian', 'daya listrik', 'kebiasaan'],
+                'essay_question' => 'Jelaskan tahapan singkat merancang aksi sederhana energi terbarukan di sekolah.',
+                'reference_answer' => 'Tahapan aksi dimulai dari menemukan masalah, menetapkan tujuan, memilih alat dan bahan, menyusun langkah kerja, mengumpulkan data, mengevaluasi hasil, dan menarik kesimpulan.',
             ],
         ];
 
@@ -165,19 +190,7 @@ class DemoLearningSeeder extends Seeder
                 ],
             );
 
-            Question::firstOrCreate(
-                [
-                    'assessment_id' => $assessment->id,
-                    'order' => 1,
-                ],
-                [
-                    'question_text' => $data['question'],
-                    'question_type' => 'multiple_choice',
-                    'options' => $data['options'],
-                    'correct_answer' => [$data['answer']],
-                    'weight' => 10,
-                ],
-            );
+            $this->seedFormativeQuestions($assessment, $data);
         }
 
         $essayAssessment = Assessment::firstOrCreate(
@@ -213,5 +226,87 @@ class DemoLearningSeeder extends Seeder
         QuestionKeyword::firstOrCreate(['question_id' => $essay->id, 'keyword' => 'terus menerus'], ['weight' => 1]);
         QuestionKeyword::firstOrCreate(['question_id' => $essay->id, 'keyword' => 'bahan bakar fosil'], ['weight' => 1]);
         Rubric::firstOrCreate(['question_id' => $essay->id, 'criterion' => 'Ketepatan konsep'], ['score' => 80]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function seedFormativeQuestions(Assessment $assessment, array $data): void
+    {
+        Question::updateOrCreate(
+            [
+                'assessment_id' => $assessment->id,
+                'order' => 1,
+            ],
+            [
+                'question_text' => $data['question'],
+                'question_type' => 'multiple_choice',
+                'options' => $data['options'],
+                'correct_answer' => [$data['answer']],
+                'weight' => 10,
+            ],
+        );
+
+        Question::updateOrCreate(
+            [
+                'assessment_id' => $assessment->id,
+                'order' => 2,
+            ],
+            [
+                'question_text' => $data['true_false'],
+                'question_type' => 'true_false',
+                'options' => ['Benar' => true, 'Salah' => false],
+                'correct_answer' => [true],
+                'weight' => 10,
+            ],
+        );
+
+        $shortAnswer = Question::updateOrCreate(
+            [
+                'assessment_id' => $assessment->id,
+                'order' => 3,
+            ],
+            [
+                'question_text' => $data['short_question'],
+                'question_type' => 'short_answer',
+                'correct_answer' => $data['keywords'],
+                'weight' => 10,
+            ],
+        );
+
+        $essay = Question::updateOrCreate(
+            [
+                'assessment_id' => $assessment->id,
+                'order' => 4,
+            ],
+            [
+                'question_text' => $data['essay_question'],
+                'question_type' => 'essay',
+                'reference_answer' => $data['reference_answer'],
+                'weight' => 20,
+            ],
+        );
+
+        foreach ($data['keywords'] as $keyword) {
+            $this->seedKeyword($shortAnswer, $keyword, 1);
+            $this->seedKeyword($essay, $keyword, 1);
+        }
+
+        Rubric::updateOrCreate(
+            ['question_id' => $essay->id, 'criterion' => 'Ketepatan konsep'],
+            [
+                'level' => 'baik',
+                'description' => 'Jawaban memuat konsep utama, contoh, dan hubungan sebab-akibat yang sesuai.',
+                'score' => 85,
+            ],
+        );
+    }
+
+    private function seedKeyword(Question $question, string $keyword, int $weight): void
+    {
+        QuestionKeyword::updateOrCreate(
+            ['question_id' => $question->id, 'keyword' => $keyword],
+            ['normalized_keyword' => Str::lower($keyword), 'weight' => $weight],
+        );
     }
 }

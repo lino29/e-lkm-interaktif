@@ -5,6 +5,7 @@ namespace App\Livewire\Murid;
 use App\Models\Activity;
 use App\Models\ActivityAnswer;
 use App\Models\Discussion;
+use App\Services\Learning\ProgressService;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -26,6 +27,8 @@ class ActivityPage extends Component
         $this->currentActivity = Activity::with('learningUnit.module')
             ->whereHas('learningUnit.module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($activity);
+
+        abort_unless(app(ProgressService::class)->isLearningUnitUnlocked(auth()->user(), $this->currentActivity->learningUnit), 403);
     }
 
     public function submit(): void
@@ -71,6 +74,8 @@ class ActivityPage extends Component
                 'type' => 'reflection',
             ]);
         }
+
+        app(ProgressService::class)->refreshLearningUnitProgress(auth()->user(), $this->currentActivity->learningUnit);
 
         $this->reset(['file']);
         session()->flash('status', 'Jawaban aktivitas berhasil disimpan.');

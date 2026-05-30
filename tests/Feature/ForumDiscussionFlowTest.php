@@ -92,9 +92,16 @@ test('guru can filter and moderate discussions from owned modules', function () 
         ->set('learning_unit_id', $learningUnit->id)
         ->assertSee('Komentar perlu dipin.')
         ->call('togglePinned', $discussion->id)
+        ->set("replyBodies.{$discussion->id}", 'Feedback guru: cek kembali data pengamatan.')
+        ->call('replyToDiscussion', $discussion->id)
         ->assertHasNoErrors();
 
-    expect($discussion->fresh()->is_pinned)->toBeTrue();
+    expect($discussion->fresh()->is_pinned)->toBeTrue()
+        ->and($discussion->replies()->where('body', 'Feedback guru: cek kembali data pengamatan.')->exists())->toBeTrue();
+
+    Livewire::actingAs($student)
+        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
+        ->assertSee('Feedback guru: cek kembali data pengamatan.');
 });
 
 /**

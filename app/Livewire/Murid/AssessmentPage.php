@@ -24,10 +24,14 @@ class AssessmentPage extends Component
 
     public function mount(string|int $assessment): void
     {
-        $this->currentAssessment = Assessment::with('questions.keywords', 'questions.rubrics', 'module')
+        $this->currentAssessment = Assessment::with('questions.keywords', 'questions.rubrics', 'module', 'learningUnit')
             ->where('is_published', true)
             ->whereHas('module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($assessment);
+
+        if ($this->currentAssessment->learningUnit) {
+            abort_unless(app(ProgressService::class)->isLearningUnitUnlocked(auth()->user(), $this->currentAssessment->learningUnit), 403);
+        }
 
         $this->latestAttempt = AssessmentAttempt::where('assessment_id', $this->currentAssessment->id)
             ->where('student_id', auth()->id())
@@ -102,7 +106,13 @@ class AssessmentPage extends Component
             'feedback' => $status === 'tuntas' ? 'Nilai sudah mencapai KKTP.' : 'Nilai belum mencapai KKTP, lakukan remedial.',
         ]);
 
-        app(ProgressService::class)->recordAssessment(auth()->user(), $this->currentAssessment, $totalScore, $status);
+        $progressService = app(ProgressService::class);
+        $progressService->recordAssessment(auth()->user(), $this->currentAssessment, $totalScore, $status);
+
+        if ($this->currentAssessment->learningUnit) {
+            $progressService->refreshLearningUnitProgress(auth()->user(), $this->currentAssessment->learningUnit);
+        }
+
         $this->latestAttempt = $attempt->fresh();
         $this->currentAttempt = $this->latestAttempt;
         session()->flash('status', 'Asesmen berhasil dinilai otomatis.');

@@ -18,16 +18,29 @@ class ModuleDetail extends Component
 
     public function render()
     {
+        $progressService = app(ProgressService::class);
+        $student = auth()->user();
+        $module = $this->currentModule->load([
+            'subject',
+            'learningUnits.materials',
+            'learningUnits.activities.answers',
+            'learningUnits.assessments' => fn ($query) => $query->where('is_published', true),
+            'assessments' => fn ($query) => $query->where('is_published', true),
+            'glossaries',
+            'references',
+        ]);
+
         return view('livewire.murid.module-detail', [
-            'module' => $this->currentModule->load([
-                'subject',
-                'learningUnits.materials',
-                'learningUnits.activities.answers',
-                'learningUnits.assessments' => fn ($query) => $query->where('is_published', true),
-                'assessments' => fn ($query) => $query->where('is_published', true),
-                'glossaries',
-                'references',
-            ]),
+            'module' => $module,
+            'completedUnitIds' => $module->learningUnits
+                ->filter(fn ($learningUnit): bool => $progressService->isLearningUnitComplete($student, $learningUnit))
+                ->pluck('id')
+                ->all(),
+            'moduleProgressPercentage' => $progressService->moduleCompletionPercentage($student, $module),
+            'unlockedUnitIds' => $module->learningUnits
+                ->filter(fn ($learningUnit): bool => $progressService->isLearningUnitUnlocked($student, $learningUnit))
+                ->pluck('id')
+                ->all(),
         ]);
     }
 }

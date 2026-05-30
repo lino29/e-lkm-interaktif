@@ -16,7 +16,9 @@ class Reports extends Component
     public function render()
     {
         $teacherModuleIds = Module::where('created_by', auth()->id())->pluck('id');
-        $moduleIds = $this->module_id ? [$this->module_id] : $teacherModuleIds;
+        $moduleIds = $this->module_id && $teacherModuleIds->contains($this->module_id)
+            ? collect([$this->module_id])
+            : $teacherModuleIds;
 
         $attemptsQuery = AssessmentAttempt::with('student', 'assessment.module')
             ->whereHas('assessment', fn ($query) => $query->whereIn('module_id', $moduleIds));
@@ -28,6 +30,9 @@ class Reports extends Component
             'modules' => Module::whereIn('id', $teacherModuleIds)->orderBy('title')->get(),
             'tuntasCount' => $tuntasCount,
             'remedialCount' => $remedialCount,
+            'submittedProjectCount' => Project::whereIn('module_id', $moduleIds)->where('status', 'submitted')->count(),
+            'reviewedProjectCount' => Project::whereIn('module_id', $moduleIds)->where('status', 'reviewed')->count(),
+            'discussionCount' => Discussion::whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))->count(),
             'attempts' => (clone $attemptsQuery)
                 ->latest()
                 ->limit(20)

@@ -23,7 +23,12 @@ class LearningUnitPage extends Component
         $this->currentLearningUnit = LearningUnit::with('module', 'materials', 'media', 'activities', 'assessments')
             ->whereHas('module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($learningUnit);
-        app(ProgressService::class)->markStarted(auth()->user(), $this->currentLearningUnit->module, $this->currentLearningUnit);
+
+        $progressService = app(ProgressService::class);
+
+        abort_unless($progressService->isLearningUnitUnlocked(auth()->user(), $this->currentLearningUnit), 403);
+
+        $progressService->markStarted(auth()->user(), $this->currentLearningUnit->module, $this->currentLearningUnit);
     }
 
     public function submitDiscussion(): void
