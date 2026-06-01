@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             DemoUserSeeder::class,
             DemoLearningSeeder::class,
             RenewableEnergyActivitySeeder::class,
+            RenewableEnergyOutlineSeeder::class,
         ]);
     }
 }

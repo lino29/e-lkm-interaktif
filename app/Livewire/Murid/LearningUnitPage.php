@@ -5,12 +5,17 @@ namespace App\Livewire\Murid;
 use App\Models\ActivityAnswer;
 use App\Models\Discussion;
 use App\Models\LearningUnit;
+use App\Models\LearningUnitSection;
+use App\Services\Learning\LearningUnitOutlineService;
 use App\Services\Learning\ProgressService;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class LearningUnitPage extends Component
 {
     public LearningUnit $currentLearningUnit;
+
+    public ?int $activeSectionId = null;
 
     public string $discussionBody = '';
 
@@ -21,43 +26,63 @@ class LearningUnitPage extends Component
 
     public function mount(string|int $learningUnit): void
     {
-        $this->currentLearningUnit = LearningUnit::with(['module', 'materials', 'media', 'activities' => fn ($q) => $q->orderBy('order'), 'assessments'])
+        $this->currentLearningUnit = LearningUnit::with([
+            'module',
+            'rootSections.children',
+            'sections.children',
+            'materials.media',
+            'media',
+            'activities.answers',
+            'assessments.questions',
+        ])
             ->whereHas('module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($learningUnit);
+
+        app(LearningUnitOutlineService::class)->ensureDefaultOutline($this->currentLearningUnit);
+        $this->currentLearningUnit = $this->currentLearningUnit->fresh([
+            'module',
+            'rootSections.children',
+            'sections.children',
+            'materials.media',
+            'media',
+            'activities.answers',
+            'assessments.questions',
+        ]);
 
         $progressService = app(ProgressService::class);
 
         abort_unless($progressService->isLearningUnitUnlocked(auth()->user(), $this->currentLearningUnit), 403);
 
         $progressService->markStarted(auth()->user(), $this->currentLearningUnit->module, $this->currentLearningUnit);
+
+        $this->activeSectionId = $this->currentLearningUnit->rootSections->firstWhere('section_type', 'activity_group')?->id
+            ?? $this->currentLearningUnit->rootSections->first()?->id;
     }
 
-    private function getActivityStatuses(): array
+    public function openSection(int $sectionId): void
     {
-        $answers = ActivityAnswer::where('user_id', auth()->id())
-            ->whereIn('activity_id', $this->currentLearningUnit->activities->pluck('id'))
-            ->get()
-            ->keyBy('activity_id');
+        $exists = $this->currentLearningUnit
+            ->sections()
+            ->whereKey($sectionId)
+            ->exists();
 
-        $statuses = [];
-        $isLocked = false;
+        if ($exists) {
+            $this->activeSectionId = $sectionId;
+        }
+    }
 
-        foreach ($this->currentLearningUnit->activities as $activity) {
-            $answer = $answers->get($activity->id);
-            $status = $answer ? $answer->status : 'belum_mulai';
-
-            $statuses[$activity->id] = [
-                'status' => $status,
-                'is_locked' => $isLocked,
-                'answer' => $answer,
-            ];
-
-            if ($activity->is_required && ! in_array($status, ['submitted', 'reviewed'])) {
-                $isLocked = true; // Lock subsequent activities
-            }
+    #[Computed]
+    public function activeSection(): ?LearningUnitSection
+    {
+        if (! $this->activeSectionId) {
+            return $this->currentLearningUnit->rootSections->firstWhere('section_type', 'activity_group')
+                ?? $this->currentLearningUnit->rootSections->first();
         }
 
-        return $statuses;
+        return $this->currentLearningUnit
+            ->sections()
+            ->with('children')
+            ->find($this->activeSectionId);
     }
 
     public function submitDiscussion(): void
@@ -100,6 +125,34 @@ class LearningUnitPage extends Component
 
         unset($this->replyBodies[$discussionId]);
         session()->flash('status', 'Balasan diskusi berhasil dikirim.');
+    }
+
+    private function getActivityStatuses(): array
+    {
+        $answers = ActivityAnswer::where('user_id', auth()->id())
+            ->whereIn('activity_id', $this->currentLearningUnit->activities->pluck('id'))
+            ->get()
+            ->keyBy('activity_id');
+
+        $statuses = [];
+        $isLocked = false;
+
+        foreach ($this->currentLearningUnit->activities as $activity) {
+            $answer = $answers->get($activity->id);
+            $status = $answer ? $answer->status : 'belum_mulai';
+
+            $statuses[$activity->id] = [
+                'status' => $status,
+                'is_locked' => $isLocked,
+                'answer' => $answer,
+            ];
+
+            if ($activity->is_required && ! in_array($status, ['submitted', 'reviewed'])) {
+                $isLocked = true;
+            }
+        }
+
+        return $statuses;
     }
 
     public function render()

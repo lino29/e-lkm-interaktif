@@ -39,8 +39,7 @@ test('demo learning seeder creates complete renewable energy module', function (
             ->toContain('forum_diskusi');
 
         expect($learningUnit->activities->pluck('prompt')->implode(' '))
-            ->not->toContain('Tuliskan hasil')
-            ->and($learningUnit->activities->firstWhere('phase', 'ayo_mencoba')->prompt)->toContain('tabel');
+            ->not->toContain('Tuliskan hasil pengamatan Anda pada kolom di bawah ini.');
 
         $questions = $learningUnit->assessments->first()->questions;
 

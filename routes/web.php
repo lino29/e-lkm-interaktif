@@ -11,6 +11,7 @@ use App\Livewire\Guru\Dashboard as GuruDashboard;
 use App\Livewire\Guru\ManageActivities;
 use App\Livewire\Guru\ManageAssessments;
 use App\Livewire\Guru\ManageDiscussions;
+use App\Livewire\Guru\ManageLearningUnitOutline;
 use App\Livewire\Guru\ManageLearningUnits;
 use App\Livewire\Guru\ManageMaterials;
 use App\Livewire\Guru\ManageModules;
@@ -68,6 +69,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('modules', 'dashboard.page', ['livewireComponent' => ManageModules::class, 'title' => 'Kelola Modul'])->name('modules');
         Route::view('modules/{module}', 'dashboard.page', ['livewireComponent' => GuruModuleDetail::class, 'title' => 'Detail Modul'])->name('modules.show');
         Route::view('learning-units', 'dashboard.page', ['livewireComponent' => ManageLearningUnits::class, 'title' => 'Kelola Kegiatan Belajar'])->name('learning-units');
+        Route::view('learning-units/{learningUnit}/outline', 'dashboard.page', ['livewireComponent' => ManageLearningUnitOutline::class, 'title' => 'Kelola Outline KB'])->name('learning-units.outline');
         Route::view('materials', 'dashboard.page', ['livewireComponent' => ManageMaterials::class, 'title' => 'Kelola Materi'])->name('materials');
         Route::view('activities', 'dashboard.page', ['livewireComponent' => ManageActivities::class, 'title' => 'Kelola Aktivitas'])->name('activities');
         Route::view('discussions', 'dashboard.page', ['livewireComponent' => ManageDiscussions::class, 'title' => 'Kelola Diskusi'])->name('discussions');

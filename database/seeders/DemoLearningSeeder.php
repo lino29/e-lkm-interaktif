@@ -14,6 +14,7 @@ use App\Models\Reference;
 use App\Models\Rubric;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\Assessment\QuestionGroupService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -209,6 +210,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'question_text' => 'Jelaskan mengapa energi surya termasuk energi terbarukan.',
                 'question_type' => 'essay',
+                'question_group' => app(QuestionGroupService::class)->groupForType('essay'),
                 'reference_answer' => 'Energi surya berasal dari matahari, tersedia terus-menerus, dan dapat dimanfaatkan tanpa menghabiskan bahan bakar fosil.',
                 'weight' => 10,
             ],
@@ -344,6 +346,7 @@ class DemoLearningSeeder extends Seeder
     private function seedFormativeQuestions(Assessment $assessment, array $data): void
     {
         $contextTitle = $assessment->learningUnit?->title ?? $assessment->module->title;
+        $questionGroups = app(QuestionGroupService::class);
 
         Question::updateOrCreate(
             [
@@ -353,6 +356,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'question_text' => $data['question'],
                 'question_type' => 'multiple_choice',
+                'question_group' => $questionGroups->groupForType('multiple_choice'),
                 'options' => $data['options'],
                 'correct_answer' => [$data['answer']],
                 'weight' => 10,
@@ -367,6 +371,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'question_text' => $data['true_false'],
                 'question_type' => 'true_false',
+                'question_group' => $questionGroups->groupForType('true_false'),
                 'options' => ['Benar' => true, 'Salah' => false],
                 'correct_answer' => [true],
                 'weight' => 10,
@@ -381,6 +386,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'question_text' => $data['short_question'],
                 'question_type' => 'short_answer',
+                'question_group' => $questionGroups->groupForType('short_answer'),
                 'correct_answer' => $data['keywords'],
                 'weight' => 10,
             ],
@@ -394,6 +400,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'question_text' => $data['essay_question'],
                 'question_type' => 'essay',
+                'question_group' => $questionGroups->groupForType('essay'),
                 'reference_answer' => $data['reference_answer'],
                 'weight' => 20,
             ],
@@ -421,6 +428,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'question_text' => 'Pilih dua konsep yang paling sesuai dengan '.$contextTitle.'.',
                 'question_type' => 'complex_multiple_choice',
+                'question_group' => $questionGroups->groupForType('complex_multiple_choice'),
                 'options' => [
                     'A' => $data['keywords'][0],
                     'B' => $data['keywords'][1] ?? $data['keywords'][0],
@@ -440,6 +448,7 @@ class DemoLearningSeeder extends Seeder
             [
                 'question_text' => 'Jodohkan konsep energi berikut dengan karakteristik yang tepat.',
                 'question_type' => 'matching',
+                'question_group' => $questionGroups->groupForType('matching'),
                 'options' => [
                     'A' => 'Energi terbarukan',
                     'B' => 'Energi fosil',

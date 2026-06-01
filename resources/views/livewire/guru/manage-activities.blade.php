@@ -41,7 +41,7 @@
                         @endforeach
                     </flux:select>
                 </div>
-                <flux:button type="button" variant="secondary" wire:click="applyTemplate">
+                <flux:button type="button" variant="ghost" wire:click="applyTemplate">
                     Gunakan Template
                 </flux:button>
             </div>

@@ -46,4 +46,16 @@ class LearningUnit extends Model
     {
         return $this->hasMany(Discussion::class);
     }
+
+    public function sections(): HasMany
+    {
+        return $this->hasMany(LearningUnitSection::class)->orderBy('order');
+    }
+
+    public function rootSections(): HasMany
+    {
+        return $this->hasMany(LearningUnitSection::class)
+            ->whereNull('parent_id')
+            ->orderBy('order');
+    }
 }

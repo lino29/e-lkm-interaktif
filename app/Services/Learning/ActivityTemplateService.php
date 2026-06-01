@@ -18,6 +18,11 @@ class ActivityTemplateService
         return $this->getDefaultTemplate($phase);
     }
 
+    public function getTemplateForPhase(string $phase, ?int $learningUnitOrder = null): array
+    {
+        return $this->templateFor($phase, $learningUnitOrder);
+    }
+
     private function getAyoMengamatiTemplate(?int $kb): array
     {
         $prompt = match ($kb) {
@@ -71,11 +76,13 @@ class ActivityTemplateService
                 'prompt' => 'Lengkapi tabel 10 alat dengan kolom alat, energi masuk, energi keluar, dan sumber energi.',
                 'answer_schema' => [
                     'columns' => [
+                        ['name' => 'no', 'label' => 'No', 'type' => 'readonly_text', 'required' => false],
                         ['name' => 'alat', 'label' => 'Nama Alat', 'type' => 'text', 'required' => true],
                         ['name' => 'energi_masuk', 'label' => 'Energi Masuk', 'type' => 'text', 'required' => true],
                         ['name' => 'energi_keluar', 'label' => 'Energi Keluar', 'type' => 'text', 'required' => true],
                         ['name' => 'sumber_energi', 'label' => 'Sumber Energi', 'type' => 'text', 'required' => true],
                     ],
+                    'preset_rows' => collect(range(1, 10))->map(fn (int $number) => ['no' => $number])->all(),
                     'min_rows' => 10,
                     'allow_add' => true,
                     'allow_delete' => true,
@@ -152,6 +159,7 @@ class ActivityTemplateService
                         ['name' => 'objective', 'label' => 'Tujuan Proyek', 'type' => 'textarea', 'required' => true],
                         ['name' => 'tools_materials', 'label' => 'Alat dan Bahan', 'type' => 'textarea', 'required' => true],
                         ['name' => 'procedure', 'label' => 'Langkah Kerja', 'type' => 'textarea', 'required' => true],
+                        ['name' => 'data_to_collect', 'label' => 'Data yang Dikumpulkan', 'type' => 'textarea', 'required' => true],
                         ['name' => 'expected_result', 'label' => 'Hasil yang Diharapkan', 'type' => 'textarea', 'required' => true],
                     ],
                 ],

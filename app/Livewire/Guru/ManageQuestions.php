@@ -6,6 +6,7 @@ use App\Models\Assessment;
 use App\Models\Module;
 use App\Models\Question;
 use App\Models\QuestionKeyword;
+use App\Services\Assessment\QuestionGroupService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -41,6 +42,7 @@ class ManageQuestions extends Component
 
         $question = Question::create([
             ...$validated,
+            'question_group' => app(QuestionGroupService::class)->groupForType($validated['question_type']),
             'options' => $this->decodeJson($this->options_json, []),
             'correct_answer' => $this->decodeJson($this->correct_answer_json, []),
             'order' => Question::where('assessment_id', $validated['assessment_id'])->max('order') + 1,

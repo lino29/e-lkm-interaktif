@@ -22,6 +22,10 @@ class ActivityPage extends Component
 
     public string $answer_text = '';
 
+    public array $answer_json = [];
+
+    public array $field_data = [];
+
     public array $table_data = [];
 
     public mixed $file = null;
@@ -40,40 +44,41 @@ class ActivityPage extends Component
 
         if ($this->existingAnswer) {
             $this->answer_text = $this->existingAnswer->answer_text ?? '';
-            $this->table_data = $this->existingAnswer->answer_json ?? [];
-        } else {
-            // Initialize table rows if it's a table
-            if ($this->currentActivity->input_type === 'table') {
-                $minRows = data_get($this->currentActivity->answer_schema, 'min_rows', 1);
-                $columns = data_get($this->currentActivity->answer_schema, 'columns', []);
-                for ($i = 0; $i < $minRows; $i++) {
-                    $row = [];
-                    foreach ($columns as $col) {
-                        $row[$col['name']] = '';
-                    }
-                    $this->table_data[] = $row;
-                }
-            }
+            $this->answer_json = $this->existingAnswer->answer_json ?? [];
+            $this->table_data = $this->answer_json;
+            $this->field_data = $this->answer_json[0] ?? $this->answer_json;
+
+            return;
         }
+
+        $this->initializeSchemaAnswer();
     }
 
     public function addTableRow(): void
     {
-        $columns = data_get($this->currentActivity->answer_schema, 'columns', []);
-        $row = [];
-        foreach ($columns as $col) {
-            $row[$col['name']] = '';
-        }
-        $this->table_data[] = $row;
+        $this->answer_json[] = $this->emptyTableRow();
+        $this->table_data = $this->answer_json;
     }
 
     public function removeTableRow(int $index): void
     {
-        $minRows = data_get($this->currentActivity->answer_schema, 'min_rows', 1);
-        if (count($this->table_data) > $minRows) {
-            unset($this->table_data[$index]);
-            $this->table_data = array_values($this->table_data);
+        $minRows = (int) data_get($this->currentActivity->answer_schema, 'min_rows', 1);
+
+        if (count($this->answer_json) <= $minRows) {
+            return;
         }
+
+        unset($this->answer_json[$index]);
+        $this->answer_json = array_values($this->answer_json);
+        $this->table_data = $this->answer_json;
+    }
+
+    public function calculateComputedValue(?string $formula, array $row): mixed
+    {
+        return match ($formula) {
+            'suhu_akhir - suhu_awal' => ((float) ($row['suhu_akhir'] ?? 0)) - ((float) ($row['suhu_awal'] ?? 0)),
+            default => null,
+        };
     }
 
     public function submit(): void
@@ -84,6 +89,44 @@ class ActivityPage extends Component
     public function saveDraft(): void
     {
         $this->processSubmit('draft');
+    }
+
+    private function initializeSchemaAnswer(): void
+    {
+        $schema = $this->currentActivity->answer_schema ?? [];
+
+        if ($this->currentActivity->input_type === 'table') {
+            if (isset($schema['preset_rows']) && is_array($schema['preset_rows'])) {
+                $this->answer_json = collect($schema['preset_rows'])
+                    ->map(fn (array $row) => array_merge($this->emptyTableRow(), $row))
+                    ->values()
+                    ->all();
+                $this->table_data = $this->answer_json;
+
+                return;
+            }
+
+            $rows = (int) ($schema['min_rows'] ?? 1);
+            $this->answer_json = collect(range(1, $rows))
+                ->map(fn () => $this->emptyTableRow())
+                ->all();
+            $this->table_data = $this->answer_json;
+
+            return;
+        }
+
+        if (isset($schema['fields']) && is_array($schema['fields'])) {
+            $this->field_data = collect($schema['fields'])
+                ->mapWithKeys(fn (array $field) => [$field['name'] => null])
+                ->toArray();
+        }
+    }
+
+    private function emptyTableRow(): array
+    {
+        return collect(data_get($this->currentActivity->answer_schema, 'columns', []))
+            ->mapWithKeys(fn (array $column) => [$column['name'] => null])
+            ->toArray();
     }
 
     private function processSubmit(string $status): void
@@ -99,45 +142,82 @@ class ActivityPage extends Component
             return;
         }
 
-        try {
-            $answer = app(ActivityAnswerService::class)->save(
-                activity: $this->currentActivity,
-                user: auth()->user(),
-                answerText: $this->answer_text,
-                answerJson: $this->answer_json,
-                file: $this->file,
-                status: $status
-            );
+        $answer = app(ActivityAnswerService::class)->save(
+            activity: $this->currentActivity,
+            user: auth()->user(),
+            answerText: $this->answer_text,
+            answerJson: $this->answer_json,
+            file: $this->file,
+            status: $status
+        );
 
-            $this->existingAnswer = $answer;
+        $this->existingAnswer = $answer;
 
-            if ($this->currentActivity->phase === 'forum_diskusi' || $this->currentActivity->input_type === 'discussion') {
-                app(ActivityDiscussionService::class)->sync($answer);
-            }
-
-            if ($this->currentActivity->input_type === 'project_form') {
-                app(ProjectDraftService::class)->syncFromActivityAnswer($answer);
-            }
-
-            app(ProgressService::class)->refreshLearningUnitProgress(auth()->user(), $this->currentActivity->learningUnit);
-
-            $msg = $status === 'submitted' ? 'Jawaban berhasil disubmit.' : 'Draft berhasil disimpan.';
-            session()->flash('status', $msg);
-        } catch (\Throwable $e) {
-            dd($e->getMessage(), $e->getTraceAsString());
+        if ($this->currentActivity->phase === 'forum_diskusi' || $this->currentActivity->input_type === 'discussion') {
+            app(ActivityDiscussionService::class)->sync($answer);
         }
+
+        if ($this->currentActivity->input_type === 'project_form') {
+            app(ProjectDraftService::class)->syncFromActivityAnswer($answer);
+        }
+
+        app(ProgressService::class)->refreshLearningUnitProgress(auth()->user(), $this->currentActivity->learningUnit);
+
+        session()->flash('status', $status === 'submitted' ? 'Jawaban berhasil disubmit.' : 'Draft berhasil disimpan.');
     }
 
     private function validateBaseInput(): void
     {
         $this->validate([
             'answer_text' => ['nullable', 'string'],
+            'answer_json' => ['nullable', 'array'],
             'table_data' => ['nullable', 'array'],
+            'field_data' => ['nullable', 'array'],
             'file' => ['nullable', 'file', 'max:10240'],
         ]);
 
-        // table_data holds the raw data bound to frontend, map to answer_json for the service
-        $this->answer_json = $this->table_data;
+        if (in_array($this->currentActivity->input_type, ['project_form', 'fields'])) {
+            $this->answer_json = [$this->field_data];
+        }
+
+        if ($this->currentActivity->input_type === 'table') {
+            if (! $this->hasFilledTableValues($this->answer_json) && $this->hasFilledTableValues($this->table_data)) {
+                $this->answer_json = $this->table_data;
+            }
+
+            $this->persistComputedFields();
+            $this->table_data = $this->answer_json;
+        }
+    }
+
+    private function hasFilledTableValues(array $rows): bool
+    {
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            foreach ($row as $value) {
+                if ($value !== null && $value !== '') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function persistComputedFields(): void
+    {
+        $columns = data_get($this->currentActivity->answer_schema, 'columns', []);
+
+        foreach ($this->answer_json as $rowIndex => $row) {
+            foreach ($columns as $column) {
+                if (($column['type'] ?? null) === 'computed') {
+                    $this->answer_json[$rowIndex][$column['name']] = $this->calculateComputedValue($column['formula'] ?? null, $row);
+                }
+            }
+        }
     }
 
     public function render()
