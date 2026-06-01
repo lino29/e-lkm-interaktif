@@ -19,7 +19,7 @@
 
         <flux:field>
             <flux:label>Isi Materi</flux:label>
-            <x-forms.rich-editor wire:model="form.content" id="material-content-editor-{{ $selectedSection->id }}" />
+            <x-forms.rich-editor wire:model.live="form.content" id="material-content-editor-{{ $selectedSection->id }}" />
             <flux:error name="form.content" />
         </flux:field>
     @else

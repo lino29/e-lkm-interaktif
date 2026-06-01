@@ -9,65 +9,34 @@
 
 <div
     wire:ignore
+    data-rich-editor
     x-data="{
-        value: $wire.entangle('{{ $model }}').live,
+        value: $wire.entangle(@js($model)).live,
         editor: null,
-        async initEditor() {
-            if (! window.ClassicEditor) {
-                await new Promise((resolve, reject) => {
-                    const existing = document.querySelector('script[data-ckeditor]');
-
-                    if (existing) {
-                        existing.addEventListener('load', resolve);
-                        return;
-                    }
-
-                    const script = document.createElement('script');
-                    script.src = 'https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js';
-                    script.dataset.ckeditor = 'true';
-                    script.onload = resolve;
-                    script.onerror = reject;
-                    document.head.appendChild(script);
-                });
+        async waitForEditor() {
+            if (window.CKEditorClassic) {
+                return;
             }
 
-            this.editor = await ClassicEditor.create(this.$refs.editor, {
-                placeholder: '{{ $placeholder }}',
-                toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'insertTable', 'mediaEmbed', '|', 'undo', 'redo'],
-                extraPlugins: [
-                    editor => {
-                        editor.plugins.get('FileRepository').createUploadAdapter = loader => ({
-                            upload: async () => {
-                                const file = await loader.file;
-                                const body = new FormData();
-                                body.append('upload', file);
+            await new Promise(resolve => window.addEventListener('ckeditor:ready', resolve, { once: true }));
+        },
+        async initEditor() {
+            await this.waitForEditor();
 
-                                const response = await fetch(@js(route('guru.uploads.editor-image')), {
-                                    method: 'POST',
-                                    headers: {
-                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                        'Accept': 'application/json',
-                                    },
-                                    body,
-                                });
-
-                                if (! response.ok) {
-                                    throw new Error('Upload gagal.');
-                                }
-
-                                const data = await response.json();
-
-                                return { default: data.url };
-                            },
-                            abort: () => {},
-                        });
-                    },
-                ],
+            this.editor = await window.CKEditorClassic.create(this.$refs.editor, {
+                ...window.CKEditorConfig,
+                placeholder: @js($placeholder),
             });
 
             this.editor.setData(this.value || '');
-            this.editor.editing.view.change(writer => writer.setStyle('min-height', '{{ $height }}', this.editor.editing.view.document.getRoot()));
-            this.editor.model.document.on('change:data', () => this.value = this.editor.getData());
+            this.editor.editing.view.change(writer => writer.setStyle('min-height', @js($height), this.editor.editing.view.document.getRoot()));
+            this.editor.model.document.on('change:data', () => {
+                const editorData = this.editor.getData();
+
+                if (editorData !== (this.value || '')) {
+                    this.value = editorData;
+                }
+            });
             this.$watch('value', value => {
                 if (this.editor && this.editor.getData() !== (value || '')) {
                     this.editor.setData(value || '');
@@ -75,7 +44,7 @@
             });
 
             @if ($disabled)
-                this.editor.enableReadOnlyMode('{{ $id }}');
+                this.editor.enableReadOnlyMode(@js($id));
             @endif
         }
     }"

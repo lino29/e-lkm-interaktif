@@ -11,10 +11,13 @@
     </flux:field>
 </div>
 
-@if (in_array($section->section_type, ['learning_objective', 'material_item']))
+@if (
+    in_array($section->editor_type, ['rich_text', 'material_editor'], true)
+        || in_array($section->section_type, ['learning_objective', 'material_item', 'custom_content'], true)
+)
     <flux:field>
         <flux:label>Konten</flux:label>
-        <flux:textarea rows="4" wire:model="contents.{{ $section->id }}" />
+        <x-forms.rich-editor wire:model.live="contents.{{ $section->id }}" id="section-content-{{ $section->id }}" />
     </flux:field>
 @endif
 

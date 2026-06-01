@@ -50,7 +50,7 @@
 
                 <flux:field>
                     <flux:label>Konten</flux:label>
-                    <x-forms.rich-editor wire:model="content" id="module-section-editor" />
+                    <x-forms.rich-editor wire:model.live="content" id="module-section-editor" />
                     <flux:error name="content" />
                 </flux:field>
 

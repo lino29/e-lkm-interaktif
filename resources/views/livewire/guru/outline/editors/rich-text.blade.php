@@ -7,7 +7,7 @@
 
     <flux:field>
         <flux:label>{{ $form['section_type'] === 'learning_objective' ? 'Isi Tujuan Pembelajaran' : 'Isi Konten' }}</flux:label>
-        <x-forms.rich-editor wire:model="form.content" id="section-content-editor-{{ $selectedSection->id }}" />
+        <x-forms.rich-editor wire:model.live="form.content" id="section-content-editor-{{ $selectedSection->id }}" />
         <flux:error name="form.content" />
     </flux:field>
 </div>
