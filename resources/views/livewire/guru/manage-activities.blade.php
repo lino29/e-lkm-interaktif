@@ -51,7 +51,7 @@
         <flux:field>
             <flux:label>Tipe input murid</flux:label>
             <flux:select wire:model="input_type">
-                @foreach (['short_text', 'essay', 'table', 'file', 'discussion', 'project_form'] as $inputOption)
+                @foreach (['short_text', 'essay', 'table', 'fields', 'file', 'discussion', 'project_form'] as $inputOption)
                     <flux:select.option value="{{ $inputOption }}">{{ \Illuminate\Support\Str::headline($inputOption) }}</flux:select.option>
                 @endforeach
             </flux:select>

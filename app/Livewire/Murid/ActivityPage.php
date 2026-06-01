@@ -62,6 +62,10 @@ class ActivityPage extends Component
 
     public function removeTableRow(int $index): void
     {
+        if (! data_get($this->currentActivity->answer_schema, 'allow_delete', true)) {
+            return;
+        }
+
         $minRows = (int) data_get($this->currentActivity->answer_schema, 'min_rows', 1);
 
         if (count($this->answer_json) <= $minRows) {
@@ -117,7 +121,7 @@ class ActivityPage extends Component
 
         if (isset($schema['fields']) && is_array($schema['fields'])) {
             $this->field_data = collect($schema['fields'])
-                ->mapWithKeys(fn (array $field) => [$field['name'] => null])
+                ->mapWithKeys(fn (array $field) => [$field['name'] => $field['value'] ?? null])
                 ->toArray();
         }
     }
@@ -125,7 +129,7 @@ class ActivityPage extends Component
     private function emptyTableRow(): array
     {
         return collect(data_get($this->currentActivity->answer_schema, 'columns', []))
-            ->mapWithKeys(fn (array $column) => [$column['name'] => null])
+            ->mapWithKeys(fn (array $column) => [$column['name'] => $column['value'] ?? null])
             ->toArray();
     }
 

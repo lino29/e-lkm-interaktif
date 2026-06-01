@@ -66,7 +66,7 @@ class ManageActivities extends Component
             'title' => ['required', 'string', 'max:255'],
             'phase' => ['required', Rule::in(['ayo_mengamati', 'ayo_bertanya', 'ayo_mencoba', 'ayo_menalar', 'ayo_menyimpulkan', 'forum_diskusi'])],
             'prompt' => ['nullable', 'string'],
-            'input_type' => ['required', Rule::in(['short_text', 'essay', 'table', 'file', 'discussion', 'project_form'])],
+            'input_type' => ['required', Rule::in(['short_text', 'essay', 'table', 'fields', 'file', 'discussion', 'project_form'])],
             'is_required' => ['boolean'],
             'order' => ['required', 'integer', 'min:1'],
             'answer_schema' => ['nullable', 'string'],

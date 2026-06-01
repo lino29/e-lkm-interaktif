@@ -78,9 +78,9 @@ class ActivityTemplateService
                     'columns' => [
                         ['name' => 'no', 'label' => 'No', 'type' => 'readonly_text', 'required' => false],
                         ['name' => 'alat', 'label' => 'Nama Alat', 'type' => 'text', 'required' => true],
-                        ['name' => 'energi_masuk', 'label' => 'Energi Masuk', 'type' => 'text', 'required' => true],
+                        ['name' => 'energi_masuk', 'label' => 'Energi Masuk', 'type' => 'select', 'options' => ['Listrik', 'Panas', 'Cahaya', 'Gerak', 'Kimia', 'Bunyi'], 'required' => true],
                         ['name' => 'energi_keluar', 'label' => 'Energi Keluar', 'type' => 'text', 'required' => true],
-                        ['name' => 'sumber_energi', 'label' => 'Sumber Energi', 'type' => 'text', 'required' => true],
+                        ['name' => 'sumber_energi', 'label' => 'Sumber Energi', 'type' => 'select', 'options' => ['Matahari', 'PLN', 'Baterai', 'Bahan bakar fosil', 'Biomassa', 'Air', 'Angin'], 'required' => true],
                     ],
                     'preset_rows' => collect(range(1, 10))->map(fn (int $number) => ['no' => $number])->all(),
                     'min_rows' => 10,
@@ -95,12 +95,22 @@ class ActivityTemplateService
 
         if ($kb === 2) {
             return [
-                'input_type' => 'essay',
-                'title' => 'Ayo Mencoba: Peta Masalah',
-                'prompt' => 'Uraikan peta masalah energi fosil berdasarkan hasil analisis Anda.',
-                'answer_schema' => null,
+                'input_type' => 'fields',
+                'title' => 'Ayo Mencoba: Peta Masalah Energi Fosil',
+                'prompt' => 'Lengkapi peta masalah untuk menelusuri hubungan sumber energi fosil, emisi, dampak, dan solusi transisi energi.',
+                'answer_schema' => [
+                    'fields' => [
+                        ['name' => 'sumber_energi_fosil', 'label' => 'Sumber Energi Fosil', 'type' => 'select', 'options' => ['Batu bara', 'Minyak bumi', 'Gas alam'], 'required' => true],
+                        ['name' => 'proses_pembakaran', 'label' => 'Proses Pembakaran', 'type' => 'textarea', 'required' => true],
+                        ['name' => 'emisi', 'label' => 'Emisi yang Dihasilkan', 'type' => 'textarea', 'required' => true],
+                        ['name' => 'dampak_lingkungan', 'label' => 'Dampak Lingkungan', 'type' => 'textarea', 'required' => true],
+                        ['name' => 'dampak_kesehatan', 'label' => 'Dampak Kesehatan', 'type' => 'textarea', 'required' => true],
+                        ['name' => 'dampak_ekonomi', 'label' => 'Dampak Ekonomi', 'type' => 'textarea', 'required' => true],
+                        ['name' => 'solusi', 'label' => 'Solusi yang Dapat Dilakukan', 'type' => 'textarea', 'required' => true],
+                    ],
+                ],
                 'display_config' => null,
-                'validation_rules' => ['required' => true, 'min_words' => 20],
+                'validation_rules' => ['required' => true],
                 'requires_teacher_review' => false,
             ];
         }
@@ -112,12 +122,19 @@ class ActivityTemplateService
                 'prompt' => 'Isilah tabel kondisi lingkungan, energi terbarukan yang cocok, serta alasannya.',
                 'answer_schema' => [
                     'columns' => [
-                        ['name' => 'kondisi', 'label' => 'Kondisi Lingkungan', 'type' => 'text', 'required' => true],
-                        ['name' => 'energi_cocok', 'label' => 'Energi yang Cocok', 'type' => 'text', 'required' => true],
+                        ['name' => 'kondisi', 'label' => 'Kondisi Lingkungan', 'type' => 'readonly_text', 'required' => false],
+                        ['name' => 'energi_cocok', 'label' => 'Energi yang Cocok', 'type' => 'select', 'options' => ['Surya', 'Biomassa', 'Mikrohidro', 'Angin', 'Biogas'], 'required' => true],
                         ['name' => 'alasan', 'label' => 'Alasan', 'type' => 'textarea', 'required' => true],
                     ],
-                    'min_rows' => 3,
-                    'allow_add' => true,
+                    'preset_rows' => [
+                        ['kondisi' => 'Banyak sinar matahari'],
+                        ['kondisi' => 'Banyak limbah organik'],
+                        ['kondisi' => 'Dekat sungai deras'],
+                        ['kondisi' => 'Daerah pesisir berangin'],
+                    ],
+                    'min_rows' => 4,
+                    'allow_add' => false,
+                    'allow_delete' => false,
                 ],
                 'display_config' => null,
                 'validation_rules' => ['required' => true],
@@ -132,14 +149,19 @@ class ActivityTemplateService
                 'prompt' => 'Lakukan percobaan warna dan penyerapan panas. Catat suhu awal dan akhir.',
                 'answer_schema' => [
                     'columns' => [
-                        ['name' => 'warna', 'label' => 'Warna Material', 'type' => 'text', 'required' => true],
-                        ['name' => 'waktu', 'label' => 'Waktu (menit)', 'type' => 'number', 'required' => true],
+                        ['name' => 'media', 'label' => 'Media', 'type' => 'readonly_text', 'required' => false],
                         ['name' => 'suhu_awal', 'label' => 'Suhu Awal (°C)', 'type' => 'number', 'required' => true],
                         ['name' => 'suhu_akhir', 'label' => 'Suhu Akhir (°C)', 'type' => 'number', 'required' => true],
                         ['name' => 'perubahan_suhu', 'label' => 'Perubahan Suhu', 'type' => 'computed', 'formula' => 'suhu_akhir - suhu_awal', 'required' => false],
+                        ['name' => 'catatan', 'label' => 'Catatan Pengamatan', 'type' => 'textarea', 'required' => true],
+                    ],
+                    'preset_rows' => [
+                        ['media' => 'Gelas dibungkus kertas hitam'],
+                        ['media' => 'Gelas dibungkus kertas putih'],
                     ],
                     'min_rows' => 2,
-                    'allow_add' => true,
+                    'allow_add' => false,
+                    'allow_delete' => false,
                 ],
                 'display_config' => null,
                 'validation_rules' => ['required' => true],
@@ -258,6 +280,7 @@ class ActivityTemplateService
                     ],
                     'min_rows' => 3,
                     'allow_add' => true,
+                    'allow_delete' => true,
                 ],
                 'display_config' => null,
                 'validation_rules' => ['required' => true],

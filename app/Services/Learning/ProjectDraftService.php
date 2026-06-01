@@ -17,7 +17,6 @@ class ProjectDraftService
 
         $json = $answer->answer_json ?? [];
         $data = $json[0] ?? $json;
-        $status = $answer->status === 'submitted' ? 'submitted' : 'draft';
 
         $project = Project::where('user_id', $answer->user_id)
             ->where('module_id', $answer->activity->learningUnit->module_id)
@@ -45,7 +44,7 @@ class ProjectDraftService
                 'data_to_collect' => $data['data_to_collect'] ?? null,
                 'expected_result' => $data['expected_result'] ?? null,
                 'conclusion' => $data['conclusion'] ?? null,
-                'status' => $status,
+                'status' => 'draft',
             ],
         );
     }

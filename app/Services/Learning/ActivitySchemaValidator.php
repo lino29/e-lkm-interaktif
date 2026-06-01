@@ -55,16 +55,14 @@ class ActivitySchemaValidator
                 }
             }
 
-            if ($activity->input_type === 'project_form') {
+            if (in_array($activity->input_type, ['fields', 'project_form'], true)) {
                 if (! is_array($answerJson) || empty($answerJson)) {
-                    $errors[] = 'Form proyek tidak boleh kosong.';
+                    $errors[] = 'Form tidak boleh kosong.';
                 } else {
-                    // Assuming project_form uses schema['fields'] or schema['columns']?
-                    // The sprint doc says project_form uses `fields`.
                     $fields = $schema['fields'] ?? [];
                     foreach ($fields as $field) {
                         if ($field['required'] ?? false) {
-                            $row = $answerJson[0] ?? []; // fields usually map to a single row array
+                            $row = $answerJson[0] ?? [];
                             if (empty(trim((string) ($row[$field['name']] ?? '')))) {
                                 $errors[] = "Field '{$field['label']}' wajib diisi.";
                             }

@@ -1,6 +1,7 @@
 @php
     $columns = $currentActivity->answer_schema['columns'] ?? [];
     $allowAdd = $currentActivity->answer_schema['allow_add'] ?? true;
+    $allowDelete = $currentActivity->answer_schema['allow_delete'] ?? true;
 @endphp
 
 <div class="overflow-x-auto">
@@ -10,7 +11,7 @@
                 @foreach ($columns as $column)
                     <th class="px-4 py-3">{{ $column['label'] ?? $column['name'] }}</th>
                 @endforeach
-                @if (! ($answer?->status === 'reviewed'))
+                @if ($allowDelete && ! ($answer?->status === 'reviewed'))
                     <th class="px-4 py-3 text-right">Aksi</th>
                 @endif
             </tr>
@@ -51,7 +52,7 @@
                             @endswitch
                         </td>
                     @endforeach
-                    @if (! ($answer?->status === 'reviewed'))
+                    @if ($allowDelete && ! ($answer?->status === 'reviewed'))
                         <td class="px-4 py-2 text-right">
                             <flux:button type="button" size="sm" variant="danger" wire:click="removeTableRow({{ $rowIndex }})">Hapus</flux:button>
                         </td>

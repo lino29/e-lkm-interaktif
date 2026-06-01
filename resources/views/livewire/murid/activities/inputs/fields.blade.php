@@ -12,6 +12,10 @@
                         <flux:select.option value="{{ $option }}">{{ $option }}</flux:select.option>
                     @endforeach
                 </flux:select>
+            @elseif (($field['type'] ?? 'text') === 'number')
+                <flux:input type="number" wire:model="field_data.{{ $field['name'] }}" :disabled="$answer?->status === 'reviewed'" />
+            @elseif (($field['type'] ?? 'text') === 'readonly_text')
+                <flux:input value="{{ $field_data[$field['name']] ?? $field['value'] ?? '' }}" disabled />
             @else
                 <flux:input wire:model="field_data.{{ $field['name'] }}" :disabled="$answer?->status === 'reviewed'" />
             @endif

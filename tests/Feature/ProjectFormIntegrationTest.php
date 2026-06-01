@@ -42,7 +42,7 @@ test('kb5 project form creates or updates project draft for the student', functi
     expect($project->module_id)->toBe($kb5->module_id)
         ->and($project->project_type)->toBe('Audit Energi Kelas')
         ->and($project->data_to_collect)->toContain('Waktu pemakaian')
-        ->and($project->status)->toBe('submitted');
+        ->and($project->status)->toBe('draft');
 });
 
 function completeLearningUnitForProjectFormTest(User $student, LearningUnit $learningUnit): void
