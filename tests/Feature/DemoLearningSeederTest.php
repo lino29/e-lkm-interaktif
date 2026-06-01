@@ -21,7 +21,7 @@ test('demo learning seeder creates complete renewable energy module', function (
 
     foreach ($module->learningUnits as $learningUnit) {
         expect($learningUnit->objectives)->not->toBeEmpty()
-            ->and($learningUnit->materials)->toHaveCount(1)
+            ->and($learningUnit->materials->count())->toBeGreaterThanOrEqual(5)
             ->and($learningUnit->materials->first()->content)->not->toContain('placeholder')
             ->and($learningUnit->media)->toHaveCount(1)
             ->and($learningUnit->media->first()->file_path)->toStartWith('demo/media/energi-terbarukan/')

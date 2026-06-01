@@ -7,6 +7,7 @@ use App\Models\LearningUnit;
 use App\Models\Module;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\Learning\LearningUnitOutlineService;
 use Database\Seeders\RoleSeeder;
 use Livewire\Livewire;
 
@@ -53,7 +54,12 @@ test('stepper locks subsequent activities until previous is submitted', function
         'order' => 2,
     ]);
 
-    $component = Livewire::actingAs($student)->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id]);
+    app(LearningUnitOutlineService::class)->ensureDefaultOutline($learningUnit);
+    $activityGroupId = $learningUnit->sections()->where('section_type', 'activity_group')->firstOrFail()->id;
+
+    $component = Livewire::actingAs($student)
+        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
+        ->call('openSection', $activityGroupId);
 
     // Activity 1 should be unlocked, Activity 2 should be locked
     $component->assertSee('Mengamati')
@@ -68,12 +74,16 @@ test('stepper locks subsequent activities until previous is submitted', function
         'answer_text' => 'Draft',
     ]);
 
-    $component = Livewire::actingAs($student)->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id]);
+    $component = Livewire::actingAs($student)
+        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
+        ->call('openSection', $activityGroupId);
     $component->assertSee('Terkunci');
 
     // Submit SHOULD unlock
     ActivityAnswer::where('activity_id', $activity1->id)->update(['status' => 'submitted', 'submitted_at' => now()]);
 
-    $component = Livewire::actingAs($student)->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id]);
+    $component = Livewire::actingAs($student)
+        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
+        ->call('openSection', $activityGroupId);
     $component->assertDontSee('Terkunci');
 });

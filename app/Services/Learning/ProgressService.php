@@ -2,6 +2,7 @@
 
 namespace App\Services\Learning;
 
+use App\Models\Activity;
 use App\Models\ActivityAnswer;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
@@ -59,6 +60,69 @@ class ProgressService
         }
 
         return $previousLearningUnits->every(fn (LearningUnit $previousLearningUnit): bool => $this->isLearningUnitComplete($student, $previousLearningUnit));
+    }
+
+    public function isActivityUnlocked(User $student, Activity $activity): bool
+    {
+        if ($student->hasAnyRole(['admin', 'guru'])) {
+            return true;
+        }
+
+        $activity->loadMissing('learningUnit.module');
+
+        if (! $this->isLearningUnitUnlocked($student, $activity->learningUnit)) {
+            return false;
+        }
+
+        $previousRequiredActivityIds = $activity->learningUnit
+            ->activities()
+            ->where('order', '<', $activity->order)
+            ->where('is_required', true)
+            ->pluck('id');
+
+        if ($previousRequiredActivityIds->isEmpty()) {
+            return true;
+        }
+
+        $submittedCount = ActivityAnswer::where('user_id', $student->id)
+            ->whereIn('activity_id', $previousRequiredActivityIds)
+            ->whereIn('status', ['submitted', 'reviewed'])
+            ->distinct('activity_id')
+            ->count('activity_id');
+
+        return $submittedCount === $previousRequiredActivityIds->count();
+    }
+
+    public function isAssessmentUnlocked(User $student, Assessment $assessment): bool
+    {
+        if ($student->hasAnyRole(['admin', 'guru'])) {
+            return true;
+        }
+
+        if (! $assessment->learningUnit) {
+            return true;
+        }
+
+        if (! $this->isLearningUnitUnlocked($student, $assessment->learningUnit)) {
+            return false;
+        }
+
+        $requiredActivityIds = $assessment->learningUnit
+            ->activities()
+            ->where('is_required', true)
+            ->pluck('id');
+
+        if ($requiredActivityIds->isEmpty()) {
+            return true;
+        }
+
+        $submittedCount = ActivityAnswer::where('user_id', $student->id)
+            ->whereIn('activity_id', $requiredActivityIds)
+            ->whereIn('status', ['submitted', 'reviewed'])
+            ->distinct('activity_id')
+            ->count('activity_id');
+
+        return $submittedCount === $requiredActivityIds->count();
     }
 
     public function isLearningUnitComplete(User $student, LearningUnit $learningUnit): bool

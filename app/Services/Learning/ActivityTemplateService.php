@@ -39,7 +39,7 @@ class ActivityTemplateService
             'title' => 'Ayo Mengamati',
             'prompt' => $prompt,
             'answer_schema' => null,
-            'display_config' => null,
+            'display_config' => $this->observationMediaFor($kb),
             'validation_rules' => ['required' => true, 'min_words' => 10],
             'requires_teacher_review' => false,
         ];
@@ -176,7 +176,7 @@ class ActivityTemplateService
                 'prompt' => 'Buatlah rancangan aksi sederhana mengenai energi terbarukan.',
                 'answer_schema' => [
                     'fields' => [
-                        ['name' => 'project_type', 'label' => 'Tipe Proyek / Nama Aksi', 'type' => 'text', 'required' => true],
+                        ['name' => 'project_type', 'label' => 'Tipe Proyek / Nama Aksi', 'type' => 'select', 'options' => ['Kompor surya mini', 'Briket biomassa', 'Audit energi kelas', 'Kampanye hemat energi', 'Lampu taman surya mini'], 'required' => true],
                         ['name' => 'problem', 'label' => 'Masalah yang Diangkat', 'type' => 'textarea', 'required' => true],
                         ['name' => 'objective', 'label' => 'Tujuan Proyek', 'type' => 'textarea', 'required' => true],
                         ['name' => 'tools_materials', 'label' => 'Alat dan Bahan', 'type' => 'textarea', 'required' => true],
@@ -192,6 +192,27 @@ class ActivityTemplateService
         }
 
         return $this->getDefaultTemplate('ayo_mencoba');
+    }
+
+    /**
+     * @return array{media_type: string, media_path: string, caption: string}
+     */
+    private function observationMediaFor(?int $kb): array
+    {
+        $order = $kb ?? 1;
+
+        return [
+            'media_type' => 'image',
+            'media_path' => 'demo/media/energi-terbarukan/kb'.$order.'-ayo-mengamati.png',
+            'caption' => match ($kb) {
+                1 => 'Amati contoh perubahan energi pada alat listrik dan sumber energi di sekitar sekolah.',
+                2 => 'Amati ilustrasi dampak penggunaan bahan bakar fosil pada udara, kesehatan, dan lingkungan.',
+                3 => 'Amati contoh pemanfaatan energi surya, angin, air, biomassa, dan panas bumi.',
+                4 => 'Amati komponen teknologi energi terbarukan sederhana berbasis STEM.',
+                5 => 'Amati masalah energi di lingkungan sekolah sebagai titik awal rancangan proyek.',
+                default => 'Media pendukung untuk kegiatan pengamatan.',
+            },
+        ];
     }
 
     private function getAyoMenalarTemplate(?int $kb): array

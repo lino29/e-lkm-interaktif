@@ -24,24 +24,4 @@
             />
         </main>
     </div>
-
-    @if ($discussions->isNotEmpty())
-        <section class="space-y-3">
-            <flux:heading>Diskusi Terbaru</flux:heading>
-            @foreach ($discussions as $discussion)
-                <flux:card wire:key="unit-discussion-preview-{{ $discussion->id }}">
-                    <div class="font-semibold">{{ $discussion->user->name }}</div>
-                    <p class="mt-2 text-sm">{{ $discussion->body }}</p>
-                    <div class="mt-4 space-y-2">
-                        @foreach ($discussion->replies as $reply)
-                            <div class="border-l-2 pl-3 text-sm" wire:key="unit-discussion-preview-reply-{{ $reply->id }}">
-                                <div class="font-medium">{{ $reply->user->name }}</div>
-                                <p>{{ $reply->body }}</p>
-                            </div>
-                        @endforeach
-                    </div>
-                </flux:card>
-            @endforeach
-        </section>
-    @endif
 </div>

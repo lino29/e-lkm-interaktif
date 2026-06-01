@@ -55,11 +55,13 @@ test('seeded ayo mencoba schemas follow renewable energy outline', function () {
     $kb2 = LearningUnit::where('order', 2)->firstOrFail();
     $kb3 = LearningUnit::where('order', 3)->firstOrFail();
     $kb4 = LearningUnit::where('order', 4)->firstOrFail();
+    $kb5 = LearningUnit::where('order', 5)->firstOrFail();
 
     $kb1Schema = Activity::where('learning_unit_id', $kb1->id)->where('phase', 'ayo_mencoba')->firstOrFail()->answer_schema;
     $kb2Activity = Activity::where('learning_unit_id', $kb2->id)->where('phase', 'ayo_mencoba')->firstOrFail();
     $kb3Schema = Activity::where('learning_unit_id', $kb3->id)->where('phase', 'ayo_mencoba')->firstOrFail()->answer_schema;
     $kb4Schema = Activity::where('learning_unit_id', $kb4->id)->where('phase', 'ayo_mencoba')->firstOrFail()->answer_schema;
+    $kb5Activity = Activity::where('learning_unit_id', $kb5->id)->where('phase', 'ayo_mencoba')->firstOrFail();
 
     expect($kb1Schema['min_rows'])->toBe(10)
         ->and(collect($kb1Schema['columns'])->firstWhere('name', 'energi_masuk')['type'])->toBe('select')
@@ -81,7 +83,8 @@ test('seeded ayo mencoba schemas follow renewable energy outline', function () {
         ->and($kb4Schema['allow_add'])->toBeFalse()
         ->and($kb4Schema['allow_delete'])->toBeFalse()
         ->and($kb4Schema['preset_rows'])->toHaveCount(2)
-        ->and(collect($kb4Schema['columns'])->pluck('name')->all())->toContain('media', 'suhu_awal', 'suhu_akhir', 'perubahan_suhu', 'catatan');
+        ->and(collect($kb4Schema['columns'])->pluck('name')->all())->toContain('media', 'suhu_awal', 'suhu_akhir', 'perubahan_suhu', 'catatan')
+        ->and(collect($kb5Activity->answer_schema['fields'])->firstWhere('name', 'project_type')['type'])->toBe('select');
 });
 
 test('fixed table rows cannot be removed from locked schemas', function () {

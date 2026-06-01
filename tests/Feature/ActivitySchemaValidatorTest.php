@@ -69,3 +69,67 @@ test('validates table rows minimum and column required', function () {
     $result = $validator->validate($activity, [['alat' => 'Lampu'], ['alat' => 'Setrika']], null);
     expect($result['valid'])->toBeTrue();
 });
+
+test('validates select number readonly and locked table shape', function () {
+    $activity = new Activity([
+        'input_type' => 'table',
+        'is_required' => true,
+        'answer_schema' => [
+            'columns' => [
+                ['name' => 'media', 'label' => 'Media', 'type' => 'readonly_text'],
+                ['name' => 'energi', 'label' => 'Energi', 'type' => 'select', 'options' => ['Surya', 'Angin'], 'required' => true],
+                ['name' => 'suhu', 'label' => 'Suhu', 'type' => 'number', 'required' => true],
+                ['name' => 'perubahan', 'label' => 'Perubahan', 'type' => 'computed', 'formula' => 'suhu_akhir - suhu_awal'],
+            ],
+            'preset_rows' => [
+                ['media' => 'Gelas hitam'],
+                ['media' => 'Gelas putih'],
+            ],
+            'min_rows' => 2,
+            'allow_add' => false,
+            'allow_delete' => false,
+        ],
+    ]);
+
+    $validator = app(ActivitySchemaValidator::class);
+
+    expect($validator->validate($activity, [
+        ['media' => 'Gelas hitam', 'energi' => 'Nuklir', 'suhu' => 30],
+        ['media' => 'Gelas putih', 'energi' => 'Surya', 'suhu' => 29],
+    ], null)['valid'])->toBeFalse()
+        ->and($validator->validate($activity, [
+            ['media' => 'Gelas hitam', 'energi' => 'Surya', 'suhu' => 'panas'],
+            ['media' => 'Gelas putih', 'energi' => 'Angin', 'suhu' => 29],
+        ], null)['valid'])->toBeFalse()
+        ->and($validator->validate($activity, [
+            ['media' => 'Diubah', 'energi' => 'Surya', 'suhu' => 30],
+            ['media' => 'Gelas putih', 'energi' => 'Angin', 'suhu' => 29],
+        ], null)['valid'])->toBeFalse()
+        ->and($validator->validate($activity, [
+            ['media' => 'Gelas hitam', 'energi' => 'Surya', 'suhu' => 30],
+            ['media' => 'Gelas putih', 'energi' => 'Angin', 'suhu' => 29],
+            ['media' => 'Baris baru', 'energi' => 'Surya', 'suhu' => 28],
+        ], null)['valid'])->toBeFalse()
+        ->and($validator->validate($activity, [
+            ['media' => 'Gelas hitam', 'energi' => 'Surya', 'suhu' => 30],
+        ], null)['valid'])->toBeFalse();
+});
+
+test('validates fields select and number values', function () {
+    $activity = new Activity([
+        'input_type' => 'fields',
+        'is_required' => true,
+        'answer_schema' => [
+            'fields' => [
+                ['name' => 'jenis', 'label' => 'Jenis', 'type' => 'select', 'options' => ['Surya'], 'required' => true],
+                ['name' => 'jumlah', 'label' => 'Jumlah', 'type' => 'number', 'required' => true],
+            ],
+        ],
+    ]);
+
+    $validator = app(ActivitySchemaValidator::class);
+
+    expect($validator->validate($activity, [['jenis' => 'Angin', 'jumlah' => 2]], null)['valid'])->toBeFalse()
+        ->and($validator->validate($activity, [['jenis' => 'Surya', 'jumlah' => 'dua']], null)['valid'])->toBeFalse()
+        ->and($validator->validate($activity, [['jenis' => 'Surya', 'jumlah' => 2]], null)['valid'])->toBeTrue();
+});

@@ -3,7 +3,6 @@
 namespace App\Livewire\Murid;
 
 use App\Models\ActivityAnswer;
-use App\Models\Discussion;
 use App\Models\LearningUnit;
 use App\Models\LearningUnitSection;
 use App\Services\Learning\LearningUnitOutlineService;
@@ -16,13 +15,6 @@ class LearningUnitPage extends Component
     public LearningUnit $currentLearningUnit;
 
     public ?int $activeSectionId = null;
-
-    public string $discussionBody = '';
-
-    /**
-     * @var array<int, string>
-     */
-    public array $replyBodies = [];
 
     public function mount(string|int $learningUnit): void
     {
@@ -55,8 +47,7 @@ class LearningUnitPage extends Component
 
         $progressService->markStarted(auth()->user(), $this->currentLearningUnit->module, $this->currentLearningUnit);
 
-        $this->activeSectionId = $this->currentLearningUnit->rootSections->firstWhere('section_type', 'activity_group')?->id
-            ?? $this->currentLearningUnit->rootSections->first()?->id;
+        $this->activeSectionId = $this->currentLearningUnit->rootSections->first()?->id;
     }
 
     public function openSection(int $sectionId): void
@@ -75,56 +66,13 @@ class LearningUnitPage extends Component
     public function activeSection(): ?LearningUnitSection
     {
         if (! $this->activeSectionId) {
-            return $this->currentLearningUnit->rootSections->firstWhere('section_type', 'activity_group')
-                ?? $this->currentLearningUnit->rootSections->first();
+            return $this->currentLearningUnit->rootSections->first();
         }
 
         return $this->currentLearningUnit
             ->sections()
             ->with('children')
             ->find($this->activeSectionId);
-    }
-
-    public function submitDiscussion(): void
-    {
-        $validated = $this->validate([
-            'discussionBody' => ['required', 'string', 'min:3'],
-        ]);
-
-        Discussion::create([
-            'learning_unit_id' => $this->currentLearningUnit->id,
-            'user_id' => auth()->id(),
-            'title' => 'Diskusi '.$this->currentLearningUnit->title,
-            'body' => $validated['discussionBody'],
-            'type' => 'forum',
-        ]);
-
-        $this->reset('discussionBody');
-        session()->flash('status', 'Komentar diskusi berhasil dikirim.');
-    }
-
-    public function replyToDiscussion(int $discussionId): void
-    {
-        $body = $this->replyBodies[$discussionId] ?? '';
-        $this->validate([
-            "replyBodies.{$discussionId}" => ['required', 'string', 'min:3'],
-        ]);
-
-        $parent = Discussion::where('learning_unit_id', $this->currentLearningUnit->id)
-            ->whereNull('parent_id')
-            ->findOrFail($discussionId);
-
-        Discussion::create([
-            'learning_unit_id' => $this->currentLearningUnit->id,
-            'user_id' => auth()->id(),
-            'parent_id' => $parent->id,
-            'title' => 'Balasan diskusi',
-            'body' => $body,
-            'type' => 'reply',
-        ]);
-
-        unset($this->replyBodies[$discussionId]);
-        session()->flash('status', 'Balasan diskusi berhasil dikirim.');
     }
 
     private function getActivityStatuses(): array
@@ -135,7 +83,7 @@ class LearningUnitPage extends Component
             ->keyBy('activity_id');
 
         $statuses = [];
-        $isLocked = false;
+        $progressService = app(ProgressService::class);
 
         foreach ($this->currentLearningUnit->activities as $activity) {
             $answer = $answers->get($activity->id);
@@ -143,13 +91,9 @@ class LearningUnitPage extends Component
 
             $statuses[$activity->id] = [
                 'status' => $status,
-                'is_locked' => $isLocked,
+                'is_locked' => ! $progressService->isActivityUnlocked(auth()->user(), $activity),
                 'answer' => $answer,
             ];
-
-            if ($activity->is_required && ! in_array($status, ['submitted', 'reviewed'])) {
-                $isLocked = true;
-            }
         }
 
         return $statuses;
@@ -160,11 +104,6 @@ class LearningUnitPage extends Component
         return view('livewire.murid.learning-unit-page', [
             'learningUnit' => $this->currentLearningUnit,
             'activityStatuses' => $this->getActivityStatuses(),
-            'discussions' => Discussion::with('user', 'replies.user')
-                ->where('learning_unit_id', $this->currentLearningUnit->id)
-                ->whereNull('parent_id')
-                ->latest()
-                ->get(),
         ]);
     }
 }

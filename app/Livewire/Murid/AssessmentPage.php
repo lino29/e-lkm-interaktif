@@ -30,7 +30,10 @@ class AssessmentPage extends Component
             ->findOrFail($assessment);
 
         if ($this->currentAssessment->learningUnit) {
-            abort_unless(app(ProgressService::class)->isLearningUnitUnlocked(auth()->user(), $this->currentAssessment->learningUnit), 403);
+            $progressService = app(ProgressService::class);
+
+            abort_unless($progressService->isLearningUnitUnlocked(auth()->user(), $this->currentAssessment->learningUnit), 403);
+            abort_unless($progressService->isAssessmentUnlocked(auth()->user(), $this->currentAssessment), 403);
         }
 
         $this->latestAttempt = AssessmentAttempt::where('assessment_id', $this->currentAssessment->id)

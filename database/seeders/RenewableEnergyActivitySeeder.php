@@ -20,9 +20,6 @@ class RenewableEnergyActivitySeeder extends Seeder
         $learningUnits = $module->learningUnits()->orderBy('order')->get();
         $templateService = app(ActivityTemplateService::class);
 
-        // Hapus aktivitas lama agar tidak double
-        Activity::whereIn('learning_unit_id', $learningUnits->pluck('id'))->delete();
-
         foreach ($learningUnits as $unit) {
             $order = $unit->order;
 
@@ -33,12 +30,12 @@ class RenewableEnergyActivitySeeder extends Seeder
                     [
                         'learning_unit_id' => $unit->id,
                         'phase' => $phase,
-                        'order' => $activityOrder + 1,
                     ],
                     [
                         'title' => $template['title'],
                         'prompt' => $template['prompt'],
                         'input_type' => $template['input_type'],
+                        'order' => $activityOrder + 1,
                         'is_required' => true,
                         'answer_schema' => $template['answer_schema'],
                         'display_config' => $template['display_config'],

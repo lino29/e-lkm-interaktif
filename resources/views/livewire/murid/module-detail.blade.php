@@ -14,15 +14,21 @@
         <flux:button :href="route('murid.modules')" wire:navigate>Kembali ke Modul</flux:button>
     </div>
 
-    <section class="grid gap-4 lg:grid-cols-2">
-        <flux:card>
-            <flux:heading>Pendahuluan</flux:heading>
-            <p class="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $module->introduction ?: 'Pendahuluan belum tersedia.' }}</p>
-        </flux:card>
-        <flux:card>
-            <flux:heading>Tujuan Pembelajaran</flux:heading>
-            <p class="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $module->learning_objectives ?: 'Tujuan pembelajaran belum tersedia.' }}</p>
-        </flux:card>
+    <section class="space-y-4">
+        <flux:heading>Pendahuluan Modul</flux:heading>
+        <div class="grid gap-4 lg:grid-cols-2">
+            @forelse ($module->sections->where('section_type', 'introduction') as $section)
+                <flux:card wire:key="module-introduction-{{ $section->id }}">
+                    <flux:heading size="lg">{{ $section->title }}</flux:heading>
+                    <p class="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $section->content }}</p>
+                </flux:card>
+            @empty
+                <flux:card>
+                    <flux:heading>Pendahuluan</flux:heading>
+                    <p class="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $module->introduction ?: 'Pendahuluan belum tersedia.' }}</p>
+                </flux:card>
+            @endforelse
+        </div>
     </section>
 
     <section class="space-y-4">
@@ -60,7 +66,7 @@
 
                 <div class="flex flex-wrap gap-2">
                     @foreach ($unit->activities as $activity)
-                        @if ($isUnlocked)
+                        @if ($isUnlocked && in_array($activity->id, $activityUnlockedIds, true))
                             <flux:button size="sm" :href="route('murid.activities.show', $activity)" wire:navigate>{{ \Illuminate\Support\Str::headline($activity->phase) }}</flux:button>
                         @else
                             <flux:button size="sm" disabled>{{ \Illuminate\Support\Str::headline($activity->phase) }}</flux:button>
@@ -103,6 +109,18 @@
             </div>
         </section>
     @endif
+
+    <section class="space-y-4">
+        <flux:heading>Penutup Modul</flux:heading>
+        <div class="grid gap-4 lg:grid-cols-3">
+            @foreach ($module->sections->where('section_type', 'closing') as $section)
+                <flux:card wire:key="module-closing-{{ $section->id }}">
+                    <flux:heading size="lg">{{ $section->title }}</flux:heading>
+                    <p class="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $section->content }}</p>
+                </flux:card>
+            @endforeach
+        </div>
+    </section>
 
     @if ($module->references->isNotEmpty())
         <section class="space-y-4">

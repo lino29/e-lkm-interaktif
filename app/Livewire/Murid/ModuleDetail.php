@@ -22,6 +22,7 @@ class ModuleDetail extends Component
         $student = auth()->user();
         $module = $this->currentModule->load([
             'subject',
+            'sections',
             'learningUnits.materials',
             'learningUnits.activities.answers',
             'learningUnits.assessments' => fn ($query) => $query->where('is_published', true),
@@ -41,6 +42,11 @@ class ModuleDetail extends Component
             'moduleProgressPercentage' => $progressService->moduleCompletionPercentage($student, $module),
             'unlockedUnitIds' => $module->learningUnits
                 ->filter(fn ($learningUnit): bool => $progressService->isLearningUnitUnlocked($student, $learningUnit))
+                ->pluck('id')
+                ->all(),
+            'activityUnlockedIds' => $module->learningUnits
+                ->flatMap(fn ($learningUnit) => $learningUnit->activities)
+                ->filter(fn ($activity): bool => $progressService->isActivityUnlocked($student, $activity))
                 ->pluck('id')
                 ->all(),
             'allUnitsCompleted' => count($completedUnitIds) === $module->learningUnits->count() && $module->learningUnits->count() > 0,

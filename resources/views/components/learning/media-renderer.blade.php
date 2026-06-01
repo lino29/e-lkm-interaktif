@@ -1,4 +1,4 @@
-@props(['type', 'url' => null, 'filePath' => null, 'embedCode' => null, 'title' => 'Media'])
+@props(['type', 'url' => null, 'filePath' => null, 'embedCode' => null, 'title' => 'Media', 'caption' => null])
 
 @php
     use Illuminate\Support\Facades\Storage;
@@ -91,4 +91,10 @@
             <div class="text-slate-400 italic text-sm">Tipe media tidak dikenali.</div>
         @endif
     </div>
+
+    @if ($caption)
+        <div class="border-t border-slate-200 px-4 py-3 text-sm text-slate-600">
+            {{ $caption }}
+        </div>
+    @endif
 </div>

@@ -52,4 +52,9 @@ class Module extends Model
     {
         return $this->hasMany(Reference::class)->orderBy('order');
     }
+
+    public function sections(): HasMany
+    {
+        return $this->hasMany(ModuleSection::class)->orderBy('order');
+    }
 }

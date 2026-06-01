@@ -4,6 +4,7 @@ namespace App\Livewire\Murid;
 
 use App\Models\Activity;
 use App\Models\ActivityAnswer;
+use App\Models\Discussion;
 use App\Services\Learning\ActivityAnswerService;
 use App\Services\Learning\ActivityDiscussionService;
 use App\Services\Learning\ActivitySchemaValidator;
@@ -36,7 +37,10 @@ class ActivityPage extends Component
             ->whereHas('learningUnit.module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($activity);
 
-        abort_unless(app(ProgressService::class)->isLearningUnitUnlocked(auth()->user(), $this->currentActivity->learningUnit), 403);
+        $progressService = app(ProgressService::class);
+
+        abort_unless($progressService->isLearningUnitUnlocked(auth()->user(), $this->currentActivity->learningUnit), 403);
+        abort_unless($progressService->isActivityUnlocked(auth()->user(), $this->currentActivity), 403);
 
         $this->existingAnswer = ActivityAnswer::where('activity_id', $this->currentActivity->id)
             ->where('user_id', auth()->id())
@@ -229,6 +233,40 @@ class ActivityPage extends Component
         return view('livewire.murid.activity-page', [
             'activity' => $this->currentActivity,
             'answer' => $this->existingAnswer,
+            'activityMedia' => $this->activityMedia(),
+            'discussions' => $this->activityDiscussions(),
         ]);
+    }
+
+    private function activityDiscussions()
+    {
+        if ($this->currentActivity->phase !== 'forum_diskusi' && $this->currentActivity->input_type !== 'discussion') {
+            return collect();
+        }
+
+        return Discussion::with('user', 'replies.user')
+            ->where('learning_unit_id', $this->currentActivity->learning_unit_id)
+            ->whereNull('parent_id')
+            ->latest()
+            ->get();
+    }
+
+    /**
+     * @return array{type: ?string, url: ?string, filePath: ?string, embedCode: ?string, title: string, caption: ?string}
+     */
+    private function activityMedia(): array
+    {
+        $displayConfig = $this->currentActivity->display_config ?? [];
+
+        $filePath = $displayConfig['media_path'] ?? $this->currentActivity->media_path;
+
+        return [
+            'type' => $displayConfig['media_type'] ?? ($filePath ? 'image' : null),
+            'url' => $displayConfig['media_url'] ?? null,
+            'filePath' => $filePath,
+            'embedCode' => $displayConfig['embed_code'] ?? null,
+            'title' => $displayConfig['media_title'] ?? ($this->currentActivity->phase === 'ayo_mengamati' ? 'Media Pengamatan' : 'Media Pendukung'),
+            'caption' => $displayConfig['caption'] ?? null,
+        ];
     }
 }

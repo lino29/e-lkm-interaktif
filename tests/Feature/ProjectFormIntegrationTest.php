@@ -23,9 +23,17 @@ test('kb5 project form creates or updates project draft for the student', functi
         ->where('input_type', 'project_form')
         ->firstOrFail();
 
+    Activity::where('learning_unit_id', $kb5->id)
+        ->where('order', '<', $activity->order)
+        ->get()
+        ->each(fn (Activity $previousActivity) => ActivityAnswer::updateOrCreate(
+            ['activity_id' => $previousActivity->id, 'user_id' => $student->id],
+            ['answer_text' => 'Jawaban prasyarat KB5.', 'status' => 'submitted', 'submitted_at' => now()],
+        ));
+
     Livewire::actingAs($student)
         ->test(ActivityPage::class, ['activity' => $activity->id])
-        ->set('field_data.project_type', 'Audit Energi Kelas')
+        ->set('field_data.project_type', 'Audit energi kelas')
         ->set('field_data.problem', 'Lampu kelas sering menyala saat ruangan cukup terang.')
         ->set('field_data.objective', 'Mengurangi pemborosan listrik di kelas.')
         ->set('field_data.tools_materials', 'Lembar observasi, wattmeter sederhana, dan kamera.')
@@ -40,7 +48,7 @@ test('kb5 project form creates or updates project draft for the student', functi
         ->firstOrFail();
 
     expect($project->module_id)->toBe($kb5->module_id)
-        ->and($project->project_type)->toBe('Audit Energi Kelas')
+        ->and($project->project_type)->toBe('Audit energi kelas')
         ->and($project->data_to_collect)->toContain('Waktu pemakaian')
         ->and($project->status)->toBe('draft');
 });

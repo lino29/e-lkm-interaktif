@@ -19,7 +19,10 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             DemoUserSeeder::class,
             DemoLearningSeeder::class,
+            RenewableEnergyMaterialSeeder::class,
             RenewableEnergyActivitySeeder::class,
+            RenewableEnergyAssessmentSeeder::class,
+            ModuleSectionSeeder::class,
             RenewableEnergyOutlineSeeder::class,
         ]);
     }

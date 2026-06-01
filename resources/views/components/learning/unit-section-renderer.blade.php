@@ -5,7 +5,7 @@
 ])
 
 @if (! $section)
-    <div class="rounded-lg border p-6">Pilih bagian pembelajaran.</div>
+    <div class="rounded-lg border p-6">Outline belum tersedia.</div>
 @else
     <div class="space-y-5 rounded-lg border bg-white p-6 shadow-sm dark:bg-zinc-900">
         <h2 class="text-xl font-bold">{{ $section->title }}</h2>

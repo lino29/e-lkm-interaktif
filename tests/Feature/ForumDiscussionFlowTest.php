@@ -1,7 +1,9 @@
 <?php
 
 use App\Livewire\Guru\ManageDiscussions;
-use App\Livewire\Murid\LearningUnitPage;
+use App\Livewire\Murid\ActivityPage;
+use App\Models\Activity;
+use App\Models\ActivityAnswer;
 use App\Models\Discussion;
 use App\Models\LearningUnit;
 use App\Models\Module;
@@ -16,21 +18,28 @@ beforeEach(function () {
 
 test('murid can create discussion and reply in a published learning unit', function () {
     [$teacher, $student, $learningUnit] = createDiscussionFixture();
+    $forum = createForumActivityForDiscussionTest($learningUnit);
 
     Livewire::actingAs($student)
-        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
-        ->set('discussionBody', 'Bagaimana cara menghemat energi di kelas?')
-        ->call('submitDiscussion')
+        ->test(ActivityPage::class, ['activity' => $forum->id])
+        ->set('answer_text', 'Bagaimana cara menghemat energi di kelas?')
+        ->call('submit')
         ->assertHasNoErrors()
         ->assertSee('Bagaimana cara menghemat energi di kelas?');
 
     $discussion = Discussion::where('learning_unit_id', $learningUnit->id)->firstOrFail();
 
+    Discussion::create([
+        'learning_unit_id' => $learningUnit->id,
+        'user_id' => $student->id,
+        'parent_id' => $discussion->id,
+        'title' => 'Balasan diskusi',
+        'body' => 'Mulai dari mematikan lampu saat tidak digunakan.',
+        'type' => 'reply',
+    ]);
+
     Livewire::actingAs($student)
-        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
-        ->set("replyBodies.{$discussion->id}", 'Mulai dari mematikan lampu saat tidak digunakan.')
-        ->call('replyToDiscussion', $discussion->id)
-        ->assertHasNoErrors()
+        ->test(ActivityPage::class, ['activity' => $forum->id])
         ->assertSee('Mulai dari mematikan lampu saat tidak digunakan.');
 
     expect($discussion->replies()->count())->toBe(1)
@@ -78,6 +87,7 @@ test('guru only sees discussions from their own modules', function () {
 
 test('guru can filter and moderate discussions from owned modules', function () {
     [$teacher, $student, $learningUnit, $module] = createDiscussionFixture();
+    $forum = createForumActivityForDiscussionTest($learningUnit);
 
     $discussion = Discussion::create([
         'learning_unit_id' => $learningUnit->id,
@@ -104,8 +114,16 @@ test('guru can filter and moderate discussions from owned modules', function () 
         ->and($discussion->fresh()->participation_feedback)->toBe('Refleksi sudah memakai data pengamatan.')
         ->and($discussion->replies()->where('body', 'Feedback guru: cek kembali data pengamatan.')->exists())->toBeTrue();
 
+    ActivityAnswer::create([
+        'activity_id' => $forum->id,
+        'user_id' => $student->id,
+        'answer_text' => 'Komentar perlu dipin.',
+        'status' => 'submitted',
+        'submitted_at' => now(),
+    ]);
+
     Livewire::actingAs($student)
-        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
+        ->test(ActivityPage::class, ['activity' => $forum->id])
         ->assertSee('Feedback guru: cek kembali data pengamatan.');
 });
 
@@ -133,4 +151,17 @@ function createDiscussionFixture(): array
     ]);
 
     return [$teacher, $student, $learningUnit, $module];
+}
+
+function createForumActivityForDiscussionTest(LearningUnit $learningUnit): Activity
+{
+    return Activity::create([
+        'learning_unit_id' => $learningUnit->id,
+        'title' => 'Forum Diskusi/Refleksi',
+        'phase' => 'forum_diskusi',
+        'input_type' => 'discussion',
+        'is_required' => true,
+        'order' => 1,
+        'validation_rules' => ['required' => true],
+    ]);
 }

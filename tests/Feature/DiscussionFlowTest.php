@@ -1,7 +1,8 @@
 <?php
 
 use App\Livewire\Guru\ManageDiscussions;
-use App\Livewire\Murid\LearningUnitPage;
+use App\Livewire\Murid\ActivityPage;
+use App\Models\Activity;
 use App\Models\Discussion;
 use App\Models\LearningUnit;
 use App\Models\Module;
@@ -36,13 +37,24 @@ test('murid can post discussion and guru can reply', function () {
         'module_id' => $module->id,
         'title' => 'Kegiatan Belajar 1',
         'slug' => 'kegiatan-belajar-1',
+        'order' => 1,
+    ]);
+
+    $forum = Activity::create([
+        'learning_unit_id' => $learningUnit->id,
+        'title' => 'Forum Diskusi/Refleksi',
+        'phase' => 'forum_diskusi',
+        'input_type' => 'discussion',
+        'is_required' => true,
+        'order' => 1,
+        'validation_rules' => ['required' => true],
     ]);
 
     // Murid posts
     Livewire::actingAs($murid)
-        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
-        ->set('discussionBody', 'Apa itu energi?')
-        ->call('submitDiscussion');
+        ->test(ActivityPage::class, ['activity' => $forum->id])
+        ->set('answer_text', 'Apa itu energi?')
+        ->call('submit');
 
     $discussion = Discussion::where('user_id', $murid->id)->first();
     expect($discussion->body)->toBe('Apa itu energi?');
