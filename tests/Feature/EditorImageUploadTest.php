@@ -22,6 +22,7 @@ test('teacher can upload editor image to public editor images storage', function
     $response
         ->assertSuccessful()
         ->assertJsonPath('uploaded', 1)
+        ->assertJsonPath('default', $response->json('url'))
         ->assertJsonStructure(['uploaded', 'url', 'default']);
 
     $path = str($response->json('url'))->after('/storage/')->toString();

@@ -13,7 +13,7 @@
         @switch($section->section_type)
             @case('learning_objective')
                 @if ($section->content)
-                    <div class="prose max-w-none dark:prose-invert">{!! $section->content !!}</div>
+                    <div class="ck-content learning-content prose max-w-none dark:prose-invert">{!! $section->content !!}</div>
                 @else
                     <div class="prose max-w-none dark:prose-invert">{!! nl2br(e($learningUnit->objectives)) !!}</div>
                 @endif
@@ -36,7 +36,7 @@
             @case('material_item')
                 @php($material = $section->linkedModel())
                 @if ($material)
-                    <article class="prose max-w-none dark:prose-invert">{!! $material->content !!}</article>
+                    <article class="ck-content learning-content prose max-w-none dark:prose-invert">{!! $material->content !!}</article>
                     <div class="mt-4 grid gap-4">
                         @foreach ($material->media as $media)
                             <x-learning.media-renderer
@@ -49,7 +49,7 @@
                         @endforeach
                     </div>
                 @elseif ($section->content)
-                    <article class="prose max-w-none dark:prose-invert">{!! $section->content !!}</article>
+                    <article class="ck-content learning-content prose max-w-none dark:prose-invert">{!! $section->content !!}</article>
                 @else
                     <div class="text-sm text-zinc-500">Materi belum tersedia.</div>
                 @endif
@@ -116,7 +116,7 @@
                 @break
 
             @case('custom_content')
-                <div class="prose max-w-none dark:prose-invert">{!! $section->content !!}</div>
+                <div class="ck-content learning-content prose max-w-none dark:prose-invert">{!! $section->content !!}</div>
                 @break
 
             @default

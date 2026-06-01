@@ -307,12 +307,127 @@ class DynamicOutlineService
 
         $config = HTMLPurifier_Config::createDefault();
         $config->set('Cache.SerializerPath', $cachePath);
+        $config->set('HTML.DefinitionID', 'e-lkm-learning-content');
+        $config->set('HTML.DefinitionRev', 1);
         $config->set('HTML.SafeIframe', true);
         $config->set('URI.SafeIframeRegexp', '%^https://(www\.youtube\.com/embed/|www\.youtube-nocookie\.com/embed/)%');
-        $config->set('HTML.Allowed', 'h1,h2,h3,h4,p,br,strong,em,u,ul,ol,li,table,thead,tbody,tr,th,td,blockquote,a[href|title|target|rel],img[src|alt|title|width|height],iframe[src|width|height|frameborder]');
+        $config->set('URI.AllowedSchemes', [
+            'http' => true,
+            'https' => true,
+            'mailto' => true,
+        ]);
+        $config->set('HTML.AllowedElements', array_fill_keys([
+            'h1',
+            'h2',
+            'h3',
+            'h4',
+            'h5',
+            'h6',
+            'p',
+            'br',
+            'span',
+            'div',
+            'figure',
+            'figcaption',
+            'strong',
+            'em',
+            'b',
+            'i',
+            'u',
+            's',
+            'sub',
+            'sup',
+            'ul',
+            'ol',
+            'li',
+            'table',
+            'thead',
+            'tbody',
+            'tfoot',
+            'tr',
+            'th',
+            'td',
+            'colgroup',
+            'col',
+            'blockquote',
+            'a',
+            'img',
+            'iframe',
+        ], true));
+        $config->set('HTML.AllowedAttributes', array_fill_keys([
+            '*.class',
+            '*.style',
+            'a.href',
+            'a.title',
+            'a.target',
+            'a.rel',
+            'img.src',
+            'img.alt',
+            'img.title',
+            'img.width',
+            'img.height',
+            'iframe.src',
+            'iframe.width',
+            'iframe.height',
+            'iframe.title',
+            'iframe.frameborder',
+            'table.width',
+            'th.width',
+            'th.height',
+            'th.colspan',
+            'th.rowspan',
+            'td.width',
+            'td.height',
+            'td.colspan',
+            'td.rowspan',
+            'col.width',
+        ], true));
+        $config->set('CSS.AllowedProperties', [
+            'background-color',
+            'border',
+            'border-bottom',
+            'border-collapse',
+            'border-color',
+            'border-left',
+            'border-right',
+            'border-spacing',
+            'border-style',
+            'border-top',
+            'border-width',
+            'color',
+            'font',
+            'font-family',
+            'font-size',
+            'font-style',
+            'font-weight',
+            'height',
+            'line-height',
+            'margin',
+            'margin-left',
+            'margin-right',
+            'padding',
+            'padding-left',
+            'text-align',
+            'text-decoration',
+            'vertical-align',
+            'width',
+        ]);
+        $config->set('CSS.AllowImportant', false);
         $config->set('Attr.AllowedFrameTargets', ['_blank']);
 
-        return (new HTMLPurifier($config))->purify($html);
+        if ($definition = $config->maybeGetRawHTMLDefinition()) {
+            if (! isset($definition->info['figure'])) {
+                $definition->addElement('figure', 'Block', 'Flow', 'Common');
+            }
+
+            if (! isset($definition->info['figcaption'])) {
+                $definition->addElement('figcaption', 'Block', 'Flow', 'Common');
+            }
+        }
+
+        $purified = (new HTMLPurifier($config))->purify($html);
+
+        return preg_replace('/<iframe\b(?![^>]*\bsrc=)[^>]*>\s*<\/iframe>/i', '', $purified) ?? $purified;
     }
 
     public function normalizeOrder(LearningUnit $unit, ?int $parentId = null): void

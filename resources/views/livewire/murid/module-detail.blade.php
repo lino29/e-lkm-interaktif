@@ -20,7 +20,7 @@
             @forelse ($module->sections->where('section_type', 'introduction')->where('is_visible', true) as $section)
                 <flux:card wire:key="module-introduction-{{ $section->id }}">
                     <flux:heading size="lg">{{ $section->title }}</flux:heading>
-                    <div class="prose mt-3 max-w-none text-sm dark:prose-invert">{!! $section->content !!}</div>
+                    <div class="ck-content learning-content prose mt-3 max-w-none text-sm dark:prose-invert">{!! $section->content !!}</div>
                 </flux:card>
             @empty
                 <flux:card>
@@ -116,7 +116,7 @@
             @foreach ($module->sections->where('section_type', 'closing')->where('is_visible', true) as $section)
                 <flux:card wire:key="module-closing-{{ $section->id }}">
                     <flux:heading size="lg">{{ $section->title }}</flux:heading>
-                    <div class="prose mt-3 max-w-none text-sm dark:prose-invert">{!! $section->content !!}</div>
+                    <div class="ck-content learning-content prose mt-3 max-w-none text-sm dark:prose-invert">{!! $section->content !!}</div>
                 </flux:card>
             @endforeach
         </div>
