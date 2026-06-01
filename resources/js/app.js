@@ -9,9 +9,16 @@ import {
     AutoLink,
     List,
     BlockQuote,
+    Image,
+    ImageCaption,
+    ImageResize,
+    ImageStyle,
+    ImageToolbar,
+    ImageUpload,
     Table,
     TableToolbar,
     MediaEmbed,
+    SimpleUploadAdapter,
     Undo,
 } from 'ckeditor5';
 import 'ckeditor5/ckeditor5.css';
@@ -29,9 +36,16 @@ window.CKEditorConfig = {
         AutoLink,
         List,
         BlockQuote,
+        Image,
+        ImageCaption,
+        ImageResize,
+        ImageStyle,
+        ImageToolbar,
+        ImageUpload,
         Table,
         TableToolbar,
         MediaEmbed,
+        SimpleUploadAdapter,
         Undo,
     ],
     toolbar: [
@@ -43,6 +57,7 @@ window.CKEditorConfig = {
         'bulletedList',
         'numberedList',
         'blockQuote',
+        'uploadImage',
         'insertTable',
         'mediaEmbed',
         '|',
@@ -51,6 +66,18 @@ window.CKEditorConfig = {
     ],
     table: {
         contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells'],
+    },
+    image: {
+        toolbar: [
+            'imageTextAlternative',
+            'toggleImageCaption',
+            '|',
+            'imageStyle:inline',
+            'imageStyle:block',
+            'imageStyle:side',
+            '|',
+            'resizeImage',
+        ],
     },
 };
 

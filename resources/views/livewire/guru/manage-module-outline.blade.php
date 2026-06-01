@@ -15,7 +15,12 @@
     @endif
 
     <div class="grid gap-6 xl:grid-cols-[420px_1fr]">
-        <flux:card>
+        <flux:card class="space-y-4">
+            <div>
+                <flux:heading size="lg">Editor Section Modul</flux:heading>
+                <flux:text>Kelola pendahuluan dan penutup modul dengan editor rich text yang sama seperti Outline KB.</flux:text>
+            </div>
+
             <form wire:submit="save" class="space-y-4">
                 <div class="grid gap-4 md:grid-cols-2">
                     <flux:field>
@@ -55,7 +60,7 @@
                 </flux:field>
 
                 <div class="flex flex-wrap gap-2">
-                    <flux:button type="submit" variant="primary">{{ $editingSectionId ? 'Update Section' : 'Tambah Section' }}</flux:button>
+                    <flux:button type="submit" variant="primary">{{ $editingSectionId ? 'Simpan Perubahan' : 'Tambah Section' }}</flux:button>
                     @if ($editingSectionId)
                         <flux:button type="button" variant="ghost" wire:click="cancelEdit">Batal</flux:button>
                     @endif
@@ -64,16 +69,30 @@
         </flux:card>
 
         <div class="space-y-4">
+            <div>
+                <flux:heading size="lg">Daftar Section Modul</flux:heading>
+                <flux:text>Pilih section untuk mengedit konten, urutan, dan visibilitas.</flux:text>
+            </div>
+
             @foreach (['introduction' => 'Pendahuluan', 'closing' => 'Penutup'] as $type => $label)
                 <flux:card class="space-y-3">
                     <flux:heading size="lg">{{ $label }}</flux:heading>
 
                     @foreach ($sections->where('section_type', $type) as $section)
-                        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800" wire:key="module-outline-section-{{ $section->id }}">
+                        <div @class([
+                            'rounded-lg border p-4 transition',
+                            'border-blue-300 bg-blue-50/60 dark:border-blue-700 dark:bg-blue-950/20' => $editingSectionId === $section->id,
+                            'border-zinc-200 dark:border-zinc-800' => $editingSectionId !== $section->id,
+                        ]) wire:key="module-outline-section-{{ $section->id }}">
                             <div class="flex flex-col justify-between gap-3 md:flex-row md:items-start">
-                                <div>
+                                <div class="space-y-1">
                                     <div class="font-semibold">{{ $section->order }}. {{ $section->title }}</div>
-                                    <flux:text>{{ $section->slug }} {{ $section->is_visible ? '' : '- hidden' }}</flux:text>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <flux:text>{{ $section->slug }}</flux:text>
+                                        <flux:badge size="sm" color="{{ $section->is_visible ? 'green' : 'zinc' }}">
+                                            {{ $section->is_visible ? 'Tampil' : 'Disembunyikan' }}
+                                        </flux:badge>
+                                    </div>
                                 </div>
                                 <div class="flex flex-wrap gap-2">
                                     <flux:button size="sm" variant="ghost" wire:click="edit({{ $section->id }})">Edit</flux:button>

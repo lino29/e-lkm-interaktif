@@ -16,6 +16,8 @@ test('teacher can edit module outline and student sees updated content', functio
 
     Livewire::actingAs($teacher)
         ->test(ManageModuleOutline::class, ['module' => $module->id])
+        ->assertSee('Editor Section Modul')
+        ->assertSee('Daftar Section Modul')
         ->call('edit', $section->id)
         ->set('content', '<h2>Petunjuk Baru</h2><p>Belajar berurutan.</p>')
         ->call('save')

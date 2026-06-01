@@ -3,6 +3,7 @@
     'placeholder' => '',
     'height' => '260px',
     'disabled' => false,
+    'uploadUrl' => route('guru.uploads.editor-image'),
 ])
 
 @php($model = $attributes->wire('model')->value())
@@ -26,6 +27,13 @@
             this.editor = await window.CKEditorClassic.create(this.$refs.editor, {
                 ...window.CKEditorConfig,
                 placeholder: @js($placeholder),
+                simpleUpload: {
+                    uploadUrl: @js($uploadUrl),
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || @js(csrf_token()),
+                        'Accept': 'application/json',
+                    },
+                },
             });
 
             this.editor.setData(this.value || '');
