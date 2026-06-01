@@ -35,7 +35,7 @@ class LearningUnitOutlineService
 
     private function createLearningObjectiveSection(LearningUnit $unit): void
     {
-        LearningUnitSection::updateOrCreate(
+        $this->syncSection(
             [
                 'learning_unit_id' => $unit->id,
                 'section_type' => 'learning_objective',
@@ -43,6 +43,7 @@ class LearningUnitOutlineService
             ],
             [
                 'title' => self::ROOT_TITLES[0],
+                'editor_type' => DynamicOutlineService::DEFAULT_EDITORS['learning_objective'],
                 'content' => $unit->objectives,
                 'order' => 1,
                 'is_visible' => true,
@@ -53,7 +54,7 @@ class LearningUnitOutlineService
 
     private function createKeyPointsSection(LearningUnit $unit): void
     {
-        LearningUnitSection::updateOrCreate(
+        $this->syncSection(
             [
                 'learning_unit_id' => $unit->id,
                 'section_type' => 'key_points',
@@ -61,6 +62,7 @@ class LearningUnitOutlineService
             ],
             [
                 'title' => self::ROOT_TITLES[1],
+                'editor_type' => DynamicOutlineService::DEFAULT_EDITORS['key_points'],
                 'content_json' => $this->defaultKeyPointsFor($unit->order),
                 'order' => 2,
                 'is_visible' => true,
@@ -71,7 +73,7 @@ class LearningUnitOutlineService
 
     private function createMaterialSections(LearningUnit $unit): void
     {
-        $group = LearningUnitSection::updateOrCreate(
+        $group = $this->syncSection(
             [
                 'learning_unit_id' => $unit->id,
                 'section_type' => 'material_group',
@@ -79,6 +81,7 @@ class LearningUnitOutlineService
             ],
             [
                 'title' => self::ROOT_TITLES[2],
+                'editor_type' => DynamicOutlineService::DEFAULT_EDITORS['material_group'],
                 'order' => 3,
                 'is_visible' => true,
                 'is_required' => true,
@@ -86,7 +89,7 @@ class LearningUnitOutlineService
         );
 
         foreach ($unit->materials()->orderBy('order')->get() as $index => $material) {
-            LearningUnitSection::updateOrCreate(
+            $this->syncSection(
                 [
                     'learning_unit_id' => $unit->id,
                     'section_type' => 'material_item',
@@ -96,6 +99,7 @@ class LearningUnitOutlineService
                 [
                     'parent_id' => $group->id,
                     'title' => $material->title,
+                    'editor_type' => DynamicOutlineService::DEFAULT_EDITORS['material_item'],
                     'slug' => Str::slug($material->title),
                     'content' => $material->content,
                     'order' => $index + 1,
@@ -107,7 +111,7 @@ class LearningUnitOutlineService
 
     private function createActivitySections(LearningUnit $unit): void
     {
-        $group = LearningUnitSection::updateOrCreate(
+        $group = $this->syncSection(
             [
                 'learning_unit_id' => $unit->id,
                 'section_type' => 'activity_group',
@@ -115,6 +119,7 @@ class LearningUnitOutlineService
             ],
             [
                 'title' => self::ROOT_TITLES[3],
+                'editor_type' => DynamicOutlineService::DEFAULT_EDITORS['activity_group'],
                 'order' => 4,
                 'is_visible' => true,
                 'is_required' => true,
@@ -128,7 +133,7 @@ class LearningUnitOutlineService
                 continue;
             }
 
-            LearningUnitSection::updateOrCreate(
+            $this->syncSection(
                 [
                     'learning_unit_id' => $unit->id,
                     'section_type' => 'activity_item',
@@ -138,6 +143,7 @@ class LearningUnitOutlineService
                 [
                     'parent_id' => $group->id,
                     'title' => $activity->title,
+                    'editor_type' => DynamicOutlineService::DEFAULT_EDITORS['activity_item'],
                     'slug' => $phase,
                     'order' => $index + 1,
                     'is_visible' => true,
@@ -151,7 +157,7 @@ class LearningUnitOutlineService
     {
         $forum = $unit->activities()->where('phase', 'forum_diskusi')->first();
 
-        LearningUnitSection::updateOrCreate(
+        $this->syncSection(
             [
                 'learning_unit_id' => $unit->id,
                 'section_type' => 'forum',
@@ -159,6 +165,7 @@ class LearningUnitOutlineService
             ],
             [
                 'title' => self::ROOT_TITLES[4],
+                'editor_type' => DynamicOutlineService::DEFAULT_EDITORS['forum'],
                 'linked_model_type' => $forum ? Activity::class : null,
                 'linked_model_id' => $forum?->id,
                 'order' => 5,
@@ -175,7 +182,7 @@ class LearningUnitOutlineService
             ->orderBy('order')
             ->first() ?? $unit->assessments()->orderBy('order')->first();
 
-        $group = LearningUnitSection::updateOrCreate(
+        $group = $this->syncSection(
             [
                 'learning_unit_id' => $unit->id,
                 'section_type' => 'assessment_group',
@@ -183,6 +190,7 @@ class LearningUnitOutlineService
             ],
             [
                 'title' => self::ROOT_TITLES[5],
+                'editor_type' => DynamicOutlineService::DEFAULT_EDITORS['assessment_group'],
                 'linked_model_type' => $assessment ? Assessment::class : null,
                 'linked_model_id' => $assessment?->id,
                 'order' => 6,
@@ -194,7 +202,7 @@ class LearningUnitOutlineService
         $order = 1;
 
         foreach (QuestionGroupService::GROUP_LABELS as $slug => $title) {
-            LearningUnitSection::updateOrCreate(
+            $this->syncSection(
                 [
                     'learning_unit_id' => $unit->id,
                     'parent_id' => $group->id,
@@ -203,11 +211,37 @@ class LearningUnitOutlineService
                 ],
                 [
                     'title' => $title,
+                    'editor_type' => DynamicOutlineService::DEFAULT_EDITORS['question_group'],
                     'order' => $order++,
                     'is_visible' => true,
                 ],
             );
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, mixed>  $values
+     */
+    private function syncSection(array $attributes, array $values): LearningUnitSection
+    {
+        $section = LearningUnitSection::query()->firstOrCreate($attributes, $values);
+
+        if ($section->wasRecentlyCreated) {
+            return $section;
+        }
+
+        $updates = $values;
+
+        foreach (['content', 'content_json'] as $contentField) {
+            if (filled($section->{$contentField})) {
+                unset($updates[$contentField]);
+            }
+        }
+
+        $section->update($updates);
+
+        return $section->fresh();
     }
 
     /**

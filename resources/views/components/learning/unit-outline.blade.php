@@ -7,7 +7,7 @@
     <div class="mb-3 font-semibold">Outline Kegiatan Belajar</div>
 
     <nav class="space-y-1">
-        @foreach ($sections as $section)
+        @foreach ($sections->where('is_visible', true) as $section)
             <button
                 type="button"
                 wire:click="openSection({{ $section->id }})"
@@ -18,7 +18,7 @@
 
             @if ($section->children->isNotEmpty())
                 <div class="ml-4 space-y-1 border-l pl-3">
-                    @foreach ($section->children as $child)
+                    @foreach ($section->children->where('is_visible', true) as $child)
                         <button
                             type="button"
                             wire:click="openSection({{ $child->id }})"

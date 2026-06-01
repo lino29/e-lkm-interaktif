@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Guru\EditorImageUploadController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\ManageClasses;
 use App\Livewire\Admin\ManageStudents;
@@ -14,11 +15,13 @@ use App\Livewire\Guru\ManageDiscussions;
 use App\Livewire\Guru\ManageLearningUnitOutline;
 use App\Livewire\Guru\ManageLearningUnits;
 use App\Livewire\Guru\ManageMaterials;
+use App\Livewire\Guru\ManageModuleOutline;
 use App\Livewire\Guru\ManageModules;
 use App\Livewire\Guru\ManageProjects;
 use App\Livewire\Guru\ManageQuestions;
 use App\Livewire\Guru\ManageRubrics;
 use App\Livewire\Guru\ModuleDetail as GuruModuleDetail;
+use App\Livewire\Guru\PreviewLearningUnit;
 use App\Livewire\Guru\Reports as GuruReports;
 use App\Livewire\Guru\ReviewActivityAnswers;
 use App\Livewire\Murid\ActivityPage;
@@ -61,15 +64,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('students', 'dashboard.page', ['livewireComponent' => ManageStudents::class, 'title' => 'Kelola Murid'])->name('students');
         Route::view('classes', 'dashboard.page', ['livewireComponent' => ManageClasses::class, 'title' => 'Kelola Kelas'])->name('classes');
         Route::view('subjects', 'dashboard.page', ['livewireComponent' => ManageSubjects::class, 'title' => 'Kelola Mata Pelajaran'])->name('subjects');
+        Route::view('modules/{module}/outline', 'dashboard.page', ['livewireComponent' => ManageModuleOutline::class, 'title' => 'Kelola Outline Modul'])->name('modules.outline');
+        Route::view('learning-units/{learningUnit}/outline', 'dashboard.page', ['livewireComponent' => ManageLearningUnitOutline::class, 'title' => 'Kelola Outline KB'])->name('learning-units.outline');
+        Route::view('learning-units/{learningUnit}/preview', 'dashboard.page', ['livewireComponent' => PreviewLearningUnit::class, 'title' => 'Preview Kegiatan Belajar'])->name('learning-units.preview');
         Route::view('reports', 'dashboard.page', ['livewireComponent' => AdminReports::class, 'title' => 'Laporan Sistem'])->name('reports');
     });
 
     Route::middleware('role:guru')->prefix('guru')->name('guru.')->group(function () {
         Route::view('dashboard', 'dashboard.page', ['livewireComponent' => GuruDashboard::class, 'title' => 'Dashboard Guru'])->name('dashboard');
         Route::view('modules', 'dashboard.page', ['livewireComponent' => ManageModules::class, 'title' => 'Kelola Modul'])->name('modules');
+        Route::view('modules/{module}/outline', 'dashboard.page', ['livewireComponent' => ManageModuleOutline::class, 'title' => 'Kelola Outline Modul'])->name('modules.outline');
         Route::view('modules/{module}', 'dashboard.page', ['livewireComponent' => GuruModuleDetail::class, 'title' => 'Detail Modul'])->name('modules.show');
         Route::view('learning-units', 'dashboard.page', ['livewireComponent' => ManageLearningUnits::class, 'title' => 'Kelola Kegiatan Belajar'])->name('learning-units');
         Route::view('learning-units/{learningUnit}/outline', 'dashboard.page', ['livewireComponent' => ManageLearningUnitOutline::class, 'title' => 'Kelola Outline KB'])->name('learning-units.outline');
+        Route::view('learning-units/{learningUnit}/preview', 'dashboard.page', ['livewireComponent' => PreviewLearningUnit::class, 'title' => 'Preview Kegiatan Belajar'])->name('learning-units.preview');
+        Route::post('uploads/editor-image', EditorImageUploadController::class)->name('uploads.editor-image');
         Route::view('materials', 'dashboard.page', ['livewireComponent' => ManageMaterials::class, 'title' => 'Kelola Materi'])->name('materials');
         Route::view('activities', 'dashboard.page', ['livewireComponent' => ManageActivities::class, 'title' => 'Kelola Aktivitas'])->name('activities');
         Route::view('discussions', 'dashboard.page', ['livewireComponent' => ManageDiscussions::class, 'title' => 'Kelola Diskusi'])->name('discussions');

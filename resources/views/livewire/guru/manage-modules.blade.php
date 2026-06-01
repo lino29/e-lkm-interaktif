@@ -93,6 +93,7 @@
 
                 <div class="flex flex-wrap gap-2">
                     <flux:button size="sm" :href="route('guru.modules.show', $module)" wire:navigate>Detail</flux:button>
+                    <flux:button size="sm" :href="route('guru.modules.outline', $module)" wire:navigate>Kelola Outline</flux:button>
                     <flux:button size="sm" variant="ghost" wire:click="edit({{ $module->id }})">Edit</flux:button>
                     <flux:button size="sm" variant="ghost" wire:click="toggleStatus({{ $module->id }})">
                         {{ $module->status === 'published' ? 'Jadikan Draft' : 'Publish' }}

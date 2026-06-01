@@ -20,8 +20,9 @@ class LearningUnitPage extends Component
     {
         $this->currentLearningUnit = LearningUnit::with([
             'module',
-            'rootSections.children',
-            'sections.children',
+            'rootSections.children.media',
+            'sections.children.media',
+            'sections.media',
             'materials.media',
             'media',
             'activities.answers',
@@ -33,8 +34,9 @@ class LearningUnitPage extends Component
         app(LearningUnitOutlineService::class)->ensureDefaultOutline($this->currentLearningUnit);
         $this->currentLearningUnit = $this->currentLearningUnit->fresh([
             'module',
-            'rootSections.children',
-            'sections.children',
+            'rootSections.children.media',
+            'sections.children.media',
+            'sections.media',
             'materials.media',
             'media',
             'activities.answers',
@@ -71,7 +73,7 @@ class LearningUnitPage extends Component
 
         return $this->currentLearningUnit
             ->sections()
-            ->with('children')
+            ->with(['children.media', 'media'])
             ->find($this->activeSectionId);
     }
 

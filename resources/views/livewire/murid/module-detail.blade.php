@@ -17,10 +17,10 @@
     <section class="space-y-4">
         <flux:heading>Pendahuluan Modul</flux:heading>
         <div class="grid gap-4 lg:grid-cols-2">
-            @forelse ($module->sections->where('section_type', 'introduction') as $section)
+            @forelse ($module->sections->where('section_type', 'introduction')->where('is_visible', true) as $section)
                 <flux:card wire:key="module-introduction-{{ $section->id }}">
                     <flux:heading size="lg">{{ $section->title }}</flux:heading>
-                    <p class="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $section->content }}</p>
+                    <div class="prose mt-3 max-w-none text-sm dark:prose-invert">{!! $section->content !!}</div>
                 </flux:card>
             @empty
                 <flux:card>
@@ -113,10 +113,10 @@
     <section class="space-y-4">
         <flux:heading>Penutup Modul</flux:heading>
         <div class="grid gap-4 lg:grid-cols-3">
-            @foreach ($module->sections->where('section_type', 'closing') as $section)
+            @foreach ($module->sections->where('section_type', 'closing')->where('is_visible', true) as $section)
                 <flux:card wire:key="module-closing-{{ $section->id }}">
                     <flux:heading size="lg">{{ $section->title }}</flux:heading>
-                    <p class="mt-3 whitespace-pre-line text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $section->content }}</p>
+                    <div class="prose mt-3 max-w-none text-sm dark:prose-invert">{!! $section->content !!}</div>
                 </flux:card>
             @endforeach
         </div>

@@ -65,6 +65,7 @@
                         <flux:text>{{ $unit->module->title }}. {{ $unit->materials_count }} materi. {{ $unit->activities_count }} aktivitas. {{ $unit->assessments_count }} asesmen.</flux:text>
                     </div>
                     <div class="flex gap-2">
+                        <flux:button size="sm" :href="route('guru.learning-units.outline', $unit)" wire:navigate>Kelola Outline</flux:button>
                         <flux:button size="sm" variant="ghost" wire:click="edit({{ $unit->id }})">Edit</flux:button>
                         <flux:button size="sm" variant="danger" wire:click="delete({{ $unit->id }})" wire:confirm="Hapus kegiatan belajar ini?">Hapus</flux:button>
                     </div>

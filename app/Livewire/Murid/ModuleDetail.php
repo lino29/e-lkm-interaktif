@@ -3,6 +3,7 @@
 namespace App\Livewire\Murid;
 
 use App\Models\Module;
+use App\Services\Learning\ModuleOutlineService;
 use App\Services\Learning\ProgressService;
 use Livewire\Component;
 
@@ -13,6 +14,7 @@ class ModuleDetail extends Component
     public function mount(string|int $module): void
     {
         $this->currentModule = Module::where('status', 'published')->findOrFail($module);
+        app(ModuleOutlineService::class)->ensureDefaultSections($this->currentModule);
         app(ProgressService::class)->markStarted(auth()->user(), $this->currentModule);
     }
 

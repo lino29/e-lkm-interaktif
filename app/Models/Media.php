@@ -21,6 +21,11 @@ class Media extends Model
         return $this->belongsTo(LearningUnit::class);
     }
 
+    public function learningUnitSection(): BelongsTo
+    {
+        return $this->belongsTo(LearningUnitSection::class);
+    }
+
     public function material(): BelongsTo
     {
         return $this->belongsTo(Material::class);

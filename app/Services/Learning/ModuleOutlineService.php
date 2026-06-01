@@ -89,7 +89,7 @@ class ModuleOutlineService
     public function ensureDefaultSections(Module $module): void
     {
         foreach ($this->defaultSections($module) as $section) {
-            ModuleSection::updateOrCreate(
+            $moduleSection = ModuleSection::firstOrCreate(
                 [
                     'module_id' => $module->id,
                     'section_type' => $section['section_type'],
@@ -102,6 +102,15 @@ class ModuleOutlineService
                     'is_visible' => true,
                 ],
             );
+
+            if (! $moduleSection->wasRecentlyCreated) {
+                $moduleSection->update([
+                    'title' => $section['title'],
+                    'content' => filled($moduleSection->content) ? $moduleSection->content : $section['content'],
+                    'order' => $section['order'],
+                    'is_visible' => true,
+                ]);
+            }
         }
     }
 }

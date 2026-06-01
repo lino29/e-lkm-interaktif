@@ -14,8 +14,10 @@ class LearningUnitSection extends Model
     {
         return [
             'content_json' => 'array',
+            'settings' => 'array',
             'is_visible' => 'boolean',
             'is_required' => 'boolean',
+            'is_locked' => 'boolean',
             'order' => 'integer',
         ];
     }
@@ -35,9 +37,21 @@ class LearningUnitSection extends Model
         return $this->hasMany(self::class, 'parent_id')->orderBy('order');
     }
 
+    public function media(): HasMany
+    {
+        return $this->hasMany(Media::class)->orderBy('order');
+    }
+
     public function linkedModel(): ?Model
     {
-        if (! $this->linked_model_type || ! $this->linked_model_id || ! class_exists($this->linked_model_type)) {
+        $allowedModels = [
+            Material::class,
+            Activity::class,
+            Assessment::class,
+            Media::class,
+        ];
+
+        if (! $this->linked_model_type || ! $this->linked_model_id || ! in_array($this->linked_model_type, $allowedModels, true)) {
             return null;
         }
 
