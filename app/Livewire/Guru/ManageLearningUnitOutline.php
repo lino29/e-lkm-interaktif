@@ -38,6 +38,10 @@ class ManageLearningUnitOutline extends Component
 
     public ?int $selectedParentId = null;
 
+    public string $newSectionType = 'custom_content';
+
+    public bool $showMediaModal = false;
+
     public string $contentJsonText = '';
 
     public string $settingsText = '';
@@ -90,6 +94,46 @@ class ManageLearningUnitOutline extends Component
 
         $this->selectedSection = $this->sectionForTeacher($sectionId)->load(['children', 'media']);
         $this->fillFormFromSection($this->selectedSection);
+    }
+
+    public function openAddSectionModal(?int $parentId = null): void
+    {
+        if ($parentId !== null) {
+            $this->sectionForTeacher($parentId);
+        }
+
+        $this->selectedParentId = $parentId;
+        $this->newSectionType = 'custom_content';
+        $this->showCreateModal = true;
+    }
+
+    public function closeAddSectionModal(): void
+    {
+        $this->showCreateModal = false;
+        $this->selectedParentId = null;
+        $this->newSectionType = 'custom_content';
+    }
+
+    public function createSectionFromModal(): void
+    {
+        $validated = $this->validate([
+            'selectedParentId' => ['nullable', Rule::in($this->currentLearningUnit->sections->pluck('id')->all())],
+            'newSectionType' => ['required', Rule::in(array_keys($this->sectionTypeChoices()))],
+        ]);
+
+        $sectionType = $validated['newSectionType'];
+        $section = app(DynamicOutlineService::class)->createSection($this->currentLearningUnit, [
+            'parent_id' => $validated['selectedParentId'],
+            'title' => $this->defaultTitleFor($sectionType),
+            'section_type' => $sectionType,
+            'editor_type' => DynamicOutlineService::DEFAULT_EDITORS[$sectionType],
+        ]);
+
+        $this->closeAddSectionModal();
+        $this->loadTree();
+        $this->selectSection($section->id);
+
+        session()->flash('status', 'Bagian baru berhasil ditambahkan.');
     }
 
     public function createRootSection(): void
@@ -145,8 +189,8 @@ class ManageLearningUnitOutline extends Component
             'settingsText' => ['nullable', 'string'],
         ]);
 
-        $data = $validated['form'];
-        $data['content_json'] = $this->decodedJsonOrFormArray($this->contentJsonText, $this->form['content_json'] ?? null, 'contentJsonText');
+        $data = $this->withFriendlyLinkType($validated['form']);
+        $data['content_json'] = $this->contentJsonForSave($data['editor_type']);
         $data['settings'] = $this->decodedJsonOrFormArray($this->settingsText, $this->form['settings'] ?? null, 'settingsText');
 
         $this->selectedSection = app(DynamicOutlineService::class)->updateSection($this->selectedSection, $data);
@@ -154,6 +198,13 @@ class ManageLearningUnitOutline extends Component
         $this->selectSection($this->selectedSection->id);
 
         session()->flash('status', 'Section outline berhasil disimpan.');
+    }
+
+    public function updatedFormSectionType(string $sectionType): void
+    {
+        if (isset(DynamicOutlineService::DEFAULT_EDITORS[$sectionType])) {
+            $this->form['editor_type'] = DynamicOutlineService::DEFAULT_EDITORS[$sectionType];
+        }
     }
 
     public function deleteSection(int $sectionId): void
@@ -224,6 +275,20 @@ class ManageLearningUnitOutline extends Component
         return redirect()->route(auth()->user()->hasRole('admin') ? 'admin.learning-units.preview' : 'guru.learning-units.preview', $this->currentLearningUnit);
     }
 
+    public function openMediaModal(): void
+    {
+        abort_unless($this->selectedSection, 404);
+
+        $this->resetMediaForm();
+        $this->showMediaModal = true;
+    }
+
+    public function closeMediaModal(): void
+    {
+        $this->showMediaModal = false;
+        $this->resetMediaForm();
+    }
+
     public function addMedia(): void
     {
         abort_unless($this->selectedSection, 404);
@@ -251,8 +316,7 @@ class ManageLearningUnitOutline extends Component
             'order' => $this->selectedSection->media()->max('order') + 1,
         ]);
 
-        $this->reset(['mediaTitle', 'mediaUrl', 'mediaEmbedCode', 'mediaFile']);
-        $this->mediaType = 'image';
+        $this->closeMediaModal();
         $this->selectSection($this->selectedSection->id);
 
         session()->flash('status', 'Media section berhasil ditambahkan.');
@@ -288,6 +352,9 @@ class ManageLearningUnitOutline extends Component
                 Assessment::class => 'Asesmen',
                 Media::class => 'Media',
             ],
+            'sectionTypeChoices' => $this->sectionTypeChoices(),
+            'selectedSectionLabel' => $this->selectedSection ? $this->humanSectionLabel($this->selectedSection->section_type) : null,
+            'editorView' => $this->editorView(),
         ]);
     }
 
@@ -346,12 +413,98 @@ class ManageLearningUnitOutline extends Component
         return [
             'id' => $section->id,
             'title' => $section->title,
+            'label' => $this->humanSectionLabel($section->section_type),
             'section_type' => $section->section_type,
             'is_visible' => $section->is_visible,
             'is_required' => $section->is_required,
             'is_locked' => $section->is_locked,
             'children' => $section->children->map(fn (LearningUnitSection $child): array => $this->treeNode($child))->all(),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function sectionTypeChoices(): array
+    {
+        return [
+            'learning_objective' => 'Tujuan Pembelajaran',
+            'key_points' => 'Pokok-Pokok Materi',
+            'material_group' => 'Uraian Materi',
+            'material_item' => 'Submateri',
+            'activity_group' => 'Aktivitas Pembelajaran',
+            'activity_item' => 'Aktivitas',
+            'forum' => 'Forum Diskusi/Refleksi',
+            'assessment_group' => 'Asesmen Formatif',
+            'media_gallery' => 'Galeri Media',
+            'custom_content' => 'Konten Bebas',
+        ];
+    }
+
+    private function humanSectionLabel(?string $sectionType): string
+    {
+        return $this->sectionTypeChoices()[$sectionType] ?? 'Bagian';
+    }
+
+    private function defaultTitleFor(string $sectionType): string
+    {
+        return $this->humanSectionLabel($sectionType);
+    }
+
+    private function editorView(): string
+    {
+        if (($this->form['editor_type'] ?? null) === 'custom_json') {
+            return 'livewire.guru.outline.editors.custom-json';
+        }
+
+        return match ($this->form['section_type'] ?? null) {
+            'learning_objective' => 'livewire.guru.outline.editors.rich-text',
+            'key_points' => 'livewire.guru.outline.editors.key-points',
+            'material_group' => 'livewire.guru.outline.editors.material',
+            'material_item' => 'livewire.guru.outline.editors.material',
+            'activity_group' => 'livewire.guru.outline.editors.activity',
+            'activity_item' => 'livewire.guru.outline.editors.activity',
+            'forum' => 'livewire.guru.outline.editors.forum',
+            'assessment_group' => 'livewire.guru.outline.editors.assessment',
+            'question_group' => 'livewire.guru.outline.editors.question-group',
+            'media_gallery' => 'livewire.guru.outline.editors.media-gallery',
+            default => 'livewire.guru.outline.editors.rich-text',
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withFriendlyLinkType(array $data): array
+    {
+        if (blank($data['linked_model_id'] ?? null)) {
+            return $data;
+        }
+
+        $data['linked_model_type'] = match ($data['section_type'] ?? null) {
+            'material_item' => Material::class,
+            'activity_item', 'forum' => Activity::class,
+            'assessment_group' => Assessment::class,
+            default => $data['linked_model_type'] ?? null,
+        };
+
+        return $data;
+    }
+
+    private function contentJsonForSave(string $editorType): ?array
+    {
+        if (in_array($editorType, ['key_points_table', 'forum_link', 'question_group'], true)) {
+            return is_array($this->form['content_json'] ?? null) ? $this->form['content_json'] : null;
+        }
+
+        return $this->decodedJsonOrFormArray($this->contentJsonText, $this->form['content_json'] ?? null, 'contentJsonText');
+    }
+
+    private function resetMediaForm(): void
+    {
+        $this->reset(['mediaTitle', 'mediaUrl', 'mediaEmbedCode', 'mediaFile']);
+        $this->mediaType = 'image';
     }
 
     private function decodedJsonOrFormArray(string $json, mixed $fallback, string $errorKey): ?array
