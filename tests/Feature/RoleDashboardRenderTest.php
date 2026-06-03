@@ -41,3 +41,18 @@ test('users cannot access another role dashboard', function (string $role, strin
     'murid cannot access admin dashboard' => ['murid', 'admin.dashboard'],
     'murid cannot access guru dashboard' => ['murid', 'guru.dashboard'],
 ]);
+
+test('admin dashboard navigation links point to implemented admin features', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.dashboard'));
+
+    $response->assertOk()
+        ->assertSee(route('admin.users'), false)
+        ->assertSee(route('admin.classes'), false)
+        ->assertSee(route('admin.subjects'), false)
+        ->assertSee(route('admin.reports'), false)
+        ->assertDontSee('href="#"', false);
+});

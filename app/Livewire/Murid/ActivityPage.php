@@ -11,6 +11,7 @@ use App\Services\Learning\ActivityDiscussionService;
 use App\Services\Learning\ActivitySchemaValidator;
 use App\Services\Learning\ProgressService;
 use App\Services\Learning\ProjectDraftService;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -229,6 +230,21 @@ class ActivityPage extends Component
         }
     }
 
+    #[Computed]
+    public function nextStepUrl(): string
+    {
+        $nextActivity = Activity::where('learning_unit_id', $this->currentActivity->learning_unit_id)
+            ->where('order', '>', $this->currentActivity->order)
+            ->orderBy('order')
+            ->first();
+
+        if ($nextActivity) {
+            return route('murid.activities.show', $nextActivity->id);
+        }
+
+        return route('murid.learning-units.show', $this->currentActivity->learning_unit_id);
+    }
+
     public function render()
     {
         return view('livewire.murid.activity-page', [
@@ -236,6 +252,7 @@ class ActivityPage extends Component
             'answer' => $this->existingAnswer,
             'activityMedia' => $this->activityMedia(),
             'discussions' => $this->activityDiscussions(),
+            'nextStepUrl' => $this->nextStepUrl(),
         ]);
     }
 

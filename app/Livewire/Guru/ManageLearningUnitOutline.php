@@ -62,7 +62,9 @@ class ManageLearningUnitOutline extends Component
             ->when(! auth()->user()->hasRole('admin'), fn ($query) => $query->whereHas('module', fn ($moduleQuery) => $moduleQuery->where('created_by', auth()->id())))
             ->findOrFail($learningUnit);
 
-        app(LearningUnitOutlineService::class)->ensureDefaultOutline($this->currentLearningUnit);
+        if ($this->currentLearningUnit->sections()->count() === 0) {
+            app(LearningUnitOutlineService::class)->ensureDefaultOutline($this->currentLearningUnit);
+        }
         $this->loadTree();
         $this->selectSection($this->currentLearningUnit->rootSections->first()?->id);
     }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Laravel\Fortify\Features;
 
 test('login screen can be rendered', function () {
@@ -22,6 +23,44 @@ test('users can authenticate using the login screen', function () {
         ->assertRedirect(route('dashboard', absolute: false));
 
     $this->assertAuthenticated();
+});
+
+test('students authenticate using nisn instead of email', function () {
+    $this->seed(RoleSeeder::class);
+
+    $user = User::factory()->create([
+        'nisn' => '1234567890',
+    ]);
+    $user->assignRole('murid');
+
+    $response = $this->post(route('login.store'), [
+        'email' => '1234567890',
+        'password' => 'password',
+    ]);
+
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('dashboard', absolute: false));
+
+    $this->assertAuthenticatedAs($user);
+});
+
+test('students can not authenticate using email', function () {
+    $this->seed(RoleSeeder::class);
+
+    $user = User::factory()->create([
+        'nisn' => '1234567890',
+    ]);
+    $user->assignRole('murid');
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertSessionHasErrorsIn('email');
+
+    $this->assertGuest();
 });
 
 test('users can not authenticate with invalid password', function () {

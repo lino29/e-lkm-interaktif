@@ -78,6 +78,28 @@ test('assessment submit stores answers and total score', function () {
         ->and((float) $answer->score)->toBe(10.0);
 });
 
+test('submitted assessment result and review pages render from route parameters', function () {
+    [$assessment, $question] = createAssessmentFlowFixture($this);
+
+    Livewire::actingAs($this->student)
+        ->test(AssessmentPage::class, ['assessment' => $assessment->id])
+        ->set("answers.{$question->id}", 'B')
+        ->call('submit')
+        ->assertHasNoErrors();
+
+    $this->actingAs($this->student)
+        ->get(route('murid.assessments.result', $assessment->id))
+        ->assertOk()
+        ->assertSee('Hasil Asesmen')
+        ->assertSee($assessment->title);
+
+    $this->actingAs($this->student)
+        ->get(route('murid.assessments.review', $assessment->id))
+        ->assertOk()
+        ->assertSee('Review Hasil')
+        ->assertSee($question->question_text);
+});
+
 test('failed assessment updates progress as remedial', function () {
     [$assessment, $question] = createAssessmentFlowFixture($this);
 

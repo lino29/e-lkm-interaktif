@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -28,6 +30,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->configureActions();
         $this->configureViews();
+        $this->configureAuthentication();
         $this->configureRateLimiting();
     }
 
@@ -52,6 +55,32 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::registerView(fn () => view('pages::auth.register'));
         Fortify::resetPasswordView(fn () => view('pages::auth.reset-password'));
         Fortify::requestPasswordResetLinkView(fn () => view('pages::auth.forgot-password'));
+    }
+
+    /**
+     * Configure authentication.
+     */
+    private function configureAuthentication(): void
+    {
+        Fortify::authenticateUsing(function (Request $request): ?User {
+            $login = trim((string) $request->input(Fortify::username()));
+            $password = (string) $request->input('password');
+            $isStudentNisn = preg_match('/^\d{10}$/', $login) === 1;
+
+            $user = $isStudentNisn
+                ? User::role('murid')->where('nisn', $login)->first()
+                : User::where('email', $login)->first();
+
+            if ($user === null) {
+                return null;
+            }
+
+            if (! $isStudentNisn && $user->hasRole('murid')) {
+                return null;
+            }
+
+            return Hash::check($password, $user->password) ? $user : null;
+        });
     }
 
     /**

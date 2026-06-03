@@ -33,11 +33,15 @@ class DemoUserSeeder extends Seeder
             ['email' => 'murid@elkm.test'],
             [
                 'class_room_id' => $classRoom->id,
+                'nisn' => '1234567890',
                 'name' => 'Murid Demo',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
             ],
         );
+        if ($student->nisn === null) {
+            $student->forceFill(['nisn' => '1234567890'])->save();
+        }
         $student->assignRole('murid');
     }
 }

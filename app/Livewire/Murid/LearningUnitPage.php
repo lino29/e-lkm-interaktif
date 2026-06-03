@@ -31,7 +31,9 @@ class LearningUnitPage extends Component
             ->whereHas('module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($learningUnit);
 
-        app(LearningUnitOutlineService::class)->ensureDefaultOutline($this->currentLearningUnit);
+        if ($this->currentLearningUnit->sections()->count() === 0) {
+            app(LearningUnitOutlineService::class)->ensureDefaultOutline($this->currentLearningUnit);
+        }
         $this->currentLearningUnit = $this->currentLearningUnit->fresh([
             'module',
             'rootSections.children.media',
@@ -99,6 +101,44 @@ class LearningUnitPage extends Component
         }
 
         return $statuses;
+    }
+
+    #[Computed]
+    public function flatVisibleSections()
+    {
+        $flatten = function ($sections) use (&$flatten) {
+            $result = collect();
+            foreach ($sections as $section) {
+                if ($section->is_visible) {
+                    $result->push($section);
+                    if ($section->children->isNotEmpty()) {
+                        $result = $result->concat($flatten($section->children));
+                    }
+                }
+            }
+
+            return $result;
+        };
+
+        return $flatten($this->currentLearningUnit->rootSections);
+    }
+
+    #[Computed]
+    public function previousSection(): ?LearningUnitSection
+    {
+        $flat = $this->flatVisibleSections();
+        $index = $flat->search(fn ($s) => $s->id === $this->activeSectionId);
+
+        return $index !== false && $index > 0 ? $flat[$index - 1] : null;
+    }
+
+    #[Computed]
+    public function nextSection(): ?LearningUnitSection
+    {
+        $flat = $this->flatVisibleSections();
+        $index = $flat->search(fn ($s) => $s->id === $this->activeSectionId);
+
+        return $index !== false && $index < $flat->count() - 1 ? $flat[$index + 1] : null;
     }
 
     public function render()

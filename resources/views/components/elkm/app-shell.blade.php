@@ -47,15 +47,16 @@
         <nav class="screen-nav grid gap-2">
             @if($sidebarRole === 'admin')
                 <x-elkm.nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')" icon="🏠">Dashboard Admin</x-elkm.nav-link>
-                <x-elkm.nav-link href="#" icon="👥">Pengguna</x-elkm.nav-link>
-                <x-elkm.nav-link href="#" icon="🏫">Kelas</x-elkm.nav-link>
-                <x-elkm.nav-link href="#" icon="📖">Mapel</x-elkm.nav-link>
-                <x-elkm.nav-link href="#" icon="📋">Laporan</x-elkm.nav-link>
+                <x-elkm.nav-link href="{{ route('admin.users') }}" :active="request()->routeIs('admin.users', 'admin.teachers', 'admin.students')" icon="👥">Pengguna</x-elkm.nav-link>
+                <x-elkm.nav-link href="{{ route('admin.classes') }}" :active="request()->routeIs('admin.classes')" icon="🏫">Kelas</x-elkm.nav-link>
+                <x-elkm.nav-link href="{{ route('admin.subjects') }}" :active="request()->routeIs('admin.subjects')" icon="📖">Mapel</x-elkm.nav-link>
+                <x-elkm.nav-link href="{{ route('admin.reports') }}" :active="request()->routeIs('admin.reports')" icon="📋">Laporan</x-elkm.nav-link>
             @elseif($sidebarRole === 'guru')
                 <x-elkm.nav-link href="{{ route('guru.dashboard') }}" :active="request()->routeIs('guru.dashboard')" icon="🏠">Dashboard Guru</x-elkm.nav-link>
                 <x-elkm.nav-link href="{{ route('guru.modules') }}" :active="request()->routeIs('guru.modules')" icon="📚">Modul E-LKM</x-elkm.nav-link>
-                <x-elkm.nav-link href="{{ route('guru.activities') }}" :active="request()->routeIs('guru.activities')" icon="📝">Kegiatan</x-elkm.nav-link>
+                <x-elkm.nav-link href="{{ route('guru.learning-units') }}" :active="request()->routeIs('guru.learning-units', 'guru.activities')" icon="📝">Kegiatan</x-elkm.nav-link>
                 <x-elkm.nav-link href="{{ route('guru.assessments') }}" :active="request()->routeIs('guru.assessments', 'guru.questions', 'guru.rubrics')" icon="📋">Asesmen</x-elkm.nav-link>
+                <x-elkm.nav-link href="{{ route('guru.remedials') }}" :active="request()->routeIs('guru.remedials')" icon="🔄">Remedial</x-elkm.nav-link>
                 <x-elkm.nav-link href="{{ route('guru.reports') }}" :active="request()->routeIs('guru.reports')" icon="📈">Laporan</x-elkm.nav-link>
             @elseif($sidebarRole === 'murid')
                 <x-elkm.nav-link href="{{ route('murid.dashboard') }}" :active="request()->routeIs('murid.dashboard')" icon="🏠">Dashboard Murid</x-elkm.nav-link>

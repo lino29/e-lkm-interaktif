@@ -13,7 +13,11 @@
     </div>
 
     @if (session('status'))
-        <flux:callout>{{ session('status') }}</flux:callout>
+        <flux:callout variant="success">{{ session('status') }}</flux:callout>
+    @endif
+
+    @if (session('error'))
+        <flux:callout variant="danger">{{ session('error') }}</flux:callout>
     @endif
 
     @if ($latestAttempt)

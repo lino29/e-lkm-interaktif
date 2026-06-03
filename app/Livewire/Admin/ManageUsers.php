@@ -4,11 +4,13 @@ namespace App\Livewire\Admin;
 
 use App\Models\ClassRoom;
 use App\Models\User;
+use App\Services\Admin\UserCsvImportService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManageUsers extends Component
 {
@@ -18,6 +20,8 @@ class ManageUsers extends Component
 
     public string $email = '';
 
+    public string $nisn = '';
+
     public string $password = 'password';
 
     public string $role = 'murid';
@@ -26,94 +30,95 @@ class ManageUsers extends Component
 
     public $csvFile;
 
+    /**
+     * @var array<int, string>
+     */
+    public array $importErrors = [];
+
+    public ?string $importStatus = null;
+
+    public function updatedRole(): void
+    {
+        if ($this->role !== 'murid') {
+            $this->nisn = '';
+            $this->class_room_id = null;
+        }
+    }
+
     public function save(): void
     {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => [
+                Rule::requiredIf(fn (): bool => $this->role !== 'murid'),
+                'nullable',
+                'email',
+                'max:255',
+                'unique:users,email',
+            ],
+            'nisn' => [
+                Rule::requiredIf(fn (): bool => $this->role === 'murid'),
+                'nullable',
+                'digits:10',
+                'unique:users,nisn',
+            ],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', Rule::exists('roles', 'name')],
-            'class_room_id' => ['nullable', Rule::exists('class_rooms', 'id')],
+            'class_room_id' => [
+                Rule::requiredIf(fn (): bool => $this->role === 'murid'),
+                'nullable',
+                Rule::exists('class_rooms', 'id'),
+            ],
         ]);
 
         $user = User::create([
             'class_room_id' => $validated['role'] === 'murid' ? $validated['class_room_id'] : null,
+            'nisn' => $validated['role'] === 'murid' ? $validated['nisn'] : null,
             'name' => $validated['name'],
-            'email' => $validated['email'],
+            'email' => $validated['role'] === 'murid'
+                ? $this->studentEmail($validated['nisn'])
+                : $validated['email'],
             'password' => Hash::make($validated['password']),
             'email_verified_at' => now(),
         ]);
         $user->assignRole($validated['role']);
 
-        $this->reset(['name', 'email', 'class_room_id']);
+        $this->reset(['name', 'email', 'nisn', 'class_room_id']);
         $this->password = 'password';
         $this->role = 'murid';
         session()->flash('status', 'Pengguna berhasil dibuat.');
     }
 
-    public function importCsv(): void
+    public function importTeacherCsv(UserCsvImportService $importer): void
     {
-        $this->validate([
-            'csvFile' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
-        ]);
+        $this->importCsvForRole($importer, 'guru', 'import-teachers-modal');
+    }
 
-        $file = $this->csvFile->getRealPath();
-        $handle = fopen($file, 'r');
-        if ($handle === false) {
-            session()->flash('error', 'Gagal membaca file CSV.');
+    public function importStudentCsv(UserCsvImportService $importer): void
+    {
+        $this->importCsvForRole($importer, 'murid', 'import-students-modal');
+    }
 
-            return;
-        }
+    public function downloadTeacherCsvTemplate(): StreamedResponse
+    {
+        return $this->downloadCsvTemplate(
+            'template-import-guru.csv',
+            [
+                ['name', 'email', 'password'],
+                ['Guru Projek IPAS', 'guru.ipas@example.test', 'password123'],
+            ],
+        );
+    }
 
-        $header = fgetcsv($handle, 1000, ',');
-        // Convert header to lowercase
-        $header = array_map('strtolower', $header);
-
-        $successCount = 0;
-        $errors = [];
-
-        while (($data = fgetcsv($handle, 1000, ',')) !== false) {
-            if (count($header) !== count($data)) {
-                continue; // Skip invalid rows
-            }
-
-            $row = array_combine($header, $data);
-
-            if (! isset($row['name']) || ! isset($row['email']) || ! isset($row['password']) || ! isset($row['role'])) {
-                $errors[] = 'Baris tidak valid, pastikan kolom name, email, password, role ada.';
-
-                continue;
-            }
-
-            try {
-                // If user exists, skip (or update, but skip is safer for simple import)
-                $user = User::where('email', $row['email'])->first();
-                if (! $user) {
-                    $user = User::create([
-                        'name' => $row['name'],
-                        'email' => $row['email'],
-                        'password' => Hash::make($row['password']),
-                        'email_verified_at' => now(),
-                    ]);
-                    $user->assignRole($row['role']);
-                    $successCount++;
-                } else {
-                    $errors[] = "Email {$row['email']} sudah ada.";
-                }
-            } catch (\Exception $e) {
-                $errors[] = "Gagal memproses {$row['email']}: ".$e->getMessage();
-            }
-        }
-        fclose($handle);
-
-        $this->reset('csvFile');
-        $this->dispatch('close-modal', 'import-users-modal');
-
-        if (count($errors) > 0) {
-            session()->flash('error', "Import selesai dengan $successCount berhasil. ".count($errors).' gagal.');
-        } else {
-            session()->flash('status', "$successCount pengguna berhasil diimport.");
-        }
+    public function downloadStudentCsvTemplate(): StreamedResponse
+    {
+        return $this->downloadCsvTemplate(
+            'template-import-murid.csv',
+            [
+                ['name', 'nisn', 'password', 'kelas'],
+                ['Murid Energi', '1234567890', 'password123', 'X-TKJ-1'],
+            ],
+        );
     }
 
     public function render()
@@ -123,5 +128,57 @@ class ManageUsers extends Component
             'roles' => Role::pluck('name'),
             'classes' => ClassRoom::orderBy('name')->get(),
         ]);
+    }
+
+    private function importCsvForRole(UserCsvImportService $importer, string $role, string $modalName): void
+    {
+        $this->resetImportMessages();
+
+        $this->validate([
+            'csvFile' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+        ]);
+
+        $result = $importer->import($this->csvFile, $role);
+
+        $this->reset('csvFile');
+        $this->dispatch('close-modal', $modalName);
+
+        if ($result['errors'] !== []) {
+            $this->importErrors = $result['errors'];
+            $this->importStatus = "Import selesai dengan {$result['created']} berhasil dan ".count($result['errors']).' gagal.';
+            session()->flash('error', $this->importStatus);
+        } else {
+            $this->importStatus = "{$result['created']} pengguna berhasil diimport.";
+            session()->flash('status', $this->importStatus);
+        }
+    }
+
+    /**
+     * @param  array<int, array<int, string>>  $rows
+     */
+    private function downloadCsvTemplate(string $filename, array $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($rows): void {
+            $output = fopen('php://output', 'w');
+
+            foreach ($rows as $row) {
+                fputcsv($output, $row);
+            }
+
+            fclose($output);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    private function resetImportMessages(): void
+    {
+        $this->importErrors = [];
+        $this->importStatus = null;
+    }
+
+    private function studentEmail(string $nisn): string
+    {
+        return "{$nisn}@murid.elkm.local";
     }
 }

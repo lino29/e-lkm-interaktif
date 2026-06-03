@@ -21,11 +21,13 @@ class CreateNewUser implements CreatesNewUsers
     {
         Validator::make($input, [
             ...$this->profileRules(),
+            'nisn' => ['required', 'digits:10', 'unique:users,nisn'],
             'password' => $this->passwordRules(),
         ])->validate();
 
         $user = User::create([
             'name' => $input['name'],
+            'nisn' => $input['nisn'],
             'email' => $input['email'],
             'password' => $input['password'],
         ]);

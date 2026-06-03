@@ -71,14 +71,28 @@
                         $schema['input_type'] = $activity->input_type;
                     @endphp
                     
-                    <x-elkm.activity-renderer :schema="$schema" />
+                    <x-elkm.activity-renderer :schema="$schema" :rows="$answer_json" />
 
-                    @if (! ($answer?->status === 'reviewed'))
-                        <div class="flex gap-2 pt-6 mt-6 border-t border-elkm-line">
-                            <button type="button" wire:click="saveDraft" class="btn-elkm btn-elkm-outline">Simpan Draft</button>
-                            <button type="submit" wire:confirm="Yakin ingin mengirim? Jawaban yang disubmit akan dikunci." class="btn-elkm btn-elkm-primary">Kirim Jawaban</button>
+                    @if($activity->input_type === 'table' && ($schema['allow_add'] ?? true))
+                        <div class="mt-4">
+                            <button type="button" wire:click="addTableRow" class="text-sm btn-elkm btn-elkm-soft">
+                                + Tambah Baris
+                            </button>
                         </div>
                     @endif
+
+                    <div class="flex items-center justify-between pt-6 mt-6 border-t border-elkm-line">
+                        <div class="flex gap-2">
+                            @if (! ($answer?->status === 'reviewed'))
+                                <button type="button" wire:click="saveDraft" class="btn-elkm btn-elkm-outline">Simpan Draft</button>
+                                <button type="submit" wire:confirm="Yakin ingin mengirim? Jawaban yang disubmit akan dikunci." class="btn-elkm btn-elkm-primary">Kirim Jawaban</button>
+                            @endif
+                        </div>
+                        
+                        <a href="{{ $nextStepUrl }}" wire:navigate class="btn-elkm btn-elkm-soft">
+                            Tahap Berikutnya &rarr;
+                        </a>
+                    </div>
                 </form>
             </x-elkm.app-card>
 

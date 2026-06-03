@@ -30,6 +30,19 @@
                 placeholder="email@example.com"
             />
 
+            <!-- NISN -->
+            <flux:input
+                name="nisn"
+                :label="__('NISN')"
+                :value="old('nisn')"
+                type="text"
+                required
+                maxlength="10"
+                inputmode="numeric"
+                autocomplete="username"
+                placeholder="1234567890"
+            />
+
             <!-- Password -->
             <flux:input
                 name="password"

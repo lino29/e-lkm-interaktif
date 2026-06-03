@@ -69,6 +69,25 @@ class AssessmentPage extends Component
         }
 
         $this->loadDraftAnswers();
+        $this->initializeEmptyAnswers();
+    }
+
+    private function initializeEmptyAnswers(): void
+    {
+        foreach ($this->currentAssessment->questions as $question) {
+            if (! isset($this->answers[$question->id])) {
+                if (in_array($question->question_type, ['complex_multiple_choice', 'matching'])) {
+                    $this->answers[$question->id] = [];
+                } else {
+                    $this->answers[$question->id] = '';
+                }
+            } else {
+                if (in_array($question->question_type, ['complex_multiple_choice', 'matching']) && is_string($this->answers[$question->id])) {
+                    $decoded = json_decode($this->answers[$question->id], true);
+                    $this->answers[$question->id] = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', $this->answers[$question->id])));
+                }
+            }
+        }
     }
 
     public function saveCurrentGroup(): void
@@ -105,7 +124,7 @@ class AssessmentPage extends Component
         session()->flash('status', "Jawaban {$group['label']} berhasil disimpan.");
     }
 
-    public function submit(AssessmentScoringService $scoring): void
+    public function submit(AssessmentScoringService $scoring)
     {
         $this->persistCurrentGroupAnswers(false);
 
@@ -119,6 +138,23 @@ class AssessmentPage extends Component
 
         if ($attempt->submitted_at !== null || $attempt->status !== 'sedang_dikerjakan') {
             session()->flash('status', 'Attempt asesmen ini sudah dikirim.');
+
+            return;
+        }
+
+        // Validasi soal kosong
+        $unansweredCount = 0;
+        foreach ($this->currentAssessment->questions as $question) {
+            $answer = $this->normalizeAnswer($question->id, $question->question_type);
+
+            // Check if empty, allowing '0' or 0 as valid answers
+            if (empty($answer) && $answer !== '0' && $answer !== 0) {
+                $unansweredCount++;
+            }
+        }
+
+        if ($unansweredCount > 0) {
+            session()->flash('error', "Ada {$unansweredCount} soal yang belum diisi. Silakan cek kembali jawaban Anda pada seluruh bagian asesmen.");
 
             return;
         }
@@ -164,9 +200,9 @@ class AssessmentPage extends Component
             $progressService->refreshLearningUnitProgress(auth()->user(), $this->currentAssessment->learningUnit);
         }
 
-        $this->latestAttempt = $attempt->fresh();
-        $this->currentAttempt = $this->latestAttempt;
-        session()->flash('status', 'Asesmen berhasil dinilai otomatis.');
+        session()->flash('status', 'Asesmen berhasil disubmit dan dinilai otomatis.');
+
+        return redirect()->route('murid.assessments.result', $this->currentAssessment->id);
     }
 
     public function render()

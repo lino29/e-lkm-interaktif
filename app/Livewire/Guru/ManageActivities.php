@@ -51,6 +51,8 @@ class ManageActivities extends Component
 
     public ?string $mediaPath = null;
 
+    public array $preview = [];
+
     public function applyTemplate(): void
     {
         $learningUnitOrder = null;

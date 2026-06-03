@@ -1,76 +1,107 @@
-@props(['schema' => [], 'modelPrefix' => 'answers'])
+@props([
+    'schema' => [], 
+    'rows' => [],
+    'modelText' => null,
+    'modelJson' => null,
+    'modelField' => null,
+    'modelFile' => null,
+    'modelPrefix' => null
+])
 
 @php
     $inputType = $schema['input_type'] ?? 'short_text';
+    
+    $bindText = $modelText ?? ($modelPrefix ? "{$modelPrefix}.answer" : 'answer_text');
+    $bindFile = $modelFile ?? ($modelPrefix ? "{$modelPrefix}.file" : 'file');
+    $bindJson = $modelJson ?? ($modelPrefix ? "{$modelPrefix}.rows" : 'answer_json');
+    $bindField = $modelField ?? ($modelPrefix ? $modelPrefix : 'field_data');
 @endphp
 
 <div class="activity-renderer">
     @if($inputType === 'short_text')
-        <flux:input wire:model="{{ $modelPrefix }}.answer" placeholder="Tulis jawaban singkat..." />
+        <flux:input wire:model="{{ $bindText }}" placeholder="Tulis jawaban singkat..." />
         
     @elseif($inputType === 'essay')
-        <flux:textarea wire:model="{{ $modelPrefix }}.answer" placeholder="Tulis jawaban essay/uraian Anda di sini..." rows="6" />
+        <flux:textarea wire:model="{{ $bindText }}" placeholder="Tulis jawaban essay/uraian Anda di sini..." rows="6" />
         
     @elseif($inputType === 'file')
-        <flux:input type="file" wire:model="{{ $modelPrefix }}.file" />
-        <p class="text-xs text-elkm-muted mt-2">Format yang didukung: PDF, JPG, PNG, DOCX (Maks 5MB)</p>
+        <flux:input type="file" wire:model="{{ $bindFile }}" />
+        <p class="mt-2 text-xs text-elkm-muted">Format yang didukung: PDF, JPG, PNG, DOCX (Maks 5MB)</p>
         
     @elseif($inputType === 'discussion')
-        <div class="discussion-placeholder p-4 border border-elkm-line rounded-xl bg-elkm-surface-2 text-center text-elkm-muted">
-            <span class="text-2xl block mb-2">💬</span>
-            <p>Ruang diskusi akan terbuka saat aktivitas dimulai.</p>
-        </div>
+        <flux:textarea wire:model="{{ $bindText }}" placeholder="Tuliskan pendapat, hasil diskusi, atau pertanyaan Anda di sini..." rows="5" />
+        <p class="mt-2 text-xs text-elkm-muted">Jawaban Anda akan dibagikan ke Forum Diskusi agar dapat dilihat dan ditanggapi oleh guru serta teman kelas Anda.</p>
         
     @elseif($inputType === 'table')
         @php
             $columns = $schema['columns'] ?? [];
-            $minRows = $schema['min_rows'] ?? 5;
-            // Since this is a generic component, we rely on Livewire to provide the rows array
-            // Assuming the parent Livewire component has initialized `$answers['rows']` as an array
+            $rowCount = count($rows) > 0 ? count($rows) : ($schema['min_rows'] ?? 5);
         @endphp
         
         <div class="overflow-x-auto border border-elkm-line rounded-xl">
-            <table class="w-full text-left border-collapse text-sm">
+            <table class="w-full text-sm text-left border-collapse">
                 <thead>
                     <tr class="bg-elkm-surface-2">
-                        <th class="p-3 border-b border-elkm-line text-elkm-muted font-bold uppercase text-xs tracking-wider">No</th>
+                        <th class="p-3 text-xs font-bold tracking-wider uppercase border-b border-elkm-line text-elkm-muted">No</th>
                         @foreach($columns as $col)
-                            <th class="p-3 border-b border-elkm-line text-elkm-muted font-bold uppercase text-xs tracking-wider">{{ $col['name'] ?? 'Column' }}</th>
+                            <th class="p-3 text-xs font-bold tracking-wider uppercase border-b border-elkm-line text-elkm-muted">{{ $col['label'] ?? $col['name'] ?? 'Column' }}</th>
                         @endforeach
+                        @if($schema['allow_delete'] ?? true)
+                            <th class="p-3 text-xs font-bold tracking-wider text-right uppercase border-b border-elkm-line text-elkm-muted">Aksi</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- Di Blade biasa kita tidak bisa for loop row kosong yang belum ada di state tanpa JS/Livewire entangle. --}}
-                    {{-- Pendekatan di sini adalah melempar event ke komponen parent atau me-render berdasarkan data dari state parent --}}
-                    
-                    {{-- Mockup statis jika array kosong (misal saat pratinjau oleh guru) --}}
-                    @for($i = 0; $i < $minRows; $i++)
-                        <tr class="border-b border-elkm-line last:border-b-0 bg-white">
+                    @for($i = 0; $i < $rowCount; $i++)
+                        <tr class="bg-white border-b border-elkm-line last:border-b-0">
                             <td class="p-3 align-top">{{ $i + 1 }}</td>
                             @foreach($columns as $col)
                                 <td class="p-3 align-top">
                                     @if(($col['type'] ?? 'text') === 'select')
-                                        <flux:select wire:model="{{ $modelPrefix }}.rows.{{ $i }}.{{ $col['name'] }}" placeholder="Pilih...">
+                                        <flux:select wire:model="{{ $bindJson }}.{{ $i }}.{{ $col['name'] }}" placeholder="Pilih...">
                                             @foreach($col['options'] ?? ['Opsi 1', 'Opsi 2'] as $opt)
                                                 <flux:select.option value="{{ $opt }}">{{ $opt }}</flux:select.option>
                                             @endforeach
                                         </flux:select>
+                                    @elseif(($col['type'] ?? 'text') === 'readonly_text' || ($col['type'] ?? 'text') === 'computed')
+                                        <div class="p-2 text-sm bg-gray-50 text-elkm-muted rounded-lg border border-transparent">
+                                            {{ $rows[$i][$col['name']] ?? '-' }}
+                                        </div>
                                     @else
-                                        <flux:input wire:model="{{ $modelPrefix }}.rows.{{ $i }}.{{ $col['name'] }}" placeholder="Ketik {{ strtolower($col['name']) }}..." />
+                                        <flux:input wire:model="{{ $bindJson }}.{{ $i }}.{{ $col['name'] }}" placeholder="Ketik..." />
                                     @endif
                                 </td>
                             @endforeach
+                            @if($schema['allow_delete'] ?? true)
+                                <td class="p-3 text-right align-top">
+                                    <button type="button" wire:click="removeTableRow({{ $i }})" class="text-xs text-elkm-danger hover:underline">Hapus</button>
+                                </td>
+                            @endif
                         </tr>
                     @endfor
                 </tbody>
             </table>
         </div>
         
-    @elseif($inputType === 'project_form')
+    @elseif($inputType === 'project_form' || $inputType === 'fields')
+        @php
+            $fields = $schema['fields'] ?? [];
+        @endphp
         <div class="space-y-4">
-            <flux:input wire:model="{{ $modelPrefix }}.project_title" label="Judul Proyek" placeholder="Tuliskan judul proyek kelompok Anda..." />
-            <flux:textarea wire:model="{{ $modelPrefix }}.project_desc" label="Deskripsi Proyek" placeholder="Jelaskan secara singkat apa yang akan Anda buat..." rows="4" />
-            <flux:input type="file" wire:model="{{ $modelPrefix }}.proposal_file" label="Upload Proposal (Opsional)" />
+            @foreach($fields as $field)
+                @if(($field['type'] ?? 'text') === 'select')
+                    <flux:select wire:model="{{ $bindField }}.{{ $field['name'] }}" label="{{ $field['label'] ?? $field['name'] }}">
+                        <flux:select.option value="">Pilih...</flux:select.option>
+                        @foreach($field['options'] ?? [] as $opt)
+                            <flux:select.option value="{{ $opt }}">{{ $opt }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @elseif(($field['type'] ?? 'text') === 'textarea')
+                    <flux:textarea wire:model="{{ $bindField }}.{{ $field['name'] }}" label="{{ $field['label'] ?? $field['name'] }}" rows="4" />
+                @else
+                    <flux:input wire:model="{{ $bindField }}.{{ $field['name'] }}" label="{{ $field['label'] ?? $field['name'] }}" />
+                @endif
+            @endforeach
         </div>
         
     @else

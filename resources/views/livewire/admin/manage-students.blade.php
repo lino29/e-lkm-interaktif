@@ -3,7 +3,7 @@
     @foreach ($students as $student)
         <flux:card wire:key="student-{{ $student->id }}">
             <div class="font-semibold">{{ $student->name }}</div>
-            <flux:text>{{ $student->email }} · {{ $student->classRoom?->name ?? 'Belum punya kelas' }}</flux:text>
+            <flux:text>NISN {{ $student->nisn ?? '-' }} - {{ $student->classRoom?->name ?? 'Belum punya kelas' }}</flux:text>
         </flux:card>
     @endforeach
 </div>
