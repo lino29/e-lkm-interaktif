@@ -12,6 +12,7 @@ use App\Models\Rubric;
 use App\Models\StudentAnswer;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\Assessment\QuestionGroupService;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Livewire\Livewire;
@@ -205,6 +206,72 @@ test('complex and matching answers can be submitted as arrays', function () {
     expect((float) AssessmentAttempt::where('assessment_id', $assessment->id)->firstOrFail()->total_score)->toBe(20.0)
         ->and(StudentAnswer::where('question_id', $complex->id)->firstOrFail()->answer_json)->toBe(['A', 'B'])
         ->and(StudentAnswer::where('question_id', $matching->id)->firstOrFail()->answer_json)->toBe(['surya' => 'Matahari', 'angin' => 'Turbin']);
+});
+
+test('assessment page saves and navigates question groups one at a time', function () {
+    $assessment = Assessment::create([
+        'module_id' => $this->module->id,
+        'learning_unit_id' => $this->learningUnit->id,
+        'title' => 'Asesmen Bertahap',
+        'kktp' => 75,
+        'max_attempts' => 2,
+        'is_published' => true,
+    ]);
+
+    $multipleChoice = Question::create([
+        'assessment_id' => $assessment->id,
+        'question_text' => 'Pilih sumber energi terbarukan.',
+        'question_type' => 'multiple_choice',
+        'question_group' => 'pilihan_ganda_biasa',
+        'options' => ['A' => 'Batu bara', 'B' => 'Matahari'],
+        'correct_answer' => ['B'],
+        'weight' => 10,
+        'order' => 1,
+    ]);
+
+    $complexChoice = Question::create([
+        'assessment_id' => $assessment->id,
+        'question_text' => 'Pilih energi terbarukan.',
+        'question_type' => 'complex_multiple_choice',
+        'question_group' => 'pilihan_ganda_kompleks',
+        'options' => ['A' => 'Surya', 'B' => 'Angin', 'C' => 'Batu bara'],
+        'correct_answer' => ['A', 'B'],
+        'weight' => 10,
+        'order' => 2,
+    ]);
+
+    $component = Livewire::actingAs($this->student)
+        ->test(AssessmentPage::class, ['assessment' => $assessment->id])
+        ->assertSee(QuestionGroupService::GROUP_LABELS['pilihan_ganda_biasa'])
+        ->assertSee('Pilih sumber energi terbarukan.')
+        ->assertDontSee('Pilih energi terbarukan.')
+        ->set("answers.{$multipleChoice->id}", 'B')
+        ->call('saveCurrentGroup')
+        ->assertHasNoErrors()
+        ->assertSet('savedQuestionGroups.pilihan_ganda_biasa', true);
+
+    $attempt = AssessmentAttempt::where('assessment_id', $assessment->id)->firstOrFail();
+
+    expect(StudentAnswer::where('assessment_attempt_id', $attempt->id)
+        ->where('question_id', $multipleChoice->id)
+        ->firstOrFail()
+        ->answer_text)->toBe('B');
+
+    $component
+        ->call('nextGroup')
+        ->assertSet('currentGroupIndex', 1)
+        ->assertSee(QuestionGroupService::GROUP_LABELS['pilihan_ganda_kompleks'])
+        ->assertSee('Pilih energi terbarukan.')
+        ->assertDontSee('Pilih sumber energi terbarukan.')
+        ->set("answers.{$complexChoice->id}", ['A', 'B'])
+        ->call('submit')
+        ->assertHasNoErrors();
+
+    $attempt->refresh();
+
+    expect((float) $attempt->total_score)->toBe(20.0)
+        ->and(StudentAnswer::where('assessment_attempt_id', $attempt->id)->count())->toBe(2)
+        ->and(StudentAnswer::where('question_id', $complexChoice->id)->firstOrFail()->answer_json)->toBe(['A', 'B']);
 });
 
 /**

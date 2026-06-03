@@ -26,6 +26,25 @@
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
+
+    /* E-LKM Canvas Tokens */
+    --color-elkm-bg: #eef6f2;
+    --color-elkm-surface: #ffffff;
+    --color-elkm-surface-2: #f8fafc;
+    --color-elkm-line: #dbe7e2;
+    --color-elkm-text: #10231c;
+    --color-elkm-muted: #64756f;
+    --color-elkm-primary: #0f8f5f;
+    --color-elkm-primary-2: #0a6c48;
+    --color-elkm-accent: #f4b63f;
+    --color-elkm-danger: #e05252;
+    --color-elkm-info: #2478d4;
+    --color-elkm-purple: #6d5bd0;
+    --shadow-elkm: 0 18px 55px rgba(16, 35, 28, .10);
+    --radius-xl: 28px;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
 }
 
 @layer theme {
@@ -34,6 +53,61 @@
         --color-accent-content: var(--color-white);
         --color-accent-foreground: var(--color-neutral-800);
     }
+}
+
+@layer utilities {
+    .bg-elkm-canvas {
+        background: radial-gradient(circle at 12% 10%, rgba(15,143,95,.18), transparent 28%),
+                    radial-gradient(circle at 92% 8%, rgba(244,182,63,.18), transparent 26%),
+                    linear-gradient(135deg, #f7fbf9 0%, var(--color-elkm-bg) 100%);
+    }
+
+    .canvas-sidebar {
+        background: rgba(255,255,255,.78);
+        backdrop-filter: blur(16px);
+    }
+
+    .brand-mark {
+        background: linear-gradient(135deg, var(--color-elkm-primary), #20b47b);
+        box-shadow: 0 12px 30px rgba(15,143,95,.28);
+    }
+
+    .card-elkm {
+        background: white;
+        border: 1px solid var(--color-elkm-line);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 8px 24px rgba(16,35,28,.04);
+    }
+
+    .card-elkm.soft { background: #f9fcfb; }
+
+    .btn-elkm {
+        border: 0;
+        border-radius: 999px;
+        padding: 11px 16px;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-size: 14px;
+    }
+
+    .btn-elkm-primary { background: var(--color-elkm-primary); color: white; box-shadow: 0 10px 24px rgba(15,143,95,.22); }
+    .btn-elkm-soft { background: #e8f5ef; color: var(--color-elkm-primary-2); }
+    .btn-elkm-dark { background: #10231c; color: white; }
+    .btn-elkm-outline { border: 1px solid var(--color-elkm-line); color: var(--color-elkm-text); background: white; }
+    .btn-elkm-warning { background: #fff3d7; color: #946411; }
+    .btn-elkm-danger { background: #fff1f1; color: #b83333; }
+
+    .pill-elkm { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 850; }
+    .pill-elkm.green { background: #e4f8ef; color: #0a6c48; }
+    .pill-elkm.yellow { background: #fff4d8; color: #946411; }
+    .pill-elkm.blue { background: #e8f2ff; color: #1c64b7; }
+    .pill-elkm.red { background: #fff0f0; color: #bd3838; }
+    .pill-elkm.gray { background: #eef2f1; color: #66766f; }
+    .pill-elkm.purple { background: #f1edff; color: #5b47bd; }
 }
 
 @layer base {
@@ -167,6 +241,35 @@ select:focus[data-flux-control] {
     color: var(--color-zinc-300);
 }
 
+.plyr {
+    width: 100%;
+    border-radius: 0.5rem;
+}
+
+.plyr--video {
+    background: #0f172a;
+}
+
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* Force CKEditor to Light Mode */
+.ck, .ck-editor, :root {
+    --ck-color-base-background: #ffffff !important;
+    --ck-color-base-text: #10231c !important;
+    --ck-color-toolbar-background: #fbfdfc !important;
+    --ck-color-toolbar-border: #dbe7e2 !important;
+    --ck-color-button-default-background: transparent !important;
+    --ck-color-button-default-hover-background: #e4f8ef !important;
+    --ck-color-button-on-background: #e4f8ef !important;
+    --ck-color-button-on-color: #0a6c48 !important;
+    --ck-color-panel-background: #ffffff !important;
+    --ck-color-panel-border: #dbe7e2 !important;
+    --ck-color-list-background: #ffffff !important;
+    --ck-color-list-button-hover-background: #fbfdfc !important;
+    --ck-color-base-border: #dbe7e2 !important;
+    --ck-color-focus-border: #0f8f5f !important;
+    --ck-color-shadow-drop: rgba(16,35,28,.04) !important;
+    --ck-color-shadow-inner: rgba(16,35,28,.04) !important;
+}

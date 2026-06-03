@@ -35,6 +35,8 @@ import {
     Undo,
 } from 'ckeditor5';
 import 'ckeditor5/ckeditor5.css';
+import Plyr from 'plyr';
+import 'plyr/dist/plyr.css';
 
 window.CKEditorClassic = ClassicEditor;
 window.CKEditorConfig = {
@@ -197,3 +199,36 @@ window.CKEditorConfig = {
 };
 
 window.dispatchEvent(new CustomEvent('ckeditor:ready'));
+
+window.Plyr = Plyr;
+window.initPlyrPlayers = () => {
+    document.querySelectorAll('[data-plyr-player]').forEach((element) => {
+        if (element._plyr) {
+            return;
+        }
+
+        element._plyr = new Plyr(element, {
+            ratio: '16:9',
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+        });
+    });
+};
+
+let plyrInitFrame = null;
+const schedulePlyrInit = () => {
+    window.cancelAnimationFrame(plyrInitFrame);
+    plyrInitFrame = window.requestAnimationFrame(() => window.initPlyrPlayers());
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', schedulePlyrInit);
+} else {
+    schedulePlyrInit();
+}
+
+document.addEventListener('livewire:navigated', schedulePlyrInit);
+
+new MutationObserver(schedulePlyrInit).observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+});

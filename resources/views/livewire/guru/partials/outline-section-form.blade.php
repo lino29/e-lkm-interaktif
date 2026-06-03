@@ -17,7 +17,7 @@
 )
     <flux:field>
         <flux:label>Konten</flux:label>
-        <x-forms.rich-editor wire:model.live="contents.{{ $section->id }}" id="section-content-{{ $section->id }}" />
+        <x-forms.rich-editor wire:model="contents.{{ $section->id }}" id="section-content-{{ $section->id }}" />
     </flux:field>
 @endif
 

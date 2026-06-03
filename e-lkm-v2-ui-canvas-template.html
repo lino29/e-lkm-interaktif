@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-LKM V2 UI Canvas Template</title>
+  <style>
+    :root {
+      --bg: #eef6f2;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --line: #dbe7e2;
+      --text: #10231c;
+      --muted: #64756f;
+      --primary: #0f8f5f;
+      --primary-2: #0a6c48;
+      --accent: #f4b63f;
+      --danger: #e05252;
+      --info: #2478d4;
+      --purple: #6d5bd0;
+      --shadow: 0 18px 55px rgba(16, 35, 28, .10);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(15,143,95,.18), transparent 28%),
+        radial-gradient(circle at 92% 8%, rgba(244,182,63,.18), transparent 26%),
+        linear-gradient(135deg, #f7fbf9 0%, var(--bg) 100%);
+      min-height: 100vh;
+    }
+
+    .canvas-shell {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .canvas-sidebar {
+      padding: 28px;
+      border-right: 1px solid var(--line);
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .brand-mark {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--primary), #20b47b);
+      color: white;
+      font-weight: 900;
+      box-shadow: 0 12px 30px rgba(15,143,95,.28);
+    }
+
+    .brand h1 { font-size: 17px; line-height: 1.2; margin: 0; }
+    .brand p { font-size: 12px; color: var(--muted); margin: 3px 0 0; }
+
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .11em;
+      color: var(--muted);
+      margin: 24px 0 10px;
+      font-weight: 800;
+    }
+
+    .screen-nav { display: grid; gap: 8px; }
+    .screen-nav button {
+      border: 0;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+      border-radius: 16px;
+      padding: 13px 14px;
+      background: transparent;
+      color: #31443d;
+      font-weight: 750;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+    .screen-nav button:hover { background: #edf7f3; color: var(--primary-2); }
+    .screen-nav button.active { background: var(--primary); color: white; box-shadow: 0 12px 25px rgba(15,143,95,.24); }
+    .screen-nav .ico {
+      width: 28px;
+      height: 28px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: rgba(15,143,95,.11);
+      font-size: 14px;
+    }
+    .screen-nav button.active .ico { background: rgba(255,255,255,.18); }
+
+    .token-card {
+      background: #10231c;
+      color: white;
+      border-radius: 22px;
+      padding: 18px;
+      margin-top: 24px;
+      box-shadow: var(--shadow);
+    }
+    .token-card h3 { margin: 0 0 10px; font-size: 14px; }
+    .token-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,.12); font-size: 12px; }
+    .swatch { width: 54px; height: 14px; border-radius: 999px; }
+
+    .canvas-main { padding: 28px; min-width: 0; }
+    .canvas-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    .canvas-title h2 { margin: 0 0 7px; font-size: clamp(24px, 3vw, 38px); letter-spacing: -0.04em; }
+    .canvas-title p { margin: 0; color: var(--muted); max-width: 860px; line-height: 1.6; }
+    .canvas-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 10px 24px rgba(15,143,95,.22); }
+    .btn-soft { background: #e8f5ef; color: var(--primary-2); }
+    .btn-dark { background: #10231c; color: white; }
+    .btn-outline { border: 1px solid var(--line); color: var(--text); background: white; }
+    .btn-warning { background: #fff3d7; color: #946411; }
+    .btn-danger { background: #fff1f1; color: #b83333; }
+
+    .screen { display: none; animation: fadeIn .18s ease; }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .artboard {
+      max-width: 1240px;
+      margin: 0 auto 30px;
+      border-radius: 34px;
+      border: 1px solid rgba(16,35,28,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.82));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+    .artboard.dark { background: #10231c; color: white; }
+
+    .browser-bar {
+      height: 54px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 18px;
+      border-bottom: 1px solid rgba(16,35,28,.08);
+      background: rgba(255,255,255,.72);
+    }
+    .dark .browser-bar { background: rgba(255,255,255,.04); border-bottom-color: rgba(255,255,255,.10); }
+    .dot { width: 12px; height: 12px; border-radius: 99px; background: #e05252; }
+    .dot:nth-child(2) { background: #f4b63f; }
+    .dot:nth-child(3) { background: #2eb872; }
+    .urlbar { margin-left: 8px; padding: 10px 14px; background: #f1f5f3; border-radius: 999px; color: var(--muted); font-size: 12px; flex: 1; }
+    .dark .urlbar { background: rgba(255,255,255,.08); color: rgba(255,255,255,.65); }
+
+    .app-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 720px; }
+    .app-sidebar {
+      border-right: 1px solid var(--line);
+      background: #fbfdfc;
+      padding: 22px 18px;
+    }
+    .app-content { background: #f6faf8; padding: 24px; min-width: 0; }
+
+    .app-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .app-logo-mark { width: 44px; height: 44px; border-radius: 16px; background: var(--primary); color: white; display: grid; place-items: center; font-weight: 900; }
+    .app-logo b { display: block; }
+    .app-logo small { color: var(--muted); }
+
+    .menu { display: grid; gap: 7px; }
+    .menu a {
+      text-decoration: none;
+      color: #385148;
+      font-weight: 750;
+      padding: 11px 12px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+    .menu a.active { background: var(--primary); color: #fff; }
+    .menu a:not(.active):hover { background: #eef7f3; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+    .topbar h3 { margin: 0; font-size: 26px; letter-spacing: -.03em; }
+    .topbar p { margin: 4px 0 0; color: var(--muted); }
+    .search { min-width: 260px; border: 1px solid var(--line); background: white; border-radius: 999px; padding: 12px 16px; color: var(--muted); font-size: 14px; }
+    .avatar { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: white; border: 1px solid var(--line); border-radius: 999px; }
+    .avatar-img { width: 34px; height: 34px; border-radius: 99px; display: grid; place-items: center; background: #e8f5ef; color: var(--primary-2); font-weight: 900; }
+
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid-aside { grid-template-columns: minmax(0, 1.4fr) 360px; }
+
+    .card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(16,35,28,.04);
+    }
+    .card.soft { background: #f9fcfb; }
+    .card h4 { margin: 0 0 8px; font-size: 17px; letter-spacing: -.02em; }
+    .card p { margin: 0; color: var(--muted); line-height: 1.55; }
+
+    .stat { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .stat strong { display: block; font-size: 28px; letter-spacing: -.04em; margin-top: 10px; }
+    .stat span { color: var(--muted); font-size: 13px; font-weight: 650; }
+    .stat-icon { width: 44px; height: 44px; border-radius: 15px; display: grid; place-items: center; background: #eaf6f1; color: var(--primary); }
+
+    .hero-login {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) 440px;
+      min-height: 680px;
+      background:
+        linear-gradient(135deg, rgba(15,143,95,.92), rgba(16,35,28,.96)),
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500"><path fill="%23ffffff" opacity="0.1" d="M51 405c80-146 166-203 257-171 136 48 157-95 258-88 68 5 116 66 144 182v172H51z"/><circle cx="640" cy="96" r="70" fill="%23ffffff" opacity="0.14"/></svg>');
+      background-size: cover;
+    }
+    .hero-pane { padding: 54px; display: flex; flex-direction: column; justify-content: space-between; }
+    .hero-copy { max-width: 650px; }
+    .hero-copy h2 { font-size: clamp(34px, 5vw, 60px); line-height: .98; letter-spacing: -.06em; margin: 30px 0 18px; }
+    .hero-copy p { color: rgba(255,255,255,.78); font-size: 17px; line-height: 1.7; }
+    .login-card { align-self: center; margin-right: 34px; background: white; color: var(--text); border-radius: 30px; padding: 30px; width: min(100%, 410px); box-shadow: 0 30px 70px rgba(0,0,0,.22); }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-weight: 800; font-size: 13px; margin-bottom: 8px; }
+    .input, .textarea, .select {
+      width: 100%; border: 1px solid var(--line); border-radius: 15px; padding: 13px 14px; font: inherit; background: white; color: var(--text);
+    }
+    .textarea { min-height: 110px; resize: vertical; }
+
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 850; }
+    .pill.green { background: #e4f8ef; color: #0a6c48; }
+    .pill.yellow { background: #fff4d8; color: #946411; }
+    .pill.blue { background: #e8f2ff; color: #1c64b7; }
+    .pill.red { background: #fff0f0; color: #bd3838; }
+    .pill.gray { background: #eef2f1; color: #66766f; }
+    .pill.purple { background: #f1edff; color: #5b47bd; }
+
+    .progress { height: 10px; background: #edf3f0; border-radius: 999px; overflow: hidden; }
+    .progress > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), #20b47b); }
+    .progress.alt > i { background: linear-gradient(90deg, var(--accent), #f7cd70); }
+
+    table { width: 100%; border-collapse: collapse; overflow: hidden; }
+    th, td { text-align: left; padding: 13px 12px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; background: #f7fbf9; }
+    tr:last-child td { border-bottom: 0; }
+
+    .unit-list { display: grid; gap: 12px; }
+    .unit-item { display: grid; grid-template-columns: 42px 1fr auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: white; }
+    .unit-no { width: 42px; height: 42px; border-radius: 14px; background: #e8f5ef; color: var(--primary-2); display: grid; place-items: center; font-weight: 900; }
+    .unit-item.locked { opacity: .62; }
+    .unit-item.locked .unit-no { background: #eef1f0; color: #82908b; }
+
+    .activity-steps { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 20px; }
+    .step-chip { padding: 10px 12px; border-radius: 999px; background: white; border: 1px solid var(--line); font-weight: 800; font-size: 13px; color: var(--muted); }
+    .step-chip.done { background: #e4f8ef; color: var(--primary-2); border-color: #c7eadb; }
+    .step-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .step-chip.locked { background: #f1f4f3; color: #a0aaa6; }
+
+    .media-placeholder {
+      min-height: 230px;
+      border-radius: 22px;
+      background:
+        linear-gradient(135deg, rgba(15,143,95,.84), rgba(36,120,212,.72)),
+        repeating-linear-gradient(45deg, rgba(255,255,255,.10) 0 12px, transparent 12px 24px);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+    .media-placeholder::after {
+      content: '▶'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 58px; opacity: .85;
+    }
+    .media-placeholder h4, .media-placeholder p { position: relative; z-index: 1; color: white; }
+
+    .question-card { border: 1px solid var(--line); border-radius: 18px; padding: 16px; background: white; margin-bottom: 12px; }
+    .option { display: flex; gap: 10px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 14px; margin-top: 8px; font-weight: 650; color: #40534d; }
+    .option.selected { border-color: var(--primary); background: #eaf8f1; color: var(--primary-2); }
+
+    .kanban { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .kanban-col { background: #f7faf9; border: 1px solid var(--line); border-radius: 20px; padding: 14px; }
+    .kanban-col h4 { margin-bottom: 12px; }
+    .task { background: white; border: 1px solid var(--line); border-radius: 16px; padding: 13px; margin-bottom: 10px; }
+    .task b { display: block; font-size: 14px; margin-bottom: 6px; }
+    .task small { color: var(--muted); line-height: 1.45; display: block; }
+
+    .phone-preview { max-width: 390px; margin: 0 auto; border-radius: 42px; padding: 14px; border: 10px solid #10231c; background: #10231c; box-shadow: var(--shadow); }
+    .phone-screen { background: #f7fbf9; min-height: 690px; border-radius: 28px; overflow: hidden; padding: 18px; }
+
+    .note { padding: 14px 16px; border-radius: 18px; background: #fff8e8; border: 1px solid #f4e0ac; color: #704c0d; line-height: 1.55; }
+    .code-map { background: #0d1f18; color: #e7fff4; padding: 16px; border-radius: 18px; overflow: auto; font-size: 13px; line-height: 1.7; }
+
+    @media (max-width: 1100px) {
+      .canvas-shell { grid-template-columns: 1fr; }
+      .canvas-sidebar { position: static; height: auto; }
+      .screen-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .app-layout, .hero-login, .grid-aside, .grid-4 { grid-template-columns: 1fr; }
+      .app-sidebar { display: none; }
+      .login-card { margin: 0 24px 34px; }
+      .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .kanban { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .search { min-width: 0; width: 100%; }
+    }
+
+    @media (max-width: 620px) {
+      .canvas-main, .canvas-sidebar { padding: 18px; }
+      .screen-nav { grid-template-columns: 1fr; }
+      .hero-pane { padding: 28px; }
+      .canvas-head { flex-direction: column; }
+      .canvas-actions { justify-content: flex-start; }
+      .app-content { padding: 16px; }
+      .artboard { border-radius: 24px; }
+      .browser-bar { display: none; }
+      th, td { min-width: 130px; }
+      .card { padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="canvas-shell">
+    <aside class="canvas-sidebar">
+      <div class="brand">
+        <div class="brand-mark">EL</div>
+        <div>
+          <h1>E-LKM V2<br/>Design Canvas</h1>
+          <p>Template UI Laravel • Livewire • Tailwind</p>
+        </div>
+      </div>
+
+      <div class="section-label">Halaman Template</div>
+      <nav class="screen-nav" id="screenNav">
+        <button class="active" data-screen="overview"><span class="ico">🧭</span>Overview Canvas</button>
+        <button data-screen="login"><span class="ico">🔐</span>Landing & Login</button>
+        <button data-screen="admin"><span class="ico">🛡️</span>Dashboard Admin</button>
+        <button data-screen="guru"><span class="ico">👨‍🏫</span>Dashboard Guru</button>
+        <button data-screen="modul"><span class="ico">📚</span>Kelola Modul</button>
+        <button data-screen="aktivitas"><span class="ico">🧩</span>Kelola Aktivitas</button>
+        <button data-screen="murid"><span class="ico">🎓</span>Dashboard Murid</button>
+        <button data-screen="belajar"><span class="ico">⚡</span>Ruang Belajar</button>
+        <button data-screen="asesmen"><span class="ico">✅</span>Asesmen & Remedial</button>
+        <button data-screen="proyek"><span class="ico">🚀</span>Proyek & Portofolio</button>
+        <button data-screen="mobile"><span class="ico">📱</span>Mobile Template</button>
+        <button data-screen="mapping"><span class="ico">🧱</span>Mapping ke Blade</button>
+      </nav>
+
+      <div class="token-card">
+        <h3>Design Token Utama</h3>
+        <div class="token-row"><span>Primary</span><span class="swatch" style="background:#0f8f5f"></span></div>
+        <div class="token-row"><span>Accent</span><span class="swatch" style="background:#f4b63f"></span></div>
+        <div class="token-row"><span>Surface</span><span class="swatch" style="background:#ffffff"></span></div>
+        <div class="token-row"><span>Text</span><span class="swatch" style="background:#10231c"></span></div>
+      </div>
+    </aside>
+
+    <main class="canvas-main">
+      <header class="canvas-head">
+        <div class="canvas-title">
+          <h2>Template Tampilan Sistem E-LKM Interaktif</h2>
+          <p>Prototipe ini disusun sebagai rujukan desain awal untuk implementasi Blade/Livewire. Fokusnya bukan sekadar visual, tetapi juga memetakan flow sistem: role-based dashboard, modul belajar, activity engine, asesmen otomatis, remedial, forum, proyek, portofolio, dan laporan.</p>
+        </div>
+        <div class="canvas-actions">
+          <button class="btn btn-primary" onclick="window.print()">🖨️ Cetak Canvas</button>
+          <button class="btn btn-outline" onclick="showScreen('mapping')">🧱 Lihat Mapping</button>
+        </div>
+      </header>
+
+      <section class="screen active" id="screen-overview">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/design-canvas/e-lkm-v2/overview</div></div>
+          <div class="app-content" style="min-height:620px">
+            <div class="topbar">
+              <div>
+                <h3>Overview Arsitektur UI</h3>
+                <p>Struktur halaman dirancang agar bisa langsung dipecah menjadi layout, component, dan Livewire page.</p>
+              </div>
+              <span class="pill green">Template v1.0</span>
+            </div>
+            <div class="grid grid-4">
+              <div class="card stat"><div><span>Role Aktif</span><strong>3</strong></div><div class="stat-icon">👥</div></div>
+              <div class="card stat"><div><span>Kegiatan Belajar</span><strong>5</strong></div><div class="stat-icon">📚</div></div>
+              <div class="card stat"><div><span>Fase Aktivitas</span><strong>6</strong></div><div class="stat-icon">🧩</div></div>
+              <div class="card stat"><div><span>Output Modul</span><strong>12</strong></div><div class="stat-icon">📊</div></div>
+            </div>
+
+            <div class="grid grid-aside" style="margin-top:16px">
+              <div class="card">
+                <h4>Flow utama murid</h4>
+                <div class="activity-steps">
+                  <span class="step-chip done">Login</span>
+                  <span class="step-chip done">Dashboard</span>
+                  <span class="step-chip active">Modul</span>
+                  <span class="step-chip">Mengamati</span>
+                  <span class="step-chip">Bertanya</span>
+                  <span class="step-chip">Mencoba</span>
+                  <span class="step-chip">Menalar</span>
+                  <span class="step-chip">Menyimpulkan</span>
+                  <span class="step-chip">Forum</span>
+                  <span class="step-chip">Asesmen</span>
+                  <span class="step-chip locked">Remedial / Lanjut</span>
+                </div>
+                <div class="grid grid-2">
+                  <div class="card soft">
+                    <h4>Prinsip UI</h4>
+                    <p>Halaman murid harus fokus, bertahap, minim distraksi, dan selalu menampilkan status progres serta aksi berikutnya.</p>
+                  </div>
+                  <div class="card soft">
+                    <h4>Prinsip Teknis</h4>
+                    <p>Aktivitas tidak dibuat statis per halaman. Gunakan schema renderer agar tabel, form, essay, file, forum, dan proyek dapat dirender dari database.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <h4>Komponen Global</h4>
+                <table>
+                  <tr><td>Layout</td><td><span class="pill blue">App Shell</span></td></tr>
+                  <tr><td>Sidebar</td><td><span class="pill green">Role Menu</span></td></tr>
+                  <tr><td>Topbar</td><td><span class="pill gray">Search + User</span></td></tr>
+                  <tr><td>Card</td><td><span class="pill yellow">Stats + Action</span></td></tr>
+                  <tr><td>Stepper</td><td><span class="pill purple">Activity Flow</span></td></tr>
+                  <tr><td>Feedback</td><td><span class="pill red">Remedial State</span></td></tr>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-3" style="margin-top:16px">
+              <div class="card">
+                <h4>Admin</h4>
+                <p>Kontrol user, role, kelas, mata pelajaran, modul, dan laporan sistem.</p>
+              </div>
+              <div class="card">
+                <h4>Guru</h4>
+                <p>Mengatur modul, kegiatan belajar, materi, aktivitas, soal, rubrik, forum, proyek, nilai, dan remedial.</p>
+              </div>
+              <div class="card">
+                <h4>Murid</h4>
+                <p>Mengikuti pembelajaran bertahap, mengerjakan aktivitas, asesmen, remedial, dan mengunggah proyek.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-login">
+        <div class="artboard dark">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/login</div></div>
+          <div class="hero-login">
+            <div class="hero-pane">
+              <div class="app-logo">
+                <div class="app-logo-mark" style="background:white;color:#0f8f5f">EL</div>
+                <div><b>E-LKM Interaktif</b><small style="color:rgba(255,255,255,.72)">Energi Terbarukan • Projek IPAS</small></div>
+              </div>
+              <div class="hero-copy">
+                <span class="pill yellow">SMK Kelas X • STEM • Project Based Learning</span>
+                <h2>Belajar energi terbarukan secara interaktif, bertahap, dan terukur.</h2>
+                <p>Platform pembelajaran digital untuk membantu murid mengamati, bertanya, mencoba, menalar, menyimpulkan, berdiskusi, mengerjakan asesmen, dan menyusun proyek energi terbarukan.</p>
+                <div class="activity-steps">
+                  <span class="step-chip done">Ayo Mengamati</span>
+                  <span class="step-chip done">Ayo Mencoba</span>
+                  <span class="step-chip done">Asesmen Otomatis</span>
+                </div>
+              </div>
+              <p style="color:rgba(255,255,255,.62)">© 2026 E-LKM Interaktif. Template UI untuk Laravel Livewire.</p>
+            </div>
+            <div class="login-card">
+              <h3 style="font-size:26px;margin:0 0 6px">Masuk ke Sistem</h3>
+              <p style="margin:0 0 24px;color:var(--muted)">Gunakan akun admin, guru, atau murid.</p>
+              <div class="field"><label>Email</label><input class="input" value="guru@elkm.test" /></div>
+              <div class="field"><label>Password</label><input class="input" type="password" value="password" /></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 20px;color:var(--muted);font-size:13px"><span>☑ Ingat saya</span><b>Lupa password?</b></div>
+              <button class="btn btn-primary" style="width:100%;justify-content:center">Masuk Dashboard</button>
+              <div class="grid grid-3" style="margin-top:18px">
+                <span class="pill green">Admin</span><span class="pill blue">Guru</span><span class="pill yellow">Murid</span>
+              </div>
+              <div class="note" style="margin-top:18px">Saran UX: setelah login, redirect berdasarkan role. Jangan tampilkan menu lintas-role pada sidebar.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-admin">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/admin/dashboard</div></div>
+          <div class="app-layout">
+            <aside class="app-sidebar">
+              <div class="app-logo"><div class="app-logo-mark">EL</div><div><b>Admin Panel</b><small>Super Admin</small></div></div>
+              <nav class="menu">
+                <a class="active">🏠 Dashboard</a><a>👥 Data Pengguna</a><a>🏫 Kelas</a><a>👨‍🏫 Guru</a><a>🎓 Murid</a><a>📚 Modul</a><a>⚙️ Pengaturan</a><a>📊 Laporan</a>
+              </nav>
+            </aside>
+            <main class="app-content">
+              <div class="topbar"><div><h3>Dashboard Admin</h3><p>Monitoring global sistem, role, kelas, dan status modul.</p></div><div class="avatar"><div class="avatar-img">A</div><b>Admin</b></div></div>
+              <div class="grid grid-4">
+                <div class="card stat"><div><span>Total Murid</span><strong>128</strong></div><div class="stat-icon">🎓</div></div>
+                <div class="card stat"><div><span>Total Guru</span><strong>8</strong></div><div class="stat-icon">👨‍🏫</div></div>
+                <div class="card stat"><div><span>Modul Aktif</span><strong>5</strong></div><div class="stat-icon">📚</div></div>
+                <div class="card stat"><div><span>Rata-rata Tuntas</span><strong>74%</strong></div><div class="stat-icon">✅</div></div>
+              </div>
+              <div class="grid grid-aside" style="margin-top:16px">
+                <div class="card">
+                  <h4>Aktivitas Sistem Terbaru</h4>
+                  <table>
+                    <thead><tr><th>Waktu</th><th>User</th><th>Aktivitas</th><th>Status</th></tr></thead>
+                    <tbody>
+                      <tr><td>08:10</td><td>Guru Projek IPAS</td><td>Memperbarui Aktivitas KB1</td><td><span class="pill green">Sukses</span></td></tr>
+                      <tr><td>08:22</td><td>Murid X TKJ</td><td>Submit Ayo Mencoba</td><td><span class="pill blue">Tersimpan</span></td></tr>
+                      <tr><td>09:01</td><td>Sistem</td><td>Scoring Asesmen Formatif</td><td><span class="pill yellow">Proses</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="card">
+                  <h4>Quick Setup</h4>
+                  <p>Checklist awal sebelum modul digunakan murid.</p>
+                  <div style="margin-top:14px" class="unit-list">
+                    <div class="unit-item"><div class="unit-no">1</div><div><b>Role & Permission</b><br><small class="muted">Admin, Guru, Murid</small></div><span class="pill green">OK</span></div>
+                    <div class="unit-item"><div class="unit-no">2</div><div><b>Data Kelas</b><br><small>X TKJ / X ATPH</small></div><span class="pill green">OK</span></div>
+                    <div class="unit-item"><div class="unit-no">3</div><div><b>Publikasi Modul</b><br><small>Butuh review guru</small></div><span class="pill yellow">Review</span></div>
+                  </div>
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-guru">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/guru/dashboard</div></div>
+          <div class="app-layout">
+            <aside class="app-sidebar">
+              <div class="app-logo"><div class="app-logo-mark">EL</div><div><b>Guru Workspace</b><small>Projek IPAS</small></div></div>
+              <nav class="menu"><a class="active">🏠 Dashboard</a><a>🏫 Kelas Saya</a><a>📚 Modul</a><a>🧩 Aktivitas</a><a>📝 Bank Soal</a><a>📣 Forum</a><a>🚀 Proyek</a><a>📊 Nilai</a><a>🔁 Remedial</a></nav>
+            </aside>
+            <main class="app-content">
+              <div class="topbar"><div><h3>Dashboard Guru</h3><p>Kelola konten, aktivitas, asesmen, proyek, dan progres belajar murid.</p></div><input class="search" value="Cari modul, aktivitas, murid..." /></div>
+              <div class="grid grid-3">
+                <div class="card"><span class="pill green">Published</span><h4 style="margin-top:12px">E-LKM Energi Terbarukan</h4><p>5 kegiatan belajar, 30 aktivitas, 5 asesmen formatif, 1 proyek akhir.</p><div class="progress" style="margin-top:14px"><i style="width:84%"></i></div></div>
+                <div class="card"><span class="pill yellow">Perlu Review</span><h4 style="margin-top:12px">Jawaban Uraian</h4><p>18 jawaban menalar dan menyimpulkan menunggu validasi guru.</p><button class="btn btn-warning" style="margin-top:14px">Review Sekarang</button></div>
+                <div class="card"><span class="pill blue">Laporan</span><h4 style="margin-top:12px">Rekap Kelas X</h4><p>Export PDF/Excel nilai, progres, remedial, forum, dan proyek murid.</p><button class="btn btn-soft" style="margin-top:14px">Buka Laporan</button></div>
+              </div>
+              <div class="card" style="margin-top:16px">
+                <h4>Ringkasan Progress Kegiatan Belajar</h4>
+                <table>
+                  <thead><tr><th>KB</th><th>Judul</th><th>Aktivitas</th><th>Ketuntasan</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td>KB1</td><td>Deteksi Potensi Energi</td><td>6/6</td><td><div class="progress"><i style="width:92%"></i></div></td><td><span class="pill green">Aktif</span></td></tr>
+                    <tr><td>KB2</td><td>Masalah Energi Fosil</td><td>6/6</td><td><div class="progress"><i style="width:70%"></i></div></td><td><span class="pill green">Aktif</span></td></tr>
+                    <tr><td>KB3</td><td>Energi Terbarukan</td><td>6/6</td><td><div class="progress"><i style="width:45%"></i></div></td><td><span class="pill yellow">Berjalan</span></td></tr>
+                    <tr><td>KB4</td><td>Teknologi STEM</td><td>6/6</td><td><div class="progress"><i style="width:0%"></i></div></td><td><span class="pill gray">Terkunci</span></td></tr>
+                    <tr><td>KB5</td><td>Merancang Aksi</td><td>6/6</td><td><div class="progress"><i style="width:0%"></i></div></td><td><span class="pill gray">Terkunci</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-modul">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/guru/modules/energy-renewable/edit</div></div>
+          <div class="app-layout">
+            <aside class="app-sidebar"><div class="app-logo"><div class="app-logo-mark">EL</div><div><b>Modul Builder</b><small>Guru</small></div></div><nav class="menu"><a>📚 Daftar Modul</a><a class="active">✏️ Edit Modul</a><a>🧭 Kegiatan Belajar</a><a>🖼️ Media</a><a>📖 Glosarium</a><a>🔗 Referensi</a></nav></aside>
+            <main class="app-content">
+              <div class="topbar"><div><h3>Kelola Modul Pembelajaran</h3><p>Metadata modul, tujuan, struktur KB, materi, media, glosarium, dan referensi.</p></div><button class="btn btn-primary">Publikasikan</button></div>
+              <div class="grid grid-aside">
+                <div class="grid">
+                  <div class="card">
+                    <h4>Informasi Modul</h4>
+                    <div class="grid grid-2">
+                      <div class="field"><label>Judul Modul</label><input class="input" value="E-LKM Interaktif Energi Terbarukan" /></div>
+                      <div class="field"><label>Mata Pelajaran</label><input class="input" value="Projek IPAS" /></div>
+                      <div class="field"><label>Kelas/Semester</label><input class="input" value="X / Genap" /></div>
+                      <div class="field"><label>Model</label><input class="input" value="Pembelajaran Mendalam, STEM, PjBL" /></div>
+                    </div>
+                  </div>
+                  <div class="card">
+                    <h4>Outline Kegiatan Belajar</h4>
+                    <table>
+                      <thead><tr><th>Urutan</th><th>Judul</th><th>Aktivitas</th><th>Asesmen</th><th>Aksi</th></tr></thead>
+                      <tbody>
+                        <tr><td>1</td><td>Deteksi Potensi Energi di Lingkungan</td><td><span class="pill green">6 Aktivitas</span></td><td><span class="pill blue">10 Soal</span></td><td><button class="btn btn-soft">Edit</button></td></tr>
+                        <tr><td>2</td><td>Masalah Energi Fosil</td><td><span class="pill green">6 Aktivitas</span></td><td><span class="pill blue">10 Soal</span></td><td><button class="btn btn-soft">Edit</button></td></tr>
+                        <tr><td>3</td><td>Energi Terbarukan</td><td><span class="pill yellow">Draft</span></td><td><span class="pill blue">10 Soal</span></td><td><button class="btn btn-soft">Edit</button></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="card">
+                  <h4>Editor Materi</h4>
+                  <p>Template area CKEditor/TinyMCE untuk paste materi Word, gambar, tabel, dan heading.</p>
+                  <div style="border:1px dashed var(--line);border-radius:18px;padding:16px;margin-top:14px;background:#fbfdfc">
+                    <div class="field"><label>Judul Submateri</label><input class="input" value="Konsep Energi" /></div>
+                    <div class="field"><label>Isi Materi</label><textarea class="textarea">Energi adalah kemampuan untuk melakukan kerja atau menyebabkan perubahan...</textarea></div>
+                    <button class="btn btn-primary">Simpan Materi</button>
+                  </div>
+                  <div class="note" style="margin-top:14px">Catatan teknis: paste dari Word harus ditangani dengan editor WYSIWYG dan sanitizer HTML agar gambar/tabel tidak berantakan.</div>
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-aktivitas">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/guru/activities/schema-builder</div></div>
+          <div class="app-layout">
+            <aside class="app-sidebar"><div class="app-logo"><div class="app-logo-mark">EL</div><div><b>Activity Engine</b><small>Schema Builder</small></div></div><nav class="menu"><a>📌 KB1</a><a class="active">🧩 Aktivitas</a><a>🧮 Schema</a><a>💬 Forum</a><a>📝 Rubrik</a></nav></aside>
+            <main class="app-content">
+              <div class="topbar"><div><h3>Kelola Aktivitas Interaktif</h3><p>Satu engine untuk render short text, essay, table, file, discussion, dan project form.</p></div><button class="btn btn-primary">Tambah Aktivitas</button></div>
+              <div class="grid grid-2">
+                <div class="card">
+                  <h4>Daftar Fase KB1</h4>
+                  <div class="unit-list">
+                    <div class="unit-item"><div class="unit-no">1</div><div><b>Ayo Mengamati</b><br><small>input_type: table</small></div><span class="pill green">Ready</span></div>
+                    <div class="unit-item"><div class="unit-no">2</div><div><b>Ayo Bertanya</b><br><small>input_type: short_text</small></div><span class="pill green">Ready</span></div>
+                    <div class="unit-item"><div class="unit-no">3</div><div><b>Ayo Mencoba</b><br><small>input_type: table + answer_schema</small></div><span class="pill green">Ready</span></div>
+                    <div class="unit-item"><div class="unit-no">4</div><div><b>Ayo Menalar</b><br><small>input_type: essay + rubric_schema</small></div><span class="pill yellow">Review</span></div>
+                    <div class="unit-item"><div class="unit-no">5</div><div><b>Ayo Menyimpulkan</b><br><small>input_type: essay</small></div><span class="pill yellow">Review</span></div>
+                    <div class="unit-item"><div class="unit-no">6</div><div><b>Forum Diskusi</b><br><small>input_type: discussion</small></div><span class="pill blue">Forum</span></div>
+                  </div>
+                </div>
+                <div class="card">
+                  <h4>Schema Preview: Ayo Mencoba KB1</h4>
+                  <p>Renderer tabel dinamis untuk kolom Alat, Energi Masuk, Energi Keluar, Sumber Energi.</p>
+                  <pre class="code-map">{
+  "input_type": "table",
+  "min_rows": 10,
+  "columns": [
+    {"name":"alat", "type":"text"},
+    {"name":"energi_masuk", "type":"select"},
+    {"name":"energi_keluar", "type":"text"},
+    {"name":"sumber_energi", "type":"select"}
+  ]
+}</pre>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-soft">Validasi Schema</button><button class="btn btn-outline">Preview Murid</button></div>
+                </div>
+              </div>
+              <div class="card" style="margin-top:16px">
+                <h4>Acceptance UI untuk Activity Engine</h4>
+                <div class="grid grid-3">
+                  <p>✓ Mendukung columns dan fields.</p><p>✓ Mendukung preset rows.</p><p>✓ Mendukung computed field.</p><p>✓ Menyimpan answer_json.</p><p>✓ Forum masuk discussions.</p><p>✓ Project form masuk projects.</p>
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-murid">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/murid/dashboard</div></div>
+          <div class="app-layout">
+            <aside class="app-sidebar"><div class="app-logo"><div class="app-logo-mark">EL</div><div><b>Ruang Murid</b><small>X TKJ</small></div></div><nav class="menu"><a class="active">🏠 Dashboard</a><a>📚 Modul Saya</a><a>🧩 Aktivitas</a><a>💬 Forum</a><a>✅ Asesmen</a><a>🔁 Remedial</a><a>🚀 Proyek</a><a>🏆 Nilai</a><a>📖 Glosarium</a></nav></aside>
+            <main class="app-content">
+              <div class="topbar"><div><h3>Halo, Murid SMK 👋</h3><p>Lanjutkan pembelajaran terakhir: KB2 Masalah Energi Fosil.</p></div><div class="avatar"><div class="avatar-img">M</div><b>Guslan</b></div></div>
+              <div class="card" style="background:linear-gradient(135deg,#0f8f5f,#1fb579);color:white;border:0">
+                <div class="grid grid-aside">
+                  <div><span class="pill yellow">Sedang Berjalan</span><h3 style="font-size:34px;margin:16px 0 8px">E-LKM Interaktif Energi Terbarukan</h3><p style="color:rgba(255,255,255,.82)">Selesaikan aktivitas bertahap, ikuti forum, lalu kerjakan asesmen formatif untuk membuka kegiatan belajar berikutnya.</p><button class="btn btn-dark" style="margin-top:18px">Lanjutkan Belajar</button></div>
+                  <div class="card" style="background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.18);color:white"><h4>Progress Modul</h4><strong style="font-size:44px">42%</strong><div class="progress" style="background:rgba(255,255,255,.24);margin:12px 0"><i style="width:42%;background:white"></i></div><p style="color:rgba(255,255,255,.8)">2 dari 5 kegiatan belajar terbuka.</p></div>
+                </div>
+              </div>
+              <div class="grid grid-2" style="margin-top:16px">
+                <div class="card"><h4>Kegiatan Belajar</h4><div class="unit-list">
+                  <div class="unit-item"><div class="unit-no">1</div><div><b>Deteksi Potensi Energi</b><br><small>Selesai, nilai 88</small></div><span class="pill green">Tuntas</span></div>
+                  <div class="unit-item"><div class="unit-no">2</div><div><b>Masalah Energi Fosil</b><br><small>Aktivitas: Ayo Menalar</small></div><span class="pill blue">Aktif</span></div>
+                  <div class="unit-item locked"><div class="unit-no">3</div><div><b>Energi Terbarukan</b><br><small>Tuntas KB2 untuk membuka</small></div><span class="pill gray">Terkunci</span></div>
+                </div></div>
+                <div class="card"><h4>Tugas Berikutnya</h4><div class="question-card"><b>Ayo Menalar</b><p>Mengapa transisi energi tidak dapat dilakukan secara tiba-tiba, tetapi harus bertahap?</p><button class="btn btn-primary" style="margin-top:12px">Kerjakan</button></div><div class="question-card"><b>Forum Diskusi</b><p>Berikan satu ide nyata yang bisa dilakukan siswa untuk mengurangi energi fosil di sekolah.</p><button class="btn btn-soft" style="margin-top:12px">Buka Forum</button></div></div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-belajar">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/murid/modules/1/learning-units/1/activity</div></div>
+          <div class="app-layout">
+            <aside class="app-sidebar"><div class="app-logo"><div class="app-logo-mark">EL</div><div><b>KB1</b><small>Deteksi Energi</small></div></div><nav class="menu"><a>📌 Tujuan</a><a>📖 Materi</a><a class="active">🧩 Aktivitas</a><a>💬 Forum</a><a>✅ Asesmen</a></nav></aside>
+            <main class="app-content">
+              <div class="topbar"><div><h3>Ruang Belajar Murid</h3><p>KB1: Deteksi Potensi Energi di Lingkungan Sekitar</p></div><span class="pill blue">Progress KB: 66%</span></div>
+              <div class="activity-steps">
+                <span class="step-chip done">Mengamati</span><span class="step-chip done">Bertanya</span><span class="step-chip active">Mencoba</span><span class="step-chip">Menalar</span><span class="step-chip">Menyimpulkan</span><span class="step-chip locked">Forum</span><span class="step-chip locked">Asesmen</span>
+              </div>
+              <div class="grid grid-aside">
+                <div class="card">
+                  <h4>Ayo Mencoba: Tabel Perubahan Energi</h4>
+                  <p>Amati alat-alat di sekitar kelas, bengkel, atau laboratorium. Isi minimal 10 alat berbeda.</p>
+                  <div style="overflow:auto;margin-top:16px">
+                    <table>
+                      <thead><tr><th>No</th><th>Alat</th><th>Energi Masuk</th><th>Energi Keluar</th><th>Sumber Energi</th></tr></thead>
+                      <tbody>
+                        <tr><td>1</td><td><input class="input" value="Lampu" /></td><td><select class="select"><option>Energi listrik</option></select></td><td><input class="input" value="Cahaya dan panas" /></td><td><select class="select"><option>PLN</option></select></td></tr>
+                        <tr><td>2</td><td><input class="input" value="Kipas angin" /></td><td><select class="select"><option>Energi listrik</option></select></td><td><input class="input" value="Gerak dan bunyi" /></td><td><select class="select"><option>PLN</option></select></td></tr>
+                        <tr><td>3</td><td><input class="input" placeholder="Tulis alat..." /></td><td><select class="select"><option>Pilih...</option></select></td><td><input class="input" placeholder="Energi keluar..." /></td><td><select class="select"><option>Pilih...</option></select></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap"><button class="btn btn-outline">Simpan Draft</button><button class="btn btn-primary">Kirim Aktivitas</button></div>
+                </div>
+                <div class="grid">
+                  <div class="media-placeholder"><h4>Video Pengamatan Energi</h4><p>Media mengamati ditempatkan di atas aktivitas atau sidebar.</p></div>
+                  <div class="card"><h4>Petunjuk</h4><p>Gunakan bahasa singkat dan jelas. Jawaban tersimpan sebagai <b>answer_json</b> untuk memudahkan validasi schema.</p></div>
+                  <div class="card"><h4>Status</h4><div class="progress"><i style="width:66%"></i></div><p style="margin-top:10px">4 dari 6 aktivitas selesai.</p></div>
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-asesmen">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/murid/assessments/kb1</div></div>
+          <div class="app-layout">
+            <aside class="app-sidebar"><div class="app-logo"><div class="app-logo-mark">EL</div><div><b>Asesmen</b><small>Formatif KB1</small></div></div><nav class="menu"><a class="active">📝 Soal</a><a>📊 Hasil</a><a>🔁 Remedial</a><a>💬 Feedback</a></nav></aside>
+            <main class="app-content">
+              <div class="topbar"><div><h3>Asesmen Formatif KB1</h3><p>Kerjakan soal untuk membuka kegiatan belajar berikutnya.</p></div><span class="pill yellow">KKTP 75 • Percobaan 1/3</span></div>
+              <div class="grid grid-aside">
+                <div>
+                  <div class="question-card"><span class="pill blue">Pilihan Ganda</span><h4>1. Energi adalah...</h4><div class="option">A. Benda yang hanya terdapat pada alat elektronik</div><div class="option selected">B. Kemampuan melakukan kerja atau menyebabkan perubahan</div><div class="option">C. Bahan bakar dari minyak bumi</div></div>
+                  <div class="question-card"><span class="pill purple">Pilihan Ganda Kompleks</span><h4>2. Pasangan alat dan perubahan energi yang tepat adalah...</h4><div class="option selected">✓ Lampu — listrik menjadi cahaya dan panas</div><div class="option selected">✓ Kipas — listrik menjadi gerak dan bunyi</div><div class="option">□ Buku tulis — listrik menjadi cahaya</div></div>
+                  <div class="question-card"><span class="pill green">Uraian Singkat</span><h4>3. Mengapa energi listrik perlu dihemat?</h4><textarea class="textarea">Karena penggunaan listrik yang boros dapat meningkatkan kebutuhan energi dari pembangkit dan berdampak pada biaya serta lingkungan.</textarea></div>
+                </div>
+                <div class="card">
+                  <h4>Panel Scoring</h4>
+                  <table>
+                    <tr><td>PG Biasa</td><td><span class="pill green">Auto</span></td></tr>
+                    <tr><td>PG Kompleks</td><td><span class="pill green">Parsial</span></td></tr>
+                    <tr><td>Benar/Salah</td><td><span class="pill green">Auto</span></td></tr>
+                    <tr><td>Menjodohkan</td><td><span class="pill green">Auto</span></td></tr>
+                    <tr><td>Uraian</td><td><span class="pill yellow">Rubrik + Keyword</span></td></tr>
+                  </table>
+                  <div class="note" style="margin-top:14px">Jika nilai &lt; KKTP, sistem membuka halaman remedial dan merekomendasikan bagian materi yang perlu dipelajari ulang.</div>
+                  <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px">Submit Asesmen</button>
+                </div>
+              </div>
+              <div class="card" style="margin-top:16px;background:#fff7e4;border-color:#f4e0ac">
+                <h4>State Remedial</h4>
+                <p>Contoh tampilan setelah submit jika nilai 68: tampilkan skor, indikator belum tuntas, rekomendasi materi, tombol pelajari ulang, dan tombol ulang asesmen jika percobaan masih tersedia.</p>
+              </div>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-proyek">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/murid/projects/create</div></div>
+          <div class="app-layout">
+            <aside class="app-sidebar"><div class="app-logo"><div class="app-logo-mark">EL</div><div><b>Proyek KB5</b><small>Aksi Energi</small></div></div><nav class="menu"><a class="active">🚀 Rancangan</a><a>📷 Dokumentasi</a><a>📄 Laporan</a><a>🏆 Nilai Proyek</a></nav></aside>
+            <main class="app-content">
+              <div class="topbar"><div><h3>Proyek & Portofolio Murid</h3><p>Rancang aksi sederhana energi terbarukan dan unggah dokumentasi hasil.</p></div><span class="pill purple">KB5</span></div>
+              <div class="grid grid-aside">
+                <div class="card">
+                  <h4>Form Rancangan Proyek</h4>
+                  <div class="grid grid-2">
+                    <div class="field"><label>Pilihan Proyek</label><select class="select"><option>Kompor surya mini</option><option>Briket biomassa</option><option>Audit energi kelas</option><option>Kampanye hemat energi</option></select></div>
+                    <div class="field"><label>Status</label><input class="input" value="Draft" /></div>
+                  </div>
+                  <div class="field"><label>Masalah Energi yang Ditemukan</label><textarea class="textarea">Banyak alat listrik di kelas menyala saat tidak digunakan.</textarea></div>
+                  <div class="field"><label>Tujuan Aksi</label><textarea class="textarea">Mengurangi pemborosan energi melalui audit dan kampanye hemat energi.</textarea></div>
+                  <div class="grid grid-2"><div class="field"><label>Alat dan Bahan</label><textarea class="textarea">Karton, spidol, ponsel, tabel pengamatan...</textarea></div><div class="field"><label>Langkah Kerja</label><textarea class="textarea">Observasi, catat, analisis, buat poster, presentasi...</textarea></div></div>
+                  <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-outline">Simpan Draft</button><button class="btn btn-primary">Kirim Proyek</button></div>
+                </div>
+                <div class="card">
+                  <h4>Rubrik Guru</h4>
+                  <table>
+                    <tr><td>Ketepatan masalah</td><td>25</td></tr>
+                    <tr><td>Kelayakan solusi</td><td>25</td></tr>
+                    <tr><td>Data & bukti</td><td>25</td></tr>
+                    <tr><td>Komunikasi hasil</td><td>25</td></tr>
+                  </table>
+                  <div class="media-placeholder" style="margin-top:14px;min-height:170px"><h4>Upload Dokumentasi</h4><p>Foto, video, poster digital, laporan singkat.</p></div>
+                </div>
+              </div>
+              <div class="grid grid-3" style="margin-top:16px"><div class="card"><h4>Portfolio Card</h4><p>Tampilkan proyek yang sudah dikirim.</p></div><div class="card"><h4>Feedback Guru</h4><p>Komentar dan nilai rubrik.</p></div><div class="card"><h4>Export</h4><p>PDF portofolio untuk lampiran hasil belajar.</p></div></div>
+            </main>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-mobile">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/mobile-preview</div></div>
+          <div class="app-content">
+            <div class="topbar"><div><h3>Preview Mobile</h3><p>Template harus tetap nyaman digunakan di smartphone.</p></div><span class="pill green">Responsive</span></div>
+            <div class="phone-preview">
+              <div class="phone-screen">
+                <div style="display:flex;justify-content:space-between;align-items:center"><div class="app-logo" style="margin:0"><div class="app-logo-mark">EL</div><div><b>E-LKM</b><small>Murid</small></div></div><div class="avatar-img">M</div></div>
+                <div class="card" style="margin-top:18px;background:linear-gradient(135deg,#0f8f5f,#20b47b);color:white;border:0"><span class="pill yellow">KB2 Aktif</span><h4 style="font-size:24px;margin-top:12px">Masalah Energi Fosil</h4><p style="color:rgba(255,255,255,.8)">Lanjutkan Ayo Menalar.</p><div class="progress" style="background:rgba(255,255,255,.24);margin-top:14px"><i style="width:58%;background:white"></i></div></div>
+                <div class="activity-steps" style="display:grid;grid-template-columns:1fr 1fr"><span class="step-chip done">Mengamati</span><span class="step-chip done">Bertanya</span><span class="step-chip active">Menalar</span><span class="step-chip locked">Asesmen</span></div>
+                <div class="question-card"><span class="pill green">Ayo Menalar</span><h4>Mengapa transisi energi harus bertahap?</h4><textarea class="textarea" placeholder="Tulis jawaban..."></textarea><button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px">Kirim</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-mapping">
+        <div class="artboard">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><div class="urlbar">/developer/ui-mapping</div></div>
+          <div class="app-content" style="min-height:650px">
+            <div class="topbar"><div><h3>Mapping Desain ke Laravel Blade/Livewire</h3><p>Rencana pemecahan template menjadi layout, component, dan halaman Livewire.</p></div><span class="pill blue">Developer Notes</span></div>
+            <div class="grid grid-2">
+              <div class="card">
+                <h4>Struktur File yang Disarankan</h4>
+                <pre class="code-map">resources/views/
+├── components/
+│   ├── app-shell.blade.php
+│   ├── sidebar-menu.blade.php
+│   ├── stat-card.blade.php
+│   ├── progress-bar.blade.php
+│   ├── activity-stepper.blade.php
+│   └── status-pill.blade.php
+├── livewire/
+│   ├── admin/dashboard.blade.php
+│   ├── guru/dashboard.blade.php
+│   ├── guru/manage-modules.blade.php
+│   ├── guru/manage-activities.blade.php
+│   └── murid/activity-page.blade.php
+└── livewire/murid/activities/inputs/
+    ├── short-text.blade.php
+    ├── essay.blade.php
+    ├── table.blade.php
+    ├── discussion.blade.php
+    └── project-form.blade.php</pre>
+              </div>
+              <div class="card">
+                <h4>Komponen Livewire Prioritas</h4>
+                <table>
+                  <thead><tr><th>Komponen</th><th>Fungsi</th></tr></thead>
+                  <tbody>
+                    <tr><td>Guru\ManageModules</td><td>CRUD modul dan kegiatan belajar</td></tr>
+                    <tr><td>Guru\ManageActivities</td><td>CRUD aktivitas + schema builder</td></tr>
+                    <tr><td>Murid\MyModules</td><td>Daftar modul dan progress</td></tr>
+                    <tr><td>Murid\ActivityPage</td><td>Render aktivitas berdasarkan input_type</td></tr>
+                    <tr><td>Murid\AssessmentPage</td><td>Render soal dan submit attempt</td></tr>
+                    <tr><td>Murid\MyProject</td><td>Form proyek dan portofolio</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card" style="margin-top:16px">
+              <h4>Tailwind Conversion Hint</h4>
+              <p>File HTML ini memakai CSS murni agar bisa dibuka mandiri. Saat implementasi, konversi class visual ke Tailwind/Flux component. Hindari inline style di Blade final; jadikan component reusable.</p>
+              <pre class="code-map" style="margin-top:14px">// Contoh mapping CSS ke component
+<x-app-shell role="guru">
+  <x-page-header title="Dashboard Guru" subtitle="Kelola modul dan aktivitas" />
+  <x-stat-grid>
+    <x-stat-card title="Modul Aktif" value="5" icon="book-open" />
+  </x-stat-grid>
+</x-app-shell></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function showScreen(key) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById('screen-' + key);
+      if (target) target.classList.add('active');
+      document.querySelectorAll('#screenNav button').forEach(b => b.classList.toggle('active', b.dataset.screen === key));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    document.querySelectorAll('#screenNav button').forEach(button => {
+      button.addEventListener('click', () => showScreen(button.dataset.screen));
+    });
+  </script>
+</body>
+</html>

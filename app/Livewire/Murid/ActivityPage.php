@@ -5,6 +5,7 @@ namespace App\Livewire\Murid;
 use App\Models\Activity;
 use App\Models\ActivityAnswer;
 use App\Models\Discussion;
+use App\Models\LearningUnitSection;
 use App\Services\Learning\ActivityAnswerService;
 use App\Services\Learning\ActivityDiscussionService;
 use App\Services\Learning\ActivitySchemaValidator;
@@ -256,9 +257,26 @@ class ActivityPage extends Component
      */
     private function activityMedia(): array
     {
-        $displayConfig = $this->currentActivity->display_config ?? [];
+        $section = LearningUnitSection::where('linked_model_type', Activity::class)
+            ->where('linked_model_id', $this->currentActivity->id)
+            ->first();
 
-        $filePath = $displayConfig['media_path'] ?? $this->currentActivity->media_path;
+        if ($section) {
+            $sectionMedia = $section->media()->first();
+            if ($sectionMedia) {
+                return [
+                    'type' => $sectionMedia->type,
+                    'url' => $sectionMedia->url,
+                    'filePath' => $sectionMedia->file_path,
+                    'embedCode' => $sectionMedia->embed_code,
+                    'title' => $sectionMedia->title,
+                    'caption' => null,
+                ];
+            }
+        }
+
+        $displayConfig = $this->currentActivity->display_config ?? [];
+        $filePath = $displayConfig['media_path'] ?? $this->currentActivity->media_path ?? null;
 
         return [
             'type' => $displayConfig['media_type'] ?? ($filePath ? 'image' : null),

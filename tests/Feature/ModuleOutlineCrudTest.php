@@ -18,6 +18,7 @@ test('teacher can edit module outline and student sees updated content', functio
         ->test(ManageModuleOutline::class, ['module' => $module->id])
         ->assertSee('Editor Section Modul')
         ->assertSee('Daftar Section Modul')
+        ->assertSeeHtml('rich-editor:sync')
         ->call('edit', $section->id)
         ->set('content', '<h2>Petunjuk Baru</h2><p>Belajar berurutan.</p>')
         ->call('save')

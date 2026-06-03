@@ -14,6 +14,12 @@ class Reports extends Component
 {
     public ?int $module_id = null;
 
+    public string $attempt_status = '';
+
+    public string $project_status = '';
+
+    public string $search = '';
+
     public function exportExcel(ReportExportService $exportService)
     {
         if (! $this->module_id) {
@@ -64,6 +70,31 @@ class Reports extends Component
         $averageParticipationScore = (clone $discussionThreadsQuery)
             ->whereNotNull('participation_score')
             ->avg('participation_score');
+        $assessmentAverageScore = (clone $attemptsQuery)
+            ->whereNotNull('submitted_at')
+            ->avg('total_score');
+
+        $filteredAttemptsQuery = (clone $attemptsQuery)
+            ->when($this->attempt_status !== '', fn ($query) => $query->where('status', $this->attempt_status))
+            ->when($this->search !== '', fn ($query) => $query->whereHas('student', fn ($studentQuery) => $studentQuery->where('name', 'like', '%'.$this->search.'%')));
+
+        $filteredProjectsQuery = Project::with('user', 'module', 'rubricScores')
+            ->whereIn('module_id', $moduleIds)
+            ->when($this->project_status !== '', fn ($query) => $query->where('status', $this->project_status))
+            ->when($this->search !== '', fn ($query) => $query->where(function ($projectQuery) {
+                $projectQuery
+                    ->where('project_title', 'like', '%'.$this->search.'%')
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$this->search.'%'));
+            }));
+
+        $filteredDiscussionsQuery = Discussion::with('user', 'learningUnit.module', 'replies.user')
+            ->whereNull('parent_id')
+            ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
+            ->when($this->search !== '', fn ($query) => $query->where(function ($discussionQuery) {
+                $discussionQuery
+                    ->where('body', 'like', '%'.$this->search.'%')
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$this->search.'%'));
+            }));
 
         return view('livewire.guru.reports', [
             'modules' => Module::whereIn('id', $teacherModuleIds)->orderBy('title')->get(),
@@ -77,7 +108,8 @@ class Reports extends Component
             'respondedDiscussionCount' => $respondedDiscussionCount,
             'unrespondedDiscussionCount' => max(0, $discussionThreadCount - $respondedDiscussionCount),
             'averageParticipationScore' => $averageParticipationScore === null ? null : round((float) $averageParticipationScore, 2),
-            'attempts' => (clone $attemptsQuery)
+            'assessmentAverageScore' => $assessmentAverageScore === null ? null : round((float) $assessmentAverageScore, 2),
+            'attempts' => $filteredAttemptsQuery
                 ->latest()
                 ->limit(20)
                 ->get(),
@@ -86,22 +118,13 @@ class Reports extends Component
                 ->latest()
                 ->limit(20)
                 ->get(),
-            'projects' => Project::with('user', 'module', 'rubricScores')
-                ->whereIn('module_id', $moduleIds)
-                ->latest()
-                ->limit(20)
-                ->get(),
+            'projects' => (clone $filteredProjectsQuery)->latest()->limit(20)->get(),
             'remedialAttempts' => (clone $attemptsQuery)
                 ->where('status', 'remedial')
                 ->latest()
                 ->limit(20)
                 ->get(),
-            'discussions' => Discussion::with('user', 'learningUnit.module', 'replies.user')
-                ->whereNull('parent_id')
-                ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
-                ->latest()
-                ->limit(10)
-                ->get(),
+            'discussions' => $filteredDiscussionsQuery->latest()->limit(10)->get(),
             'discussionParticipation' => Discussion::query()
                 ->with('user')
                 ->select('user_id')

@@ -5,17 +5,17 @@
 ])
 
 @if (! $section || ! $section->is_visible)
-    <div class="rounded-lg border p-6">Outline belum tersedia.</div>
+    <div class="card-elkm p-6 text-elkm-muted">Outline belum tersedia.</div>
 @else
-    <div class="space-y-5 rounded-lg border bg-white p-6 shadow-sm dark:bg-zinc-900">
-        <h2 class="text-xl font-bold">{{ $section->title }}</h2>
+    <div class="card-elkm space-y-5 p-6">
+        <h2 class="text-xl font-bold text-elkm-text">{{ $section->title }}</h2>
 
         @switch($section->section_type)
             @case('learning_objective')
                 @if ($section->content)
-                    <div class="ck-content learning-content prose max-w-none dark:prose-invert">{!! $section->content !!}</div>
+                    <div class="ck-content learning-content prose max-w-none text-elkm-text">{!! $section->content !!}</div>
                 @else
-                    <div class="prose max-w-none dark:prose-invert">{!! nl2br(e($learningUnit->objectives)) !!}</div>
+                    <div class="prose max-w-none text-elkm-text">{!! nl2br(e($learningUnit->objectives)) !!}</div>
                 @endif
                 @break
 
@@ -26,7 +26,7 @@
             @case('material_group')
                 <div class="space-y-3">
                     @foreach ($section->children->where('is_visible', true) as $child)
-                        <button type="button" wire:click="openSection({{ $child->id }})" class="block w-full rounded-md border p-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                        <button type="button" wire:click="openSection({{ $child->id }})" class="block w-full rounded-md border border-elkm-line p-4 text-left hover:bg-elkm-surface-2 transition-colors">
                             {{ $child->title }}
                         </button>
                     @endforeach
@@ -35,8 +35,10 @@
 
             @case('material_item')
                 @php($material = $section->linkedModel())
-                @if ($material)
-                    <article class="ck-content learning-content prose max-w-none dark:prose-invert">{!! $material->content !!}</article>
+                @if ($section->content)
+                    <article class="ck-content learning-content prose max-w-none text-elkm-text">{!! $section->content !!}</article>
+                @elseif ($material)
+                    <article class="ck-content learning-content prose max-w-none text-elkm-text">{!! $material->content !!}</article>
                     <div class="mt-4 grid gap-4">
                         @foreach ($material->media as $media)
                             <x-learning.media-renderer
@@ -48,10 +50,8 @@
                             />
                         @endforeach
                     </div>
-                @elseif ($section->content)
-                    <article class="ck-content learning-content prose max-w-none dark:prose-invert">{!! $section->content !!}</article>
                 @else
-                    <div class="text-sm text-zinc-500">Materi belum tersedia.</div>
+                    <div class="text-sm text-elkm-muted">Materi belum tersedia.</div>
                 @endif
                 @if ($section->media->isNotEmpty())
                     <div class="mt-4 grid gap-4">
@@ -116,11 +116,11 @@
                 @break
 
             @case('custom_content')
-                <div class="ck-content learning-content prose max-w-none dark:prose-invert">{!! $section->content !!}</div>
+                <div class="ck-content learning-content prose max-w-none text-elkm-text">{!! $section->content !!}</div>
                 @break
 
             @default
-                <div class="prose max-w-none dark:prose-invert">{!! nl2br(e($section->content)) !!}</div>
+                <div class="prose max-w-none text-elkm-text">{!! nl2br(e($section->content)) !!}</div>
         @endswitch
     </div>
 @endif

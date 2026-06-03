@@ -6,11 +6,15 @@ use App\Models\Activity;
 use App\Models\LearningUnit;
 use App\Models\Module;
 use App\Services\Learning\ActivityTemplateService;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class ManageActivities extends Component
 {
+    use WithFileUploads;
+
     public ?int $editingActivityId = null;
 
     public ?int $learning_unit_id = null;
@@ -35,6 +39,18 @@ class ManageActivities extends Component
 
     public bool $requires_teacher_review = false;
 
+    public mixed $mediaFile = null;
+
+    public string $mediaType = 'image';
+
+    public ?string $mediaTitle = null;
+
+    public ?string $mediaCaption = null;
+
+    public ?string $mediaUrl = null;
+
+    public ?string $mediaPath = null;
+
     public function applyTemplate(): void
     {
         $learningUnitOrder = null;
@@ -53,9 +69,23 @@ class ManageActivities extends Component
             $this->answer_schema = $template['answer_schema'] ? json_encode($template['answer_schema'], JSON_PRETTY_PRINT) : null;
             $this->display_config = $template['display_config'] ? json_encode($template['display_config'], JSON_PRETTY_PRINT) : null;
             $this->validation_rules = $template['validation_rules'] ? json_encode($template['validation_rules'], JSON_PRETTY_PRINT) : null;
+            $this->fillMediaFieldsFromDisplayConfig($template['display_config'] ?? []);
 
             session()->flash('status', 'Template berhasil diterapkan pada form.');
         }
+    }
+
+    public function updatedMediaFile(): void
+    {
+        $this->validateOnly('mediaFile', $this->mediaUploadValidationRules());
+
+        if (! $this->mediaFile) {
+            return;
+        }
+
+        $mimeType = $this->mediaFile->getMimeType();
+        $this->mediaType = str_starts_with((string) $mimeType, 'video/') ? 'video' : 'image';
+        $this->mediaTitle ??= pathinfo($this->mediaFile->getClientOriginalName(), PATHINFO_FILENAME);
     }
 
     public function save(ActivityTemplateService $templateService): void
@@ -73,6 +103,11 @@ class ManageActivities extends Component
             'display_config' => ['nullable', 'string'],
             'validation_rules' => ['nullable', 'string'],
             'requires_teacher_review' => ['boolean'],
+            'mediaType' => ['required', Rule::in(['image', 'video', 'youtube'])],
+            'mediaTitle' => ['nullable', 'string', 'max:255'],
+            'mediaCaption' => ['nullable', 'string', 'max:500'],
+            'mediaUrl' => ['nullable', 'url', 'max:255'],
+            'mediaFile' => $this->mediaUploadValidationRules()['mediaFile'],
         ]);
 
         if (! $templateService->isValidSchema($this->answer_schema)) {
@@ -94,16 +129,21 @@ class ManageActivities extends Component
         $validated['answer_schema'] = $this->answer_schema ? json_decode($this->answer_schema, true) : null;
         $validated['display_config'] = $this->display_config ? json_decode($this->display_config, true) : null;
         $validated['validation_rules'] = $this->validation_rules ? json_decode($this->validation_rules, true) : null;
+        unset($validated['mediaType'], $validated['mediaTitle'], $validated['mediaCaption'], $validated['mediaUrl'], $validated['mediaFile']);
 
         $wasEditing = filled($this->editingActivityId);
         $activity = $wasEditing
             ? Activity::whereIn('learning_unit_id', $unitIds)->findOrFail($this->editingActivityId)
             : new Activity;
 
+        $validated['display_config'] = $this->displayConfigForSave($validated['display_config'] ?? [], $activity);
+        $validated['media_path'] = $validated['display_config']['media_path'] ?? null;
+
         $activity->fill($validated)->save();
 
+        $savedWithMediaUpload = (bool) $this->mediaFile;
         $this->resetForm();
-        session()->flash('status', $wasEditing ? 'Aktivitas berhasil diperbarui.' : 'Aktivitas berhasil dibuat.');
+        session()->flash('status', $savedWithMediaUpload ? 'Aktivitas dan media pengamatan berhasil disimpan.' : ($wasEditing ? 'Aktivitas berhasil diperbarui.' : 'Aktivitas berhasil dibuat.'));
     }
 
     public function edit(int $activityId): void
@@ -122,6 +162,7 @@ class ManageActivities extends Component
         $this->display_config = $activity->display_config ? json_encode($activity->display_config, JSON_PRETTY_PRINT) : null;
         $this->validation_rules = $activity->validation_rules ? json_encode($activity->validation_rules, JSON_PRETTY_PRINT) : null;
         $this->requires_teacher_review = $activity->requires_teacher_review;
+        $this->fillMediaFieldsFromDisplayConfig($activity->display_config ?? [], $activity->media_path);
     }
 
     public function delete(int $activityId): void
@@ -146,12 +187,13 @@ class ManageActivities extends Component
 
     private function resetForm(): void
     {
-        $this->reset(['editingActivityId', 'learning_unit_id', 'title', 'prompt', 'answer_schema', 'display_config', 'validation_rules']);
+        $this->reset(['editingActivityId', 'learning_unit_id', 'title', 'prompt', 'answer_schema', 'display_config', 'validation_rules', 'mediaFile', 'mediaTitle', 'mediaCaption', 'mediaUrl', 'mediaPath']);
         $this->phase = 'ayo_mengamati';
         $this->input_type = 'essay';
         $this->is_required = true;
         $this->requires_teacher_review = false;
         $this->order = 1;
+        $this->mediaType = 'image';
     }
 
     /**
@@ -160,5 +202,77 @@ class ManageActivities extends Component
     private function teacherUnitIds(): array
     {
         return LearningUnit::whereIn('module_id', Module::where('created_by', auth()->id())->pluck('id'))->pluck('id')->all();
+    }
+
+    /**
+     * @return array{mediaFile: list<string>}
+     */
+    private function mediaUploadValidationRules(): array
+    {
+        return [
+            'mediaFile' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,mp4,webm,mov', 'max:51200'],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $displayConfig
+     * @return array<string, mixed>|null
+     */
+    private function displayConfigForSave(?array $displayConfig, Activity $activity): ?array
+    {
+        $displayConfig ??= [];
+
+        if ($this->phase !== 'ayo_mengamati') {
+            return $displayConfig ?: null;
+        }
+
+        $mediaPath = $this->mediaPath;
+
+        if ($this->mediaFile) {
+            $mediaPath = $this->mediaFile->store('activity-media', 'public');
+            $this->deleteStoredActivityMedia($activity->media_path);
+        }
+
+        if ($this->mediaType === 'youtube') {
+            unset($displayConfig['media_path']);
+            $displayConfig['media_type'] = 'youtube';
+            $displayConfig['media_url'] = $this->mediaUrl;
+        } elseif ($mediaPath) {
+            unset($displayConfig['media_url']);
+            $displayConfig['media_type'] = $this->mediaType;
+            $displayConfig['media_path'] = $mediaPath;
+        }
+
+        if (filled($this->mediaTitle)) {
+            $displayConfig['media_title'] = $this->mediaTitle;
+        }
+
+        if (filled($this->mediaCaption)) {
+            $displayConfig['caption'] = $this->mediaCaption;
+        }
+
+        return $displayConfig ?: null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $displayConfig
+     */
+    private function fillMediaFieldsFromDisplayConfig(array $displayConfig, ?string $fallbackMediaPath = null): void
+    {
+        $this->mediaFile = null;
+        $this->mediaType = $displayConfig['media_type'] ?? (($displayConfig['media_path'] ?? $fallbackMediaPath) ? 'image' : 'image');
+        $this->mediaTitle = $displayConfig['media_title'] ?? null;
+        $this->mediaCaption = $displayConfig['caption'] ?? null;
+        $this->mediaUrl = $displayConfig['media_url'] ?? null;
+        $this->mediaPath = $displayConfig['media_path'] ?? $fallbackMediaPath;
+    }
+
+    private function deleteStoredActivityMedia(?string $path): void
+    {
+        if (! $path || ! str_starts_with($path, 'activity-media/')) {
+            return;
+        }
+
+        Storage::disk('public')->delete($path);
     }
 }

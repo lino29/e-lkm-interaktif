@@ -13,6 +13,17 @@ class MediaHelper
      */
     public static function getYoutubeEmbedUrl(?string $url): ?string
     {
+        $videoId = self::getYoutubeVideoId($url);
+
+        if (blank($videoId)) {
+            return null;
+        }
+
+        return "https://www.youtube.com/embed/{$videoId}";
+    }
+
+    public static function getYoutubeVideoId(?string $url): ?string
+    {
         if (blank($url)) {
             return null;
         }
@@ -48,7 +59,7 @@ class MediaHelper
         $videoId = explode('?', (string) $videoId)[0];
         $videoId = explode('&', $videoId)[0];
 
-        return "https://www.youtube.com/embed/{$videoId}";
+        return $videoId;
     }
 
     /**

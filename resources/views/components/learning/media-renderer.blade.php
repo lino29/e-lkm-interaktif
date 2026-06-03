@@ -5,6 +5,12 @@
     use App\Services\Learning\MediaHelper;
 
     $mediaUrl = $filePath ? Storage::disk('public')->url($filePath) : $url;
+    $mediaPathForMime = parse_url((string) $mediaUrl, PHP_URL_PATH) ?: '';
+    $videoMime = match (strtolower(pathinfo($mediaPathForMime, PATHINFO_EXTENSION))) {
+        'webm' => 'video/webm',
+        'mov' => 'video/quicktime',
+        default => 'video/mp4',
+    };
 @endphp
 
 <div class="w-full bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm my-4">
@@ -24,8 +30,24 @@
 
         @elseif($type === 'video')
             @if($mediaUrl)
-                <video controls class="w-full max-w-3xl rounded border border-slate-200">
-                    <source src="{{ $mediaUrl }}" type="video/mp4">
+                <video 
+                    controls 
+                    playsinline 
+                    data-plyr-player 
+                    class="w-full max-w-3xl rounded border border-slate-200"
+                    x-data
+                    x-init="
+                        if (window.Plyr && !$el._plyr) {
+                            $el._plyr = new window.Plyr($el, {
+                                ratio: '16:9',
+                                controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                            });
+                        } else if (window.initPlyrPlayers) {
+                            setTimeout(() => window.initPlyrPlayers(), 100);
+                        }
+                    "
+                >
+                    <source src="{{ $mediaUrl }}" type="{{ $videoMime }}">
                     Browser Anda tidak mendukung tag video.
                 </video>
             @else
@@ -34,17 +56,25 @@
 
         @elseif($type === 'youtube')
             @php
-                $embedUrl = MediaHelper::getYoutubeEmbedUrl($url);
+                $videoId = MediaHelper::getYoutubeVideoId($url);
             @endphp
-            @if($embedUrl)
-                <div class="relative w-full pb-[56.25%] h-0">
-                    <iframe 
-                        src="{{ $embedUrl }}" 
-                        class="absolute top-0 left-0 w-full h-full rounded"
-                        frameborder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                    </iframe>
+            @if($videoId)
+                <div class="w-full max-w-3xl" x-data>
+                    <div 
+                        data-plyr-player 
+                        data-plyr-provider="youtube" 
+                        data-plyr-embed-id="{{ $videoId }}"
+                        x-init="
+                            if (window.Plyr && !$el._plyr) {
+                                $el._plyr = new window.Plyr($el, {
+                                    ratio: '16:9',
+                                    controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                                });
+                            } else if (window.initPlyrPlayers) {
+                                setTimeout(() => window.initPlyrPlayers(), 100);
+                            }
+                        "
+                    ></div>
                 </div>
             @else
                 <div class="text-slate-400 italic text-sm">Link YouTube tidak valid.</div>

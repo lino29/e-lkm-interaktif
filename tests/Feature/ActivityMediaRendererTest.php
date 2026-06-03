@@ -22,3 +22,30 @@ test('activity page renders observation media from display config', function () 
         ->assertSee('Media Pengamatan')
         ->assertSee('Amati contoh perubahan energi');
 });
+
+test('media renderer uses plyr hooks for video and youtube media', function () {
+    $videoHtml = view('components.learning.media-renderer', [
+        'type' => 'video',
+        'filePath' => 'activity-media/demo.mp4',
+        'url' => null,
+        'embedCode' => null,
+        'title' => 'Video Pengamatan',
+        'caption' => null,
+    ])->render();
+
+    $youtubeHtml = view('components.learning.media-renderer', [
+        'type' => 'youtube',
+        'filePath' => null,
+        'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        'embedCode' => null,
+        'title' => 'Video YouTube',
+        'caption' => null,
+    ])->render();
+
+    expect($videoHtml)
+        ->toContain('data-plyr-player')
+        ->and($youtubeHtml)
+        ->toContain('data-plyr-player')
+        ->toContain('data-plyr-provider="youtube"')
+        ->toContain('data-plyr-embed-id="dQw4w9WgXcQ"');
+});

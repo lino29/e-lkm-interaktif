@@ -71,11 +71,45 @@ test('rich editor is only rendered for rich outline sections', function () {
         ->test(ManageLearningUnitOutline::class, ['learningUnit' => $unit->id])
         ->call('selectSection', $material->id)
         ->assertSeeHtml('data-rich-editor')
+        ->assertSeeHtml('rich-editor-wrapper-material-content-editor-'.$material->id)
+        ->assertSeeHtml('rich-editor:sync')
         ->assertSeeHtml('material-content-editor-'.$material->id)
         ->call('selectSection', $keyPoints->id)
         ->assertDontSeeHtml('data-rich-editor')
         ->assertSee('Konsep')
         ->assertSee('Fakta');
+});
+
+test('teacher can delete an outline section with its sub sections', function () {
+    $this->seed(DatabaseSeeder::class);
+
+    $teacher = User::where('email', 'guru@elkm.test')->firstOrFail();
+    $unit = LearningUnit::orderBy('order')->firstOrFail();
+    $outline = app(DynamicOutlineService::class);
+
+    $parent = $outline->createSection($unit, [
+        'title' => 'Bagian Sementara',
+        'section_type' => 'custom_content',
+        'editor_type' => 'rich_text',
+    ]);
+
+    $child = $outline->createSection($unit, [
+        'parent_id' => $parent->id,
+        'title' => 'Subbagian Sementara',
+        'section_type' => 'custom_content',
+        'editor_type' => 'rich_text',
+    ]);
+
+    Livewire::actingAs($teacher)
+        ->test(ManageLearningUnitOutline::class, ['learningUnit' => $unit->id])
+        ->call('selectSection', $parent->id)
+        ->call('deleteSection', $parent->id)
+        ->assertHasNoErrors()
+        ->assertDontSee('Bagian Sementara')
+        ->assertDontSee('Subbagian Sementara');
+
+    expect($parent->fresh())->toBeNull()
+        ->and($child->fresh())->toBeNull();
 });
 
 test('rich editor content is sanitized when saved from outline editor', function () {

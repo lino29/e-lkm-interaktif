@@ -283,6 +283,21 @@ class ManageLearningUnitOutline extends Component
         $this->showMediaModal = true;
     }
 
+    public function updatedMediaFile(): void
+    {
+        if (! $this->mediaFile) {
+            return;
+        }
+
+        $mimeType = $this->mediaFile->getMimeType();
+        if (str_starts_with((string) $mimeType, 'video/')) {
+            $this->mediaType = 'video_file';
+        } else {
+            $this->mediaType = 'image';
+        }
+        $this->mediaTitle ??= pathinfo($this->mediaFile->getClientOriginalName(), PATHINFO_FILENAME);
+    }
+
     public function closeMediaModal(): void
     {
         $this->showMediaModal = false;
@@ -298,8 +313,29 @@ class ManageLearningUnitOutline extends Component
             'mediaType' => ['required', Rule::in(['image', 'video_file', 'video', 'youtube', 'simulation', 'file', 'link', 'embed'])],
             'mediaUrl' => ['nullable', 'url', 'max:255'],
             'mediaEmbedCode' => ['nullable', 'string'],
-            'mediaFile' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,mp4,pdf,doc,docx,ppt,pptx', 'max:5120'],
+            'mediaFile' => ['nullable', 'file', 'max:51200'], // Increased to 50MB for video support
         ]);
+
+        // Custom validation based on type
+        if (in_array($validated['mediaType'], ['image', 'video_file', 'file'])) {
+            if (! $this->mediaFile) {
+                throw ValidationException::withMessages([
+                    'mediaFile' => 'File media wajib diunggah untuk tipe ini.',
+                ]);
+            }
+        } elseif (in_array($validated['mediaType'], ['youtube', 'link'])) {
+            if (blank($validated['mediaUrl'])) {
+                throw ValidationException::withMessages([
+                    'mediaUrl' => 'URL wajib diisi untuk tipe ini.',
+                ]);
+            }
+        } elseif ($validated['mediaType'] === 'embed') {
+            if (blank($validated['mediaEmbedCode'])) {
+                throw ValidationException::withMessages([
+                    'mediaEmbedCode' => 'Embed code wajib diisi untuk tipe ini.',
+                ]);
+            }
+        }
 
         $filePath = $this->mediaFile
             ? $this->mediaFile->store('section-media', 'public')

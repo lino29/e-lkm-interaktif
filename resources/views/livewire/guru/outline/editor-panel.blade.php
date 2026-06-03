@@ -1,6 +1,10 @@
 <main>
     @if ($selectedSection)
-        <form wire:submit="saveSection" class="space-y-5">
+        <form
+            wire:submit="saveSection"
+            x-on:submit.capture="window.dispatchEvent(new CustomEvent('rich-editor:sync'))"
+            class="space-y-5"
+        >
             <flux:card class="space-y-5">
                 <div class="flex flex-col justify-between gap-3 md:flex-row md:items-start">
                     <div>

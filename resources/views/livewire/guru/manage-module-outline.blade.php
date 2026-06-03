@@ -21,7 +21,11 @@
                 <flux:text>Kelola pendahuluan dan penutup modul dengan editor rich text yang sama seperti Outline KB.</flux:text>
             </div>
 
-            <form wire:submit="save" class="space-y-4">
+            <form
+                wire:submit="save"
+                x-on:submit.capture="window.dispatchEvent(new CustomEvent('rich-editor:sync'))"
+                class="space-y-4"
+            >
                 <div class="grid gap-4 md:grid-cols-2">
                     <flux:field>
                         <flux:label>Tipe</flux:label>
@@ -55,7 +59,7 @@
 
                 <flux:field>
                     <flux:label>Konten</flux:label>
-                    <x-forms.rich-editor wire:model.live="content" id="module-section-editor" />
+                    <x-forms.rich-editor wire:model="content" id="module-section-editor" />
                     <flux:error name="content" />
                 </flux:field>
 

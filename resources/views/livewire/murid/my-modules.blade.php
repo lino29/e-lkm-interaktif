@@ -1,5 +1,12 @@
 <div class="space-y-6">
-    <flux:heading size="xl">Modul E-LKM</flux:heading>
+    <x-elkm.page-header title="Modul E-LKM" subtitle="Daftar modul pembelajaran yang dapat Anda akses">
+        <x-slot:breadcrumbs>
+            <flux:breadcrumbs>
+                <flux:breadcrumbs.item href="{{ route('murid.dashboard') }}">Dashboard</flux:breadcrumbs.item>
+                <flux:breadcrumbs.item>Modul E-LKM</flux:breadcrumbs.item>
+            </flux:breadcrumbs>
+        </x-slot:breadcrumbs>
+    </x-elkm.page-header>
     <div class="grid gap-4 md:grid-cols-2">
         @foreach ($modules as $module)
             <flux:card wire:key="my-module-{{ $module->id }}">

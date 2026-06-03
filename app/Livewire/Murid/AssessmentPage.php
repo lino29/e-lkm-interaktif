@@ -4,9 +4,12 @@ namespace App\Livewire\Murid;
 
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
+use App\Models\Question;
 use App\Models\StudentAnswer;
 use App\Services\Assessment\AssessmentScoringService;
+use App\Services\Assessment\QuestionGroupService;
 use App\Services\Learning\ProgressService;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 
 class AssessmentPage extends Component
@@ -21,6 +24,13 @@ class AssessmentPage extends Component
     public ?AssessmentAttempt $latestAttempt = null;
 
     public ?AssessmentAttempt $currentAttempt = null;
+
+    public int $currentGroupIndex = 0;
+
+    /**
+     * @var array<string, bool>
+     */
+    public array $savedQuestionGroups = [];
 
     public function mount(string|int $assessment): void
     {
@@ -57,10 +67,48 @@ class AssessmentPage extends Component
                 'started_at' => now(),
             ]);
         }
+
+        $this->loadDraftAnswers();
+    }
+
+    public function saveCurrentGroup(): void
+    {
+        $group = $this->persistCurrentGroupAnswers();
+
+        if ($group === null) {
+            return;
+        }
+
+        session()->flash('status', "Jawaban {$group['label']} berhasil disimpan.");
+    }
+
+    public function previousGroup(): void
+    {
+        if ($this->currentGroupIndex > 0) {
+            $this->currentGroupIndex--;
+        }
+    }
+
+    public function nextGroup(): void
+    {
+        $group = $this->persistCurrentGroupAnswers();
+
+        if ($group === null) {
+            return;
+        }
+
+        $lastIndex = max(0, $this->questionGroups()->count() - 1);
+        if ($this->currentGroupIndex < $lastIndex) {
+            $this->currentGroupIndex++;
+        }
+
+        session()->flash('status', "Jawaban {$group['label']} berhasil disimpan.");
     }
 
     public function submit(AssessmentScoringService $scoring): void
     {
+        $this->persistCurrentGroupAnswers(false);
+
         $attempt = $this->currentAttempt?->fresh();
 
         if ($attempt === null) {
@@ -123,8 +171,16 @@ class AssessmentPage extends Component
 
     public function render()
     {
+        $questionGroups = $this->questionGroups();
+        $lastGroupIndex = max(0, $questionGroups->count() - 1);
+        $this->currentGroupIndex = min($this->currentGroupIndex, $lastGroupIndex);
+
         return view('livewire.murid.assessment-page', [
             'assessment' => $this->currentAssessment,
+            'questionGroups' => $questionGroups,
+            'currentGroup' => $questionGroups->values()->get($this->currentGroupIndex),
+            'lastGroupIndex' => $lastGroupIndex,
+            'isAttemptOpen' => $this->isAttemptOpen(),
         ]);
     }
 
@@ -143,6 +199,130 @@ class AssessmentPage extends Component
         }
 
         return $answer;
+    }
+
+    /**
+     * @return Collection<int, array{key: string, label: string, questions: Collection<int, Question>}>
+     */
+    private function questionGroups(): Collection
+    {
+        $questionGroupService = app(QuestionGroupService::class);
+        $groupedQuestions = $this->currentAssessment->questions
+            ->sortBy('order')
+            ->groupBy(fn ($question) => $question->question_group ?? $questionGroupService->groupForType($question->question_type));
+
+        $orderedGroups = collect(QuestionGroupService::GROUP_LABELS)
+            ->map(fn (string $label, string $key) => [
+                'key' => $key,
+                'label' => $label,
+                'questions' => $groupedQuestions->get($key, collect())->values(),
+            ])
+            ->filter(fn (array $group) => $group['questions']->isNotEmpty())
+            ->values();
+
+        $knownGroupKeys = array_keys(QuestionGroupService::GROUP_LABELS);
+        $otherGroups = $groupedQuestions
+            ->reject(fn (Collection $questions, string $key) => in_array($key, $knownGroupKeys, true))
+            ->map(fn (Collection $questions, string $key) => [
+                'key' => $key,
+                'label' => $questionGroupService->labelForGroup($key),
+                'questions' => $questions->values(),
+            ])
+            ->values();
+
+        return $orderedGroups->concat($otherGroups)->values();
+    }
+
+    /**
+     * @return array{key: string, label: string, questions: Collection<int, Question>}|null
+     */
+    private function currentQuestionGroup(): ?array
+    {
+        return $this->questionGroups()->values()->get($this->currentGroupIndex);
+    }
+
+    /**
+     * @return array{key: string, label: string, questions: Collection<int, Question>}|null
+     */
+    private function persistCurrentGroupAnswers(bool $flashWhenClosed = true): ?array
+    {
+        $group = $this->currentQuestionGroup();
+
+        if ($group === null) {
+            return null;
+        }
+
+        if (! $this->isAttemptOpen()) {
+            if ($flashWhenClosed) {
+                session()->flash('status', 'Attempt asesmen ini sudah tidak dapat diubah.');
+            }
+
+            return null;
+        }
+
+        $attempt = $this->currentAttempt?->fresh();
+
+        if ($attempt === null) {
+            return null;
+        }
+
+        foreach ($group['questions'] as $question) {
+            $answer = $this->normalizeAnswer($question->id, $question->question_type);
+
+            StudentAnswer::updateOrCreate(
+                [
+                    'assessment_attempt_id' => $attempt->id,
+                    'question_id' => $question->id,
+                ],
+                [
+                    'student_id' => auth()->id(),
+                    'answer_text' => is_string($answer) ? $answer : null,
+                    'answer_json' => is_array($answer) ? $answer : null,
+                    'score' => 0,
+                    'rubric_score' => null,
+                    'keyword_score' => null,
+                    'similarity_score' => null,
+                    'feedback' => null,
+                ],
+            );
+        }
+
+        $this->savedQuestionGroups[$group['key']] = true;
+
+        return $group;
+    }
+
+    private function isAttemptOpen(): bool
+    {
+        return $this->currentAttempt !== null
+            && $this->currentAttempt->submitted_at === null
+            && $this->currentAttempt->status === 'sedang_dikerjakan';
+    }
+
+    private function loadDraftAnswers(): void
+    {
+        if ($this->currentAttempt === null || ! $this->isAttemptOpen()) {
+            return;
+        }
+
+        $draftAnswers = $this->currentAttempt->studentAnswers()->get();
+
+        foreach ($draftAnswers as $draftAnswer) {
+            $this->answers[$draftAnswer->question_id] = $draftAnswer->answer_json ?? $draftAnswer->answer_text ?? '';
+        }
+
+        $questionGroupService = app(QuestionGroupService::class);
+        $questionGroupsById = $this->currentAssessment->questions
+            ->keyBy('id')
+            ->map(fn ($question) => $question->question_group ?? $questionGroupService->groupForType($question->question_type));
+
+        foreach ($draftAnswers as $draftAnswer) {
+            $groupKey = $questionGroupsById->get($draftAnswer->question_id);
+
+            if ($groupKey !== null) {
+                $this->savedQuestionGroups[$groupKey] = true;
+            }
+        }
     }
 
     private function canStartNewAttempt(): bool

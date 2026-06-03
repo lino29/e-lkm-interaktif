@@ -9,19 +9,23 @@
     $isLocked = $statusData['is_locked'] ?? false;
 @endphp
 
-<div class="rounded-lg border p-4">
-    <div class="font-semibold">Forum Diskusi/Refleksi</div>
-    <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+<div class="card-elkm p-4">
+    <div class="font-bold text-elkm-text">Forum Diskusi/Refleksi</div>
+    <p class="mt-2 text-sm text-elkm-muted">
         Forum mengikuti activity engine fase forum_diskusi, sehingga jawaban dan progres tetap tercatat sebagai aktivitas belajar.
     </p>
 
     @if ($activity && ! $isLocked)
-        <flux:button class="mt-4" size="sm" variant="primary" :href="route('murid.activities.show', $activity)" wire:navigate>
-            Buka Forum
-        </flux:button>
+        <div class="mt-4">
+            <a href="{{ route('murid.activities.show', $activity) }}" wire:navigate class="btn-elkm btn-elkm-primary">
+                Buka Forum
+            </a>
+        </div>
     @elseif ($activity)
-        <flux:button class="mt-4" size="sm" disabled>Selesaikan aktivitas sebelumnya</flux:button>
+        <div class="mt-4">
+            <button class="btn-elkm btn-elkm-outline opacity-50 cursor-not-allowed" disabled>Selesaikan aktivitas sebelumnya</button>
+        </div>
     @else
-        <div class="mt-3 text-sm text-zinc-500">Aktivitas forum belum tersedia.</div>
+        <div class="mt-3 text-sm text-elkm-muted">Aktivitas forum belum tersedia.</div>
     @endif
 </div>

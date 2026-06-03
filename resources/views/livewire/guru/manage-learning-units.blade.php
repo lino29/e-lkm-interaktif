@@ -1,13 +1,20 @@
 <div class="space-y-6">
-    <div class="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-        <div>
-            <flux:heading size="xl">Kelola Kegiatan Belajar</flux:heading>
-            <flux:text>Atur lima kegiatan belajar utama sesuai struktur E-LKM.</flux:text>
-        </div>
-        @if ($editingLearningUnitId)
-            <flux:button type="button" variant="ghost" wire:click="cancelEdit">Batal Edit</flux:button>
-        @endif
-    </div>
+    <x-elkm.page-header 
+        title="Kelola Kegiatan Belajar" 
+        subtitle="Atur lima kegiatan belajar utama sesuai struktur E-LKM." 
+    >
+        <x-slot:breadcrumbs>
+            <flux:breadcrumbs>
+                <flux:breadcrumbs.item href="{{ route('guru.dashboard') }}">Dashboard</flux:breadcrumbs.item>
+                <flux:breadcrumbs.item>Kelola Kegiatan Belajar</flux:breadcrumbs.item>
+            </flux:breadcrumbs>
+        </x-slot:breadcrumbs>
+        <x-slot:actions>
+            @if ($editingLearningUnitId)
+                <button type="button" class="btn-elkm btn-elkm-outline" wire:click="cancelEdit">Batal Edit</button>
+            @endif
+        </x-slot:actions>
+    </x-elkm.page-header>
 
     @if (session('status'))
         <flux:callout variant="success">{{ session('status') }}</flux:callout>
