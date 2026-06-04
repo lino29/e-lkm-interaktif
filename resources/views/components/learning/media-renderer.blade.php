@@ -4,7 +4,13 @@
     use Illuminate\Support\Facades\Storage;
     use App\Services\Learning\MediaHelper;
 
+    // Gunakan Storage::disk()->url() agar fleksibel jika di hosting menggunakan folder /uploads/
     $mediaUrl = $filePath ? Storage::disk('public')->url($filePath) : $url;
+    // Pastikan URL absolute jika belum (opsional, karena url() biasanya sudah absolute tergantung APP_URL)
+    if ($filePath && !str_starts_with($mediaUrl, 'http')) {
+        $mediaUrl = asset($mediaUrl);
+    }
+    
     $mediaPathForMime = parse_url((string) $mediaUrl, PHP_URL_PATH) ?: '';
     $videoMime = match (strtolower(pathinfo($mediaPathForMime, PATHINFO_EXTENSION))) {
         'webm' => 'video/webm',

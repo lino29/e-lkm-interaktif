@@ -1,0 +1,102 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, fileinfo, gd, zip
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install NPM dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Prepare Hostinger release
+        run: |
+          set -euo pipefail
+          RELEASE_DIR="build/hostinger-release"
+          APP_DIR="$RELEASE_DIR/elkm-app"
+          PUBLIC_DIR="$RELEASE_DIR/public_html"
+
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$APP_DIR" "$PUBLIC_DIR"
+
+          cp -R app bootstrap config database resources routes storage vendor artisan composer.json composer.lock "$APP_DIR/"
+          rm -rf "$APP_DIR/storage/logs"
+          mkdir -p "$APP_DIR/storage/logs" "$APP_DIR/storage/framework/cache" "$APP_DIR/storage/framework/sessions" "$APP_DIR/storage/framework/views"
+          touch "$APP_DIR/storage/logs/.gitkeep"
+
+          cp -R public/. "$PUBLIC_DIR/"
+          rm -rf "$PUBLIC_DIR/uploads"
+          mkdir -p "$PUBLIC_DIR/uploads"
+          touch "$PUBLIC_DIR/uploads/.gitkeep"
+
+          cat > "$PUBLIC_DIR/index.php" <<'PHP'
+          <?php
+
+          use Illuminate\Foundation\Application;
+          use Illuminate\Http\Request;
+
+          define('LARAVEL_START', microtime(true));
+
+          if (file_exists($maintenance = __DIR__.'/../elkm-app/storage/framework/maintenance.php')) {
+              require $maintenance;
+          }
+
+          require __DIR__.'/../elkm-app/vendor/autoload.php';
+
+          /** @var Application $app */
+          $app = require_once __DIR__.'/../elkm-app/bootstrap/app.php';
+
+          $app->handleRequest(Request::capture());
+          PHP
+
+      # FTP_SERVER_DIR must point to the domain root folder that contains public_html.
+      # Example: /domains/domain-anda.com/
+      - name: Upload release via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          local-dir: build/hostinger-release/
+          protocol: ftps
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/tests/**
+            **/.env
+            public_html/uploads/**
