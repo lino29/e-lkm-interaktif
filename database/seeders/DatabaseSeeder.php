@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             AdminSeeder::class,
             DemoUserSeeder::class,
+            EducationalGameSeeder::class,
             DemoLearningSeeder::class,
             RenewableEnergyMaterialSeeder::class,
             RenewableEnergyActivitySeeder::class,

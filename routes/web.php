@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Guru\EditorImageUploadController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Games\ManageGames as AdminManageGames;
 use App\Livewire\Admin\ManageClasses;
 use App\Livewire\Admin\ManageStudents;
 use App\Livewire\Admin\ManageSubjects;
@@ -9,6 +10,7 @@ use App\Livewire\Admin\ManageTeachers;
 use App\Livewire\Admin\ManageUsers;
 use App\Livewire\Admin\Reports as AdminReports;
 use App\Livewire\Guru\Dashboard as GuruDashboard;
+use App\Livewire\Guru\Games\GameReports;
 use App\Livewire\Guru\ManageActivities;
 use App\Livewire\Guru\ManageAssessments;
 use App\Livewire\Guru\ManageDiscussions;
@@ -30,6 +32,9 @@ use App\Livewire\Murid\AssessmentPage;
 use App\Livewire\Murid\AssessmentResultPage;
 use App\Livewire\Murid\AssessmentReviewPage;
 use App\Livewire\Murid\Dashboard as MuridDashboard;
+use App\Livewire\Murid\Games\GameHub;
+use App\Livewire\Murid\Games\GamePlayPage;
+use App\Livewire\Murid\Games\GameResultPage;
 use App\Livewire\Murid\LearningUnitPage;
 use App\Livewire\Murid\ModuleDetail as MuridModuleDetail;
 use App\Livewire\Murid\MyModules;
@@ -67,6 +72,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('students', 'dashboard.page', ['livewireComponent' => ManageStudents::class, 'title' => 'Kelola Murid'])->name('students');
         Route::view('classes', 'dashboard.page', ['livewireComponent' => ManageClasses::class, 'title' => 'Kelola Kelas'])->name('classes');
         Route::view('subjects', 'dashboard.page', ['livewireComponent' => ManageSubjects::class, 'title' => 'Kelola Mata Pelajaran'])->name('subjects');
+        Route::view('games', 'dashboard.page', ['livewireComponent' => AdminManageGames::class, 'title' => 'Kelola Games'])->name('games');
         Route::view('modules/{module}/outline', 'dashboard.page', ['livewireComponent' => ManageModuleOutline::class, 'title' => 'Kelola Outline Modul'])->name('modules.outline');
         Route::view('learning-units/{learningUnit}/outline', 'dashboard.page', ['livewireComponent' => ManageLearningUnitOutline::class, 'title' => 'Kelola Outline KB'])->name('learning-units.outline');
         Route::view('learning-units/{learningUnit}/preview', 'dashboard.page', ['livewireComponent' => PreviewLearningUnit::class, 'title' => 'Preview Kegiatan Belajar'])->name('learning-units.preview');
@@ -90,7 +96,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('rubrics', 'dashboard.page', ['livewireComponent' => ManageRubrics::class, 'title' => 'Kelola Rubrik'])->name('rubrics');
         Route::view('projects', 'dashboard.page', ['livewireComponent' => ManageProjects::class, 'title' => 'Kelola Proyek'])->name('projects');
         Route::view('remedials', 'dashboard.page', ['livewireComponent' => ManageRemedials::class, 'title' => 'Daftar Remedial'])->name('remedials');
+        Route::view('games', 'dashboard.page', ['livewireComponent' => GameReports::class, 'title' => 'Kelola Games'])->name('games.manage');
         Route::view('reports', 'dashboard.page', ['livewireComponent' => GuruReports::class, 'title' => 'Laporan Guru'])->name('reports');
+        Route::view('games/reports', 'dashboard.page', ['livewireComponent' => GameReports::class, 'title' => 'Laporan Games'])->name('games.reports');
         Route::view('activity-reviews', 'dashboard.page', ['livewireComponent' => ReviewActivityAnswers::class, 'title' => 'Review Jawaban Aktivitas'])->name('activity-reviews');
     });
 
@@ -98,6 +106,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('dashboard', 'dashboard.page', ['livewireComponent' => MuridDashboard::class, 'title' => 'Dashboard Murid'])->name('dashboard');
         Route::view('modules', 'dashboard.page', ['livewireComponent' => MyModules::class, 'title' => 'Modul Saya'])->name('modules');
         Route::view('modules/{module}', 'dashboard.page', ['livewireComponent' => MuridModuleDetail::class, 'title' => 'Detail Modul'])->name('modules.show');
+        Route::view('games', 'dashboard.page', ['livewireComponent' => GameHub::class, 'title' => 'Games Edukatif'])->name('games.index');
+        Route::view('games/{game}', 'dashboard.page', ['livewireComponent' => GamePlayPage::class, 'title' => 'Main Game'])->name('games.play');
+        Route::view('games/{game}/result/{attempt}', 'dashboard.page', ['livewireComponent' => GameResultPage::class, 'title' => 'Hasil Game'])->name('games.result');
         Route::view('learning-units/{learningUnit}', 'dashboard.page', ['livewireComponent' => LearningUnitPage::class, 'title' => 'Kegiatan Belajar'])->name('learning-units.show');
         Route::view('activities/{activity}', 'dashboard.page', ['livewireComponent' => ActivityPage::class, 'title' => 'Aktivitas'])->name('activities.show');
         Route::view('assessments/{assessment}', 'dashboard.page', ['livewireComponent' => AssessmentPage::class, 'title' => 'Asesmen'])->name('assessments.show');
