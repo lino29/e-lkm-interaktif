@@ -22,6 +22,8 @@
                 <x-learning.unit-outline
                     :sections="$learningUnit->rootSections"
                     :active-section-id="$activeSectionId"
+                    :activity-statuses="$activityStatuses"
+                    :assessment-statuses="$assessmentStatuses"
                 />
             </div>
         </aside>

@@ -11,6 +11,7 @@ use App\Services\Learning\ActivityDiscussionService;
 use App\Services\Learning\ActivitySchemaValidator;
 use App\Services\Learning\ProgressService;
 use App\Services\Learning\ProjectDraftService;
+use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -101,6 +102,17 @@ class ActivityPage extends Component
         $this->processSubmit('draft');
     }
 
+    #[Computed]
+    public function canProceedToNext(): bool
+    {
+        if (! $this->currentActivity->is_required) {
+            return true;
+        }
+
+        return $this->existingAnswer !== null
+            && in_array($this->existingAnswer->status, ['submitted', 'reviewed'], true);
+    }
+
     private function initializeSchemaAnswer(): void
     {
         $schema = $this->currentActivity->answer_schema ?? [];
@@ -147,7 +159,14 @@ class ActivityPage extends Component
             ->validate($this->currentActivity, $this->answer_json, $this->answer_text);
 
         if (! $schemaValidation['valid']) {
-            $this->addError('activity', implode("\n", $schemaValidation['errors']));
+            $errorMessage = implode(' ', $schemaValidation['errors']);
+            $this->addError('activity', $errorMessage);
+
+            Flux::toast(
+                variant: 'danger',
+                heading: 'Jawaban Belum Lengkap',
+                text: $errorMessage,
+            );
 
             return;
         }
@@ -162,6 +181,7 @@ class ActivityPage extends Component
         );
 
         $this->existingAnswer = $answer;
+        unset($this->canProceedToNext); // Reset computed cache
 
         if ($this->currentActivity->phase === 'forum_diskusi' || $this->currentActivity->input_type === 'discussion') {
             app(ActivityDiscussionService::class)->sync($answer);
@@ -173,7 +193,19 @@ class ActivityPage extends Component
 
         app(ProgressService::class)->refreshLearningUnitProgress(auth()->user(), $this->currentActivity->learningUnit);
 
-        session()->flash('status', $status === 'submitted' ? 'Jawaban berhasil disubmit.' : 'Draft berhasil disimpan.');
+        if ($status === 'submitted') {
+            Flux::toast(
+                variant: 'success',
+                heading: 'Jawaban Terkirim!',
+                text: 'Jawaban Anda berhasil disimpan dan dikunci untuk diperiksa guru.',
+            );
+        } else {
+            Flux::toast(
+                variant: 'success',
+                heading: 'Draft Tersimpan',
+                text: 'Draft jawaban Anda berhasil disimpan. Jangan lupa submit sebelum pindah ke tahap berikutnya.',
+            );
+        }
     }
 
     private function validateBaseInput(): void
@@ -191,10 +223,9 @@ class ActivityPage extends Component
         }
 
         if ($this->currentActivity->input_type === 'table') {
-            if (! $this->hasFilledTableValues($this->answer_json) && $this->hasFilledTableValues($this->table_data)) {
-                $this->answer_json = $this->table_data;
-            }
-
+            // answer_json is the single source of truth for all table columns
+            // (both text inputs and select inputs are bound to answer_json in the renderer).
+            // table_data is kept in sync for display purposes only.
             $this->persistComputedFields();
             $this->table_data = $this->answer_json;
         }

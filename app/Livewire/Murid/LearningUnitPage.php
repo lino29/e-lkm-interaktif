@@ -3,6 +3,7 @@
 namespace App\Livewire\Murid;
 
 use App\Models\ActivityAnswer;
+use App\Models\AssessmentAttempt;
 use App\Models\LearningUnit;
 use App\Models\LearningUnitSection;
 use App\Services\Learning\LearningUnitOutlineService;
@@ -103,6 +104,28 @@ class LearningUnitPage extends Component
         return $statuses;
     }
 
+    private function getAssessmentStatuses(): array
+    {
+        $assessments = $this->currentLearningUnit->assessments;
+        $statuses = [];
+        $progressService = app(ProgressService::class);
+
+        foreach ($assessments as $assessment) {
+            $latestAttempt = AssessmentAttempt::where('assessment_id', $assessment->id)
+                ->where('student_id', auth()->id())
+                ->whereNotNull('submitted_at')
+                ->latest('submitted_at')
+                ->first();
+
+            $statuses[$assessment->id] = [
+                'status' => $latestAttempt?->status ?? 'belum_mulai',
+                'is_locked' => ! $progressService->isAssessmentUnlocked(auth()->user(), $assessment),
+            ];
+        }
+
+        return $statuses;
+    }
+
     #[Computed]
     public function flatVisibleSections()
     {
@@ -146,6 +169,7 @@ class LearningUnitPage extends Component
         return view('livewire.murid.learning-unit-page', [
             'learningUnit' => $this->currentLearningUnit,
             'activityStatuses' => $this->getActivityStatuses(),
+            'assessmentStatuses' => $this->getAssessmentStatuses(),
         ]);
     }
 }

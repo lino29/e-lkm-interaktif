@@ -14,14 +14,6 @@
         </x-slot:breadcrumbs>
     </x-elkm.page-header>
 
-    @if (session('status'))
-        <flux:callout variant="success">{{ session('status') }}</flux:callout>
-    @endif
-
-    @error('activity')
-        <flux:callout variant="danger">{{ $message }}</flux:callout>
-    @enderror
-
     <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div class="space-y-6">
             <x-elkm.app-card>
@@ -81,6 +73,13 @@
                         </div>
                     @endif
 
+                    @error('activity')
+                        <div class="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                            <span class="mt-0.5 shrink-0">⚠️</span>
+                            <span>{{ $message }}</span>
+                        </div>
+                    @enderror
+
                     <div class="flex items-center justify-between pt-6 mt-6 border-t border-elkm-line">
                         <div class="flex gap-2">
                             @if (! ($answer?->status === 'reviewed'))
@@ -89,9 +88,30 @@
                             @endif
                         </div>
                         
-                        <a href="{{ $nextStepUrl }}" wire:navigate class="btn-elkm btn-elkm-soft">
-                            Tahap Berikutnya &rarr;
-                        </a>
+                        @if ($this->canProceedToNext)
+                            <a href="{{ $nextStepUrl }}" wire:navigate class="btn-elkm btn-elkm-soft">
+                                Tahap Berikutnya &rarr;
+                            </a>
+                        @else
+                            <div class="relative group inline-block">
+                                <button 
+                                    type="button" 
+                                    disabled
+                                    class="btn-elkm btn-elkm-soft opacity-40 cursor-not-allowed"
+                                    aria-disabled="true"
+                                >
+                                    Tahap Berikutnya &rarr;
+                                </button>
+                                <div class="absolute bottom-full right-0 mb-2 w-64 hidden group-hover:block z-50">
+                                    <div class="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg text-center leading-relaxed">
+                                        🔒 Selesaikan dan kirim jawaban aktivitas ini terlebih dahulu untuk melanjutkan ke tahap berikutnya.
+                                        <div class="absolute bottom-0 right-6 translate-y-full">
+                                            <div class="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </form>
             </x-elkm.app-card>
