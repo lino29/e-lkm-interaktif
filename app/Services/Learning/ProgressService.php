@@ -10,6 +10,8 @@ use App\Models\LearningUnit;
 use App\Models\Module;
 use App\Models\Progress;
 use App\Models\User;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class ProgressService
 {
@@ -78,6 +80,13 @@ class ProgressService
             ->activities()
             ->where('order', '<', $activity->order)
             ->where('is_required', true)
+            ->whereExists(function (Builder $query) {
+                $query->select(DB::raw(1))
+                    ->from('learning_unit_sections')
+                    ->whereColumn('linked_model_id', 'activities.id')
+                    ->where('linked_model_type', Activity::class)
+                    ->where('is_visible', true);
+            })
             ->pluck('id');
 
         if ($previousRequiredActivityIds->isEmpty()) {
@@ -110,6 +119,13 @@ class ProgressService
         $requiredActivityIds = $assessment->learningUnit
             ->activities()
             ->where('is_required', true)
+            ->whereExists(function (Builder $query) {
+                $query->select(DB::raw(1))
+                    ->from('learning_unit_sections')
+                    ->whereColumn('linked_model_id', 'activities.id')
+                    ->where('linked_model_type', Activity::class)
+                    ->where('is_visible', true);
+            })
             ->pluck('id');
 
         if ($requiredActivityIds->isEmpty()) {
@@ -129,6 +145,13 @@ class ProgressService
     {
         $requiredActivityIds = $learningUnit->activities()
             ->where('is_required', true)
+            ->whereExists(function (Builder $query) {
+                $query->select(DB::raw(1))
+                    ->from('learning_unit_sections')
+                    ->whereColumn('linked_model_id', 'activities.id')
+                    ->where('linked_model_type', Activity::class)
+                    ->where('is_visible', true);
+            })
             ->pluck('id');
 
         if ($requiredActivityIds->isNotEmpty()) {
