@@ -7,7 +7,7 @@
             </flux:breadcrumbs>
             <flux:heading size="xl" level="1">Laporan Pembelajaran</flux:heading>
             <p class="mt-2 text-sm leading-6 text-elkm-muted md:text-base">
-                Pantau hasil asesmen, progres belajar, proyek, remedial, dan partisipasi murid dalam satu halaman.
+                Mulai dari ringkasan, lalu buka satu kategori untuk melihat data yang lebih rinci.
             </p>
         </div>
 
@@ -34,13 +34,36 @@
         </div>
     </header>
 
-    <nav aria-label="Navigasi bagian laporan" class="overflow-x-auto rounded-2xl border border-elkm-line bg-white p-2 shadow-sm">
-        <div class="flex min-w-max gap-1">
-            <a href="#ringkasan" class="rounded-xl px-3 py-2 text-sm font-semibold text-elkm-muted transition hover:bg-elkm-surface hover:text-elkm-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-elkm-primary">Ringkasan</a>
-            <a href="#attempt-asesmen" class="rounded-xl px-3 py-2 text-sm font-semibold text-elkm-muted transition hover:bg-elkm-surface hover:text-elkm-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-elkm-primary">Attempt Asesmen</a>
-            <a href="#progres-remedial" class="rounded-xl px-3 py-2 text-sm font-semibold text-elkm-muted transition hover:bg-elkm-surface hover:text-elkm-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-elkm-primary">Progres & Remedial</a>
-            <a href="#proyek" class="rounded-xl px-3 py-2 text-sm font-semibold text-elkm-muted transition hover:bg-elkm-surface hover:text-elkm-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-elkm-primary">Proyek</a>
-            <a href="#diskusi" class="rounded-xl px-3 py-2 text-sm font-semibold text-elkm-muted transition hover:bg-elkm-surface hover:text-elkm-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-elkm-primary">Diskusi</a>
+    @php
+        $reportSections = [
+            'summary' => ['label' => 'Ringkasan', 'icon' => 'chart-bar-square', 'panel' => 'ringkasan'],
+            'assessments' => ['label' => 'Attempt Asesmen', 'icon' => 'clipboard-document-check', 'panel' => 'attempt-asesmen'],
+            'progress' => ['label' => 'Progres & Remedial', 'icon' => 'arrow-trending-up', 'panel' => 'progres-remedial'],
+            'projects' => ['label' => 'Proyek', 'icon' => 'folder-open', 'panel' => 'proyek'],
+            'discussions' => ['label' => 'Diskusi', 'icon' => 'chat-bubble-left-right', 'panel' => 'diskusi'],
+        ];
+    @endphp
+
+    <nav aria-label="Kategori laporan" class="overflow-x-auto rounded-2xl border border-elkm-line bg-white p-2 shadow-sm">
+        <div class="grid min-w-[48rem] grid-cols-5 gap-2">
+            @foreach ($reportSections as $sectionKey => $section)
+                <button
+                    type="button"
+                    wire:click="showSection('{{ $sectionKey }}')"
+                    wire:key="report-section-{{ $sectionKey }}"
+                    aria-current="{{ $activeSection === $sectionKey ? 'page' : 'false' }}"
+                    aria-pressed="{{ $activeSection === $sectionKey ? 'true' : 'false' }}"
+                    aria-controls="{{ $section['panel'] }}"
+                    @class([
+                        'flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-elkm-primary',
+                        'bg-elkm-primary text-white shadow-sm' => $activeSection === $sectionKey,
+                        'text-elkm-muted hover:bg-elkm-surface hover:text-elkm-primary' => $activeSection !== $sectionKey,
+                    ])
+                >
+                    <flux:icon name="{{ $section['icon'] }}" class="size-4" aria-hidden="true" />
+                    <span>{{ $section['label'] }}</span>
+                </button>
+            @endforeach
         </div>
     </nav>
 
@@ -48,7 +71,7 @@
         <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
             <div>
                 <h2 id="filter-laporan-heading" class="text-lg font-bold text-elkm-text">Filter laporan</h2>
-                <p class="mt-1 text-sm text-elkm-muted">Gunakan filter untuk mempersempit data. Ringkasan mengikuti modul yang dipilih.</p>
+                <p class="mt-1 text-sm text-elkm-muted">Filter hanya diterapkan pada kategori laporan yang sedang dibuka.</p>
             </div>
             <div class="text-sm font-semibold text-elkm-primary" aria-live="polite">
                 {{ $activeFilterCount }} filter aktif
@@ -56,18 +79,6 @@
         </div>
 
         <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4" role="search">
-            <flux:field class="md:col-span-2">
-                <flux:label>Cari data laporan</flux:label>
-                <flux:input
-                    type="search"
-                    icon="magnifying-glass"
-                    wire:model.live.debounce.400ms="search"
-                    placeholder="Nama murid, asesmen, proyek, atau diskusi"
-                    aria-describedby="report-search-help"
-                />
-                <flux:description id="report-search-help">Pencarian diterapkan pada seluruh bagian laporan yang relevan.</flux:description>
-            </flux:field>
-
             <flux:field>
                 <flux:label>Modul</flux:label>
                 <flux:select wire:model.live="module_id">
@@ -79,27 +90,43 @@
                 <flux:error name="module_id" />
             </flux:field>
 
-            <flux:field>
-                <flux:label>Status asesmen</flux:label>
-                <flux:select wire:model.live="attempt_status">
-                    <flux:select.option value="">Semua status</flux:select.option>
-                    <flux:select.option value="tuntas">Tuntas</flux:select.option>
-                    <flux:select.option value="remedial">Remedial</flux:select.option>
-                    <flux:select.option value="sedang_dikerjakan">Sedang dikerjakan</flux:select.option>
-                </flux:select>
-            </flux:field>
+            @if ($activeSection !== 'summary')
+                <flux:field class="md:col-span-2">
+                    <flux:label>Cari pada kategori ini</flux:label>
+                    <flux:input
+                        type="search"
+                        icon="magnifying-glass"
+                        wire:model.live.debounce.400ms="search"
+                        placeholder="Masukkan nama murid atau kata kunci"
+                        aria-describedby="report-search-help"
+                    />
+                    <flux:description id="report-search-help">Hasil diperbarui pada kategori yang sedang aktif.</flux:description>
+                </flux:field>
+            @endif
 
-            <flux:field>
-                <flux:label>Status proyek</flux:label>
-                <flux:select wire:model.live="project_status">
-                    <flux:select.option value="">Semua status</flux:select.option>
-                    <flux:select.option value="draft">Draft</flux:select.option>
-                    <flux:select.option value="submitted">Dikirim</flux:select.option>
-                    <flux:select.option value="reviewed">Sudah direview</flux:select.option>
-                </flux:select>
-            </flux:field>
+            @if ($activeSection === 'assessments')
+                <flux:field>
+                    <flux:label>Status asesmen</flux:label>
+                    <flux:select wire:model.live="attempt_status">
+                        <flux:select.option value="">Semua status</flux:select.option>
+                        <flux:select.option value="tuntas">Tuntas</flux:select.option>
+                        <flux:select.option value="remedial">Remedial</flux:select.option>
+                        <flux:select.option value="sedang_dikerjakan">Sedang dikerjakan</flux:select.option>
+                    </flux:select>
+                </flux:field>
+            @elseif ($activeSection === 'projects')
+                <flux:field>
+                    <flux:label>Status proyek</flux:label>
+                    <flux:select wire:model.live="project_status">
+                        <flux:select.option value="">Semua status</flux:select.option>
+                        <flux:select.option value="draft">Draft</flux:select.option>
+                        <flux:select.option value="submitted">Dikirim</flux:select.option>
+                        <flux:select.option value="reviewed">Sudah direview</flux:select.option>
+                    </flux:select>
+                </flux:field>
+            @endif
 
-            <div class="flex items-end md:col-span-2 xl:col-span-3">
+            <div class="flex items-end">
                 <flux:button
                     type="button"
                     wire:click="resetFilters"
@@ -112,13 +139,14 @@
             </div>
         </div>
 
-        <div wire:loading.flex wire:target="module_id,attempt_status,project_status,search,resetFilters" class="mt-4 items-center gap-2 text-sm font-medium text-elkm-primary" role="status">
+        <div wire:loading.flex wire:target="module_id,attempt_status,project_status,search,resetFilters,showSection,showAttemptDetail" class="mt-4 items-center gap-2 text-sm font-medium text-elkm-primary" role="status">
             <span class="size-2 animate-pulse rounded-full bg-elkm-primary"></span>
             Memperbarui laporan…
         </div>
     </section>
 
-    <section id="ringkasan" aria-labelledby="ringkasan-heading" class="scroll-mt-6 space-y-4">
+    @if ($activeSection === 'summary')
+    <section id="ringkasan" aria-labelledby="ringkasan-heading" class="space-y-4">
         <div>
             <h2 id="ringkasan-heading" class="text-xl font-bold text-elkm-text">Ringkasan kinerja</h2>
             <p class="mt-1 text-sm text-elkm-muted">Angka utama untuk membantu Anda mengenali kondisi kelas dengan cepat.</p>
@@ -185,8 +213,10 @@
             </flux:card>
         </div>
     </section>
+    @endif
 
-    <section id="attempt-asesmen" aria-labelledby="attempt-heading" class="scroll-mt-6 space-y-4">
+    @if ($activeSection === 'assessments')
+    <section id="attempt-asesmen" aria-labelledby="attempt-heading" class="space-y-4">
         <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
                 <h2 id="attempt-heading" class="text-xl font-bold text-elkm-text">Attempt Asesmen</h2>
@@ -222,6 +252,16 @@
                             <dd class="mt-1 font-bold tabular-nums">Ke-{{ $attempt->attempt_number }}</dd>
                         </div>
                     </dl>
+                    <flux:button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        icon="eye"
+                        wire:click="showAttemptDetail({{ $attempt->id }})"
+                        class="mt-3 w-full"
+                    >
+                        Lihat detail
+                    </flux:button>
                 </article>
             @empty
                 <div class="rounded-2xl border border-dashed border-elkm-line bg-white p-6 text-center text-sm text-elkm-muted">Belum ada attempt asesmen sesuai filter.</div>
@@ -237,6 +277,7 @@
                         <th scope="col" class="px-5 py-3.5 font-semibold">Asesmen</th>
                         <th scope="col" class="px-5 py-3.5 font-semibold">Nilai</th>
                         <th scope="col" class="px-5 py-3.5 font-semibold">Status</th>
+                        <th scope="col" class="px-5 py-3.5 text-right font-semibold">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-elkm-line">
@@ -255,18 +296,31 @@
                             <td class="whitespace-nowrap px-5 py-4">
                                 <flux:badge size="sm" color="{{ $attemptStatusColor }}">{{ Illuminate\Support\Str::headline($attempt->status) }}</flux:badge>
                             </td>
+                            <td class="whitespace-nowrap px-5 py-4 text-right">
+                                <flux:button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    icon="eye"
+                                    wire:click="showAttemptDetail({{ $attempt->id }})"
+                                >
+                                    Lihat detail
+                                </flux:button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-5 py-8 text-center text-elkm-muted">Belum ada attempt asesmen sesuai filter.</td>
+                            <td colspan="5" class="px-5 py-8 text-center text-elkm-muted">Belum ada attempt asesmen sesuai filter.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </section>
+    @endif
 
-    <section id="progres-remedial" aria-labelledby="progres-remedial-heading" class="scroll-mt-6 space-y-4">
+    @if ($activeSection === 'progress')
+    <section id="progres-remedial" aria-labelledby="progres-remedial-heading" class="space-y-4">
         <div>
             <h2 id="progres-remedial-heading" class="text-xl font-bold text-elkm-text">Progres dan tindak lanjut</h2>
             <p class="mt-1 text-sm text-elkm-muted">Lihat perkembangan belajar dan murid yang memerlukan remedial.</p>
@@ -324,8 +378,10 @@
             </section>
         </div>
     </section>
+    @endif
 
-    <section id="proyek" aria-labelledby="proyek-heading" class="scroll-mt-6 space-y-4">
+    @if ($activeSection === 'projects')
+    <section id="proyek" aria-labelledby="proyek-heading" class="space-y-4">
         <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
                 <h2 id="proyek-heading" class="text-xl font-bold text-elkm-text">Proyek murid</h2>
@@ -373,8 +429,10 @@
             @endforelse
         </div>
     </section>
+    @endif
 
-    <section id="diskusi" aria-labelledby="diskusi-heading" class="scroll-mt-6 space-y-4">
+    @if ($activeSection === 'discussions')
+    <section id="diskusi" aria-labelledby="diskusi-heading" class="space-y-4">
         <div>
             <h2 id="diskusi-heading" class="text-xl font-bold text-elkm-text">Diskusi dan partisipasi</h2>
             <p class="mt-1 text-sm text-elkm-muted">Prioritaskan thread yang belum direspons dan amati keterlibatan murid.</p>
@@ -384,7 +442,11 @@
             <section aria-labelledby="diskusi-terbaru-heading" class="space-y-3">
                 <h3 id="diskusi-terbaru-heading" class="text-base font-bold text-elkm-text">Diskusi terbaru</h3>
                 @forelse ($discussions as $discussion)
-                    @php($hasTeacherReply = $discussion->replies->contains(fn ($reply) => $reply->user->roles->contains('name', 'guru')))
+                    @php
+                        $hasTeacherReply = $discussion->replies->contains(
+                            fn ($reply) => $reply->user->roles->contains('name', 'guru'),
+                        );
+                    @endphp
                     <flux:card wire:key="report-discussion-{{ $discussion->id }}" class="space-y-3">
                         <div class="flex flex-wrap items-start justify-between gap-2">
                             <div>
@@ -421,4 +483,119 @@
             </section>
         </div>
     </section>
+    @endif
+
+    <flux:modal
+        name="attempt-detail-modal"
+        wire:model="showAttemptDetailModal"
+        @close="closeAttemptDetail"
+        scroll="body"
+        class="max-w-3xl"
+    >
+        @if ($selectedAttempt)
+            @php
+                $selectedAttemptStatusColor = match ($selectedAttempt->status) {
+                    'tuntas' => 'green',
+                    'remedial' => 'yellow',
+                    default => 'blue',
+                };
+            @endphp
+
+            <div class="space-y-6">
+                <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                    <div>
+                        <flux:heading size="lg" level="2">Detail Attempt Asesmen</flux:heading>
+                        <flux:text class="mt-1">Hasil lengkap {{ $selectedAttempt->student->name }} pada asesmen ini.</flux:text>
+                    </div>
+                    <flux:badge color="{{ $selectedAttemptStatusColor }}">
+                        {{ Illuminate\Support\Str::headline($selectedAttempt->status) }}
+                    </flux:badge>
+                </div>
+
+                <dl class="grid gap-4 rounded-2xl border border-elkm-line bg-elkm-surface p-4 text-sm sm:grid-cols-2">
+                    <div>
+                        <dt class="text-elkm-muted">Murid</dt>
+                        <dd class="mt-1 font-bold text-elkm-text">{{ $selectedAttempt->student->name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-elkm-muted">Modul</dt>
+                        <dd class="mt-1 font-bold text-elkm-text">{{ $selectedAttempt->assessment->module->title }}</dd>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <dt class="text-elkm-muted">Asesmen</dt>
+                        <dd class="mt-1 font-bold text-elkm-text">{{ $selectedAttempt->assessment->title }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-elkm-muted">Nilai</dt>
+                        <dd class="mt-1 font-bold tabular-nums text-elkm-text">
+                            {{ (float) $selectedAttempt->max_score > 0 ? $selectedAttempt->total_score.'/'.$selectedAttempt->max_score : '-' }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-elkm-muted">Percobaan</dt>
+                        <dd class="mt-1 font-bold tabular-nums text-elkm-text">Ke-{{ $selectedAttempt->attempt_number }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-elkm-muted">Mulai</dt>
+                        <dd class="mt-1 font-semibold text-elkm-text">{{ $selectedAttempt->started_at?->format('d M Y, H:i') ?? '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-elkm-muted">Selesai</dt>
+                        <dd class="mt-1 font-semibold text-elkm-text">{{ $selectedAttempt->submitted_at?->format('d M Y, H:i') ?? 'Belum selesai' }}</dd>
+                    </div>
+                </dl>
+
+                @if ($selectedAttempt->feedback)
+                    <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                        <h3 class="text-sm font-bold text-blue-950">Catatan hasil</h3>
+                        <p class="mt-1 text-sm leading-6 text-blue-900">{{ $selectedAttempt->feedback }}</p>
+                    </div>
+                @endif
+
+                <section aria-labelledby="jawaban-attempt-heading" class="space-y-3">
+                    <div>
+                        <h3 id="jawaban-attempt-heading" class="font-bold text-elkm-text">Rincian jawaban</h3>
+                        <p class="mt-1 text-sm text-elkm-muted">{{ $selectedAttempt->studentAnswers->count() }} jawaban tersimpan.</p>
+                    </div>
+
+                    @forelse ($selectedAttempt->studentAnswers as $studentAnswer)
+                        @php
+                            $answerValue = $studentAnswer->answer_json ?? $studentAnswer->answer_text;
+                        @endphp
+                        <article wire:key="attempt-answer-{{ $studentAnswer->id }}" class="rounded-2xl border border-elkm-line p-4">
+                            <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-elkm-muted">Soal {{ $loop->iteration }}</p>
+                                    <h4 class="mt-1 font-semibold leading-6 text-elkm-text">{{ $studentAnswer->question->question_text }}</h4>
+                                </div>
+                                <span class="shrink-0 text-sm font-bold tabular-nums text-elkm-primary">
+                                    {{ $studentAnswer->score ?? '-' }}/{{ $studentAnswer->question->weight }}
+                                </span>
+                            </div>
+
+                            <div class="mt-3 rounded-xl bg-elkm-surface p-3 text-sm leading-6 text-elkm-text">
+                                @if (is_array($answerValue))
+                                    <pre class="whitespace-pre-wrap font-sans">{{ json_encode($answerValue, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                                @else
+                                    {{ filled($answerValue) ? $answerValue : 'Belum ada jawaban.' }}
+                                @endif
+                            </div>
+
+                            @if ($studentAnswer->feedback)
+                                <p class="mt-3 text-sm leading-6 text-elkm-muted"><span class="font-semibold text-elkm-text">Feedback:</span> {{ $studentAnswer->feedback }}</p>
+                            @endif
+                        </article>
+                    @empty
+                        <div class="rounded-2xl border border-dashed border-elkm-line p-5 text-center text-sm text-elkm-muted">
+                            Belum ada rincian jawaban untuk attempt ini.
+                        </div>
+                    @endforelse
+                </section>
+
+                <div class="flex justify-end border-t border-elkm-line pt-4">
+                    <flux:button type="button" wire:click="closeAttemptDetail">Tutup</flux:button>
+                </div>
+            </div>
+        @endif
+    </flux:modal>
 </div>
