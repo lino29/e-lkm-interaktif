@@ -11,6 +11,7 @@ use App\Models\ProjectRubricScore;
 use App\Models\Subject;
 use App\Models\User;
 use App\Services\Report\ReportExportDataService;
+use App\Services\Report\ReportExportService;
 use Database\Seeders\RoleSeeder;
 
 beforeEach(function () {
@@ -125,4 +126,24 @@ test('getModuleExportData returns empty students when no progress records exist'
 
     expect($result['students'])->toBeEmpty()
         ->and($result['module_summary']['total_students'])->toBe(0);
+});
+
+test('PDF export returns a valid downloadable document', function () {
+    $teacher = User::factory()->create();
+    $teacher->assignRole('guru');
+
+    $subject = Subject::create(['name' => 'PDF Export', 'code' => 'PDF-EXPORT']);
+    $module = Module::create([
+        'subject_id' => $subject->id,
+        'created_by' => $teacher->id,
+        'title' => 'Modul PDF Export',
+        'slug' => 'modul-pdf-export',
+        'status' => 'published',
+    ]);
+
+    $response = app(ReportExportService::class)->exportToPdf($module->id);
+
+    expect($response->headers->get('content-type'))->toBe('application/pdf')
+        ->and($response->headers->get('content-disposition'))->toContain('modul-pdf-export.pdf')
+        ->and($response->getContent())->toStartWith('%PDF');
 });
