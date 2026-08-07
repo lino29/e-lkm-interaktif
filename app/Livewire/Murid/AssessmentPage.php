@@ -39,13 +39,6 @@ class AssessmentPage extends Component
             ->whereHas('module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($assessment);
 
-        if ($this->currentAssessment->learningUnit) {
-            $progressService = app(ProgressService::class);
-
-            abort_unless($progressService->isLearningUnitUnlocked(auth()->user(), $this->currentAssessment->learningUnit), 403);
-            abort_unless($progressService->isAssessmentUnlocked(auth()->user(), $this->currentAssessment), 403);
-        }
-
         $this->latestAttempt = AssessmentAttempt::where('assessment_id', $this->currentAssessment->id)
             ->where('student_id', auth()->id())
             ->whereNotNull('submitted_at')

@@ -1,6 +1,5 @@
 <?php
 
-use App\Livewire\Murid\LearningUnitPage;
 use App\Models\Activity;
 use App\Models\ActivityAnswer;
 use App\Models\LearningUnit;
@@ -9,13 +8,13 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Services\Learning\LearningUnitOutlineService;
 use Database\Seeders\RoleSeeder;
-use Livewire\Livewire;
+use Illuminate\Support\Facades\Blade;
 
 beforeEach(function () {
     $this->seed(RoleSeeder::class);
 });
 
-test('stepper locks subsequent activities until previous is submitted', function () {
+test('learning unit navigation keeps every activity open regardless of answer status', function () {
     $teacher = User::factory()->create();
     $teacher->assignRole('guru');
 
@@ -55,18 +54,10 @@ test('stepper locks subsequent activities until previous is submitted', function
     ]);
 
     app(LearningUnitOutlineService::class)->ensureDefaultOutline($learningUnit);
-    $activityGroupId = $learningUnit->sections()->where('section_type', 'activity_group')->firstOrFail()->id;
+    $activitySection = $learningUnit->sections()
+        ->where('linked_model_id', $activity2->id)
+        ->firstOrFail();
 
-    $component = Livewire::actingAs($student)
-        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
-        ->call('openSection', $activityGroupId);
-
-    // Activity 1 should be unlocked, Activity 2 should be locked
-    $component->assertSee('Mengamati')
-        ->assertSee('Kerjakan')
-        ->assertSee('Terkunci');
-
-    // Draft should NOT unlock
     ActivityAnswer::create([
         'activity_id' => $activity1->id,
         'user_id' => $student->id,
@@ -74,16 +65,19 @@ test('stepper locks subsequent activities until previous is submitted', function
         'answer_text' => 'Draft',
     ]);
 
-    $component = Livewire::actingAs($student)
-        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
-        ->call('openSection', $activityGroupId);
-    $component->assertSee('Terkunci');
+    $html = Blade::render(
+        '<x-learning.activity-section-card :section="$section" :activity-statuses="$activityStatuses" />',
+        [
+            'section' => $activitySection,
+            'activityStatuses' => [
+                $activity1->id => ['status' => 'draft'],
+                $activity2->id => ['status' => 'belum_mulai'],
+            ],
+        ],
+    );
 
-    // Submit SHOULD unlock
-    ActivityAnswer::where('activity_id', $activity1->id)->update(['status' => 'submitted', 'submitted_at' => now()]);
-
-    $component = Livewire::actingAs($student)
-        ->test(LearningUnitPage::class, ['learningUnit' => $learningUnit->id])
-        ->call('openSection', $activityGroupId);
-    $component->assertDontSee('Terkunci');
+    expect($html)
+        ->toContain('Menanya')
+        ->toContain('Kerjakan')
+        ->not->toContain('Terkunci');
 });

@@ -5,8 +5,6 @@
         @php
             $isDone = $index < $currentStep;
             $isActive = $index == $currentStep;
-            $isLocked = $index > $currentStep;
-            
             $classes = "px-3 py-2.5 rounded-full border font-extrabold text-[13px] ";
             if ($isDone) {
                 $classes .= "bg-[#e4f8ef] text-elkm-primary-2 border-[#c7eadb]";

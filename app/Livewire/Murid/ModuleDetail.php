@@ -42,16 +42,6 @@ class ModuleDetail extends Component
             'module' => $module,
             'completedUnitIds' => $completedUnitIds,
             'moduleProgressPercentage' => $progressService->moduleCompletionPercentage($student, $module),
-            'unlockedUnitIds' => $module->learningUnits
-                ->filter(fn ($learningUnit): bool => $progressService->isLearningUnitUnlocked($student, $learningUnit))
-                ->pluck('id')
-                ->all(),
-            'activityUnlockedIds' => $module->learningUnits
-                ->flatMap(fn ($learningUnit) => $learningUnit->activities)
-                ->filter(fn ($activity): bool => $progressService->isActivityUnlocked($student, $activity))
-                ->pluck('id')
-                ->all(),
-            'allUnitsCompleted' => count($completedUnitIds) === $module->learningUnits->count() && $module->learningUnits->count() > 0,
         ]);
     }
 }

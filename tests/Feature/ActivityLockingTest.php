@@ -1,14 +1,13 @@
 <?php
 
 use App\Models\Activity;
-use App\Models\ActivityAnswer;
 use App\Models\LearningUnit;
 use App\Models\Module;
 use App\Models\Subject;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 
-test('student cannot bypass activity order through direct route', function () {
+test('student can access a later activity directly without submitting the previous activity', function () {
     $this->seed(RoleSeeder::class);
 
     $teacher = User::factory()->create();
@@ -29,7 +28,7 @@ test('student cannot bypass activity order through direct route', function () {
         'slug' => 'kb-activity-lock',
         'order' => 1,
     ]);
-    $first = Activity::create([
+    Activity::create([
         'learning_unit_id' => $unit->id,
         'title' => 'Ayo Mengamati',
         'phase' => 'ayo_mengamati',
@@ -48,17 +47,6 @@ test('student cannot bypass activity order through direct route', function () {
 
     $this->actingAs($student)
         ->get(route('murid.activities.show', $second))
-        ->assertForbidden();
-
-    ActivityAnswer::create([
-        'activity_id' => $first->id,
-        'user_id' => $student->id,
-        'answer_text' => 'Jawaban pengamatan lengkap.',
-        'status' => 'submitted',
-        'submitted_at' => now(),
-    ]);
-
-    $this->actingAs($student)
-        ->get(route('murid.activities.show', $second))
         ->assertOk();
+
 });

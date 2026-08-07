@@ -17,7 +17,7 @@
                 <x-elkm.status-pill color="yellow">Platform Aktif</x-elkm.status-pill>
                 <h3 class="text-3xl md:text-4xl font-bold mt-4 mb-3">E-LKM Interaktif Energi Terbarukan</h3>
                 <p class="text-white/80 leading-relaxed text-[15px] max-w-xl">
-                    Selesaikan aktivitas bertahap, ikuti forum diskusi, lalu kerjakan asesmen formatif untuk mengukur pemahaman dan membuka kegiatan belajar berikutnya.
+                    Pilih materi, aktivitas, forum diskusi, atau asesmen yang ingin dipelajari. Semua kegiatan belajar dapat diakses tanpa harus diselesaikan secara berurutan.
                 </p>
                 <a href="{{ route('murid.modules') }}" wire:navigate class="btn-elkm btn-elkm-dark mt-6">Mulai Belajar</a>
             </div>

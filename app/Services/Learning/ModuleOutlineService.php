@@ -17,7 +17,7 @@ class ModuleOutlineService
                 'section_type' => 'introduction',
                 'title' => 'Prakata',
                 'slug' => 'prakata',
-                'content' => 'Puji syukur, modul E-LKM Interaktif Energi Terbarukan ini disusun untuk membantu murid SMK kelas X memahami konsep energi, masalah energi fosil, energi terbarukan, teknologi berbasis STEM, dan rancangan aksi sederhana melalui kegiatan belajar berurutan.',
+                'content' => 'Puji syukur, modul E-LKM Interaktif Energi Terbarukan ini disusun untuk membantu murid SMK kelas X memahami konsep energi, masalah energi fosil, energi terbarukan, teknologi berbasis STEM, dan rancangan aksi sederhana melalui kegiatan belajar yang dapat diakses secara fleksibel.',
                 'order' => 1,
             ],
             [
@@ -59,7 +59,7 @@ class ModuleOutlineService
                 'section_type' => 'introduction',
                 'title' => 'Petunjuk Belajar',
                 'slug' => 'petunjuk-belajar',
-                'content' => 'Pelajari tujuan pembelajaran terlebih dahulu, baca materi secara berurutan, kerjakan aktivitas Ayo Mengamati sampai Forum Diskusi, selesaikan asesmen formatif, lalu lanjutkan kegiatan belajar berikutnya setelah tuntas.',
+                'content' => 'Pelajari tujuan pembelajaran, materi, aktivitas, dan asesmen sesuai kebutuhan. Seluruh kegiatan belajar dapat dibuka tanpa harus menyelesaikan tahap sebelumnya.',
                 'order' => 7,
             ],
             [

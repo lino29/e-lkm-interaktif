@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Assessment;
 use App\Models\User;
-use App\Services\Learning\ProgressService;
 
 class AssessmentPolicy
 {
@@ -24,21 +23,9 @@ class AssessmentPolicy
             return (int) $assessment->module->created_by === (int) $user->id;
         }
 
-        if ($user->hasRole('murid') && $assessment->is_published && $assessment->module->status === 'published') {
-            if ($assessment->type === 'final') {
-                $progressService = app(ProgressService::class);
-                $module = $assessment->module;
-                $completedCount = $module->learningUnits
-                    ->filter(fn ($unit) => $progressService->isLearningUnitComplete($user, $unit))
-                    ->count();
-
-                return $completedCount === $module->learningUnits->count() && $module->learningUnits->count() > 0;
-            }
-
-            return true;
-        }
-
-        return false;
+        return $user->hasRole('murid')
+            && $assessment->is_published
+            && $assessment->module->status === 'published';
     }
 
     public function create(User $user): bool

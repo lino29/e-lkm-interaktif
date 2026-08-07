@@ -8,7 +8,7 @@
 @php
 /**
  * Resolve the status icon for a given section node.
- * Returns one of: 'done', 'draft', 'locked', 'open'
+ * Returns one of: 'done', 'draft', 'open', 'none'
  */
 function sectionStatus(
     $section,
@@ -27,7 +27,6 @@ function sectionStatus(
     ) {
         $info = $activityStatuses[$modelId] ?? null;
         if (! $info) { return 'open'; }
-        if ($info['is_locked'])                                         return 'locked';
         if (in_array($info['status'], ['submitted', 'reviewed'], true)) return 'done';
         if ($info['status'] === 'draft')                                return 'draft';
         return 'open';
@@ -41,7 +40,6 @@ function sectionStatus(
     ) {
         $info = $assessmentStatuses[$modelId] ?? null;
         if (! $info) { return 'open'; }
-        if ($info['is_locked'])                   return 'locked';
         if ($info['status'] === 'tuntas')         return 'done';
         if ($info['status'] === 'remedial')       return 'draft';
         if ($info['status'] !== 'belum_mulai')    return 'draft';
@@ -73,12 +71,6 @@ function sectionStatus(
                     <span class="shrink-0 size-4 flex items-center justify-center rounded-full bg-green-500 text-white text-[9px]">✓</span>
                 @elseif ($status === 'draft')
                     <span class="shrink-0 size-4 flex items-center justify-center rounded-full bg-yellow-400 text-white text-[9px]">●</span>
-                @elseif ($status === 'locked')
-                    <span class="shrink-0 size-4 text-gray-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
-                            <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5V4.5a2 2 0 1 0-4 0V6h4Z" clip-rule="evenodd"/>
-                        </svg>
-                    </span>
                 @endif
                 <span class="truncate">{{ $section->title }}</span>
             </button>
@@ -101,12 +93,6 @@ function sectionStatus(
                                 <span class="shrink-0 size-3.5 flex items-center justify-center rounded-full bg-green-500 text-white text-[8px]">✓</span>
                             @elseif ($childStatus === 'draft')
                                 <span class="shrink-0 size-3.5 flex items-center justify-center rounded-full bg-yellow-400 text-white text-[8px]">●</span>
-                            @elseif ($childStatus === 'locked')
-                                <span class="shrink-0 size-3.5 text-gray-300">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-3.5">
-                                        <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5V4.5a2 2 0 1 0-4 0V6h4Z" clip-rule="evenodd"/>
-                                    </svg>
-                                </span>
                             @elseif ($childStatus === 'open')
                                 <span class="shrink-0 size-3.5 rounded-full border-2 border-gray-300"></span>
                             @endif
@@ -118,4 +104,3 @@ function sectionStatus(
         @endforeach
     </nav>
 </div>
-

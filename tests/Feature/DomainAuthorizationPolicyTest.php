@@ -73,9 +73,22 @@ test('murid can only view published learning data and their own records', functi
         'title' => 'Draft Assessment',
         'is_published' => false,
     ]);
+    LearningUnit::create([
+        'module_id' => $module->id,
+        'title' => 'Incomplete Learning Unit',
+        'slug' => 'incomplete-learning-unit-policy',
+        'order' => 2,
+    ]);
+    $finalAssessment = Assessment::create([
+        'module_id' => $module->id,
+        'title' => 'Published Final Assessment',
+        'type' => 'final',
+        'is_published' => true,
+    ]);
 
     expect($student->can('view', $module))->toBeTrue()
         ->and($student->can('view', $assessment))->toBeTrue()
+        ->and($student->can('view', $finalAssessment))->toBeTrue()
         ->and($student->can('view', $draftModule))->toBeFalse()
         ->and($student->can('view', $draftAssessment))->toBeFalse()
         ->and($student->can('view', $project))->toBeTrue()

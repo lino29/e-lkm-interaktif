@@ -1,11 +1,8 @@
 <?php
 
-use App\Models\ActivityAnswer;
 use App\Models\Assessment;
-use App\Models\AssessmentAttempt;
 use App\Models\Module;
 use App\Models\User;
-use App\Services\Learning\ProgressService;
 use Database\Seeders\DatabaseSeeder;
 
 test('demo learning seeder creates complete renewable energy module', function () {
@@ -78,33 +75,24 @@ test('demo learning seeder creates complete renewable energy module', function (
         ->and($finalEssay->rubrics)->not->toBeEmpty();
 });
 
-test('demo users can open the generated learning structure', function () {
+test('demo student can open the last generated learning unit without prior progress', function () {
     $this->seed(DatabaseSeeder::class);
 
     $module = Module::with('learningUnits')->where('slug', 'energi-terbarukan')->firstOrFail();
     $student = User::where('email', 'murid@elkm.test')->firstOrFail();
-    $teacher = User::where('email', 'guru@elkm.test')->firstOrFail();
+    $lastLearningUnit = $module->learningUnits->sortByDesc('order')->firstOrFail();
 
-    $previousLearningUnit = null;
-
-    foreach ($module->learningUnits as $learningUnit) {
-        if ($previousLearningUnit) {
-            completeDemoLearningUnit($student, $previousLearningUnit);
-        }
-
-        $this->actingAs($student)
-            ->get(route('murid.learning-units.show', $learningUnit))
-            ->assertOk()
-            ->assertSee($learningUnit->title);
-
-        $previousLearningUnit = $learningUnit;
-    }
-
-    $this->actingAs($teacher)
-        ->get(route('guru.modules.show', $module))
+    $this->actingAs($student)
+        ->get(route('murid.learning-units.show', $lastLearningUnit))
         ->assertOk()
-        ->assertSee('KB1 Konsep Energi dan Sumber Energi');
+        ->assertSee($lastLearningUnit->title);
+});
 
+test('demo student can open the final assessment without completing learning units', function () {
+    $this->seed(DatabaseSeeder::class);
+
+    $module = Module::where('slug', 'energi-terbarukan')->firstOrFail();
+    $student = User::where('email', 'murid@elkm.test')->firstOrFail();
     $finalAssessment = Assessment::where('module_id', $module->id)->where('type', 'final')->firstOrFail();
 
     $this->actingAs($student)
@@ -115,39 +103,3 @@ test('demo users can open the generated learning structure', function () {
     expect(Assessment::where('module_id', $module->id)->where('type', 'formative')->count())->toBeGreaterThanOrEqual(5)
         ->and(Assessment::where('module_id', $module->id)->where('type', 'final')->count())->toBe(1);
 });
-
-function completeDemoLearningUnit(User $student, $learningUnit): void
-{
-    foreach ($learningUnit->activities as $activity) {
-        ActivityAnswer::updateOrCreate(
-            [
-                'activity_id' => $activity->id,
-                'user_id' => $student->id,
-            ],
-            [
-                'answer_text' => 'Jawaban demo untuk menyelesaikan aktivitas.',
-                'status' => 'submitted',
-                'submitted_at' => now(),
-            ],
-        );
-    }
-
-    foreach ($learningUnit->assessments as $assessment) {
-        AssessmentAttempt::updateOrCreate(
-            [
-                'assessment_id' => $assessment->id,
-                'student_id' => $student->id,
-                'attempt_number' => 1,
-            ],
-            [
-                'total_score' => 50,
-                'max_score' => 50,
-                'status' => 'tuntas',
-                'started_at' => now()->subMinute(),
-                'submitted_at' => now(),
-            ],
-        );
-    }
-
-    app(ProgressService::class)->refreshLearningUnitProgress($student, $learningUnit);
-}

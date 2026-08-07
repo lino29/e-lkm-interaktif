@@ -40,11 +40,6 @@ class ActivityPage extends Component
             ->whereHas('learningUnit.module', fn ($query) => $query->where('status', 'published'))
             ->findOrFail($activity);
 
-        $progressService = app(ProgressService::class);
-
-        abort_unless($progressService->isLearningUnitUnlocked(auth()->user(), $this->currentActivity->learningUnit), 403);
-        abort_unless($progressService->isActivityUnlocked(auth()->user(), $this->currentActivity), 403);
-
         $this->existingAnswer = ActivityAnswer::where('activity_id', $this->currentActivity->id)
             ->where('user_id', auth()->id())
             ->first();
@@ -100,17 +95,6 @@ class ActivityPage extends Component
     public function saveDraft(): void
     {
         $this->processSubmit('draft');
-    }
-
-    #[Computed]
-    public function canProceedToNext(): bool
-    {
-        if (! $this->currentActivity->is_required) {
-            return true;
-        }
-
-        return $this->existingAnswer !== null
-            && in_array($this->existingAnswer->status, ['submitted', 'reviewed'], true);
     }
 
     private function initializeSchemaAnswer(): void
@@ -181,8 +165,6 @@ class ActivityPage extends Component
         );
 
         $this->existingAnswer = $answer;
-        unset($this->canProceedToNext); // Reset computed cache
-
         if ($this->currentActivity->phase === 'forum_diskusi' || $this->currentActivity->input_type === 'discussion') {
             app(ActivityDiscussionService::class)->sync($answer);
         }

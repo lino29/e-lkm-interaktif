@@ -46,11 +46,7 @@ class LearningUnitPage extends Component
             'assessments.questions',
         ]);
 
-        $progressService = app(ProgressService::class);
-
-        abort_unless($progressService->isLearningUnitUnlocked(auth()->user(), $this->currentLearningUnit), 403);
-
-        $progressService->markStarted(auth()->user(), $this->currentLearningUnit->module, $this->currentLearningUnit);
+        app(ProgressService::class)->markStarted(auth()->user(), $this->currentLearningUnit->module, $this->currentLearningUnit);
 
         $this->activeSectionId = $this->currentLearningUnit->rootSections->first()?->id;
     }
@@ -88,15 +84,12 @@ class LearningUnitPage extends Component
             ->keyBy('activity_id');
 
         $statuses = [];
-        $progressService = app(ProgressService::class);
-
         foreach ($this->currentLearningUnit->activities as $activity) {
             $answer = $answers->get($activity->id);
             $status = $answer ? $answer->status : 'belum_mulai';
 
             $statuses[$activity->id] = [
                 'status' => $status,
-                'is_locked' => ! $progressService->isActivityUnlocked(auth()->user(), $activity),
                 'answer' => $answer,
             ];
         }
@@ -108,8 +101,6 @@ class LearningUnitPage extends Component
     {
         $assessments = $this->currentLearningUnit->assessments;
         $statuses = [];
-        $progressService = app(ProgressService::class);
-
         foreach ($assessments as $assessment) {
             $latestAttempt = AssessmentAttempt::where('assessment_id', $assessment->id)
                 ->where('student_id', auth()->id())
@@ -119,7 +110,6 @@ class LearningUnitPage extends Component
 
             $statuses[$assessment->id] = [
                 'status' => $latestAttempt?->status ?? 'belum_mulai',
-                'is_locked' => ! $progressService->isAssessmentUnlocked(auth()->user(), $assessment),
             ];
         }
 

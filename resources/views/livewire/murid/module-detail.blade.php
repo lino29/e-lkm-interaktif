@@ -35,7 +35,6 @@
         <flux:heading>Kegiatan Belajar</flux:heading>
         @foreach ($module->learningUnits as $unit)
             @php
-                $isUnlocked = in_array($unit->id, $unlockedUnitIds, true);
                 $isCompleted = in_array($unit->id, $completedUnitIds, true);
             @endphp
             <flux:card wire:key="murid-module-unit-{{ $unit->id }}" class="space-y-4">
@@ -45,17 +44,11 @@
                             <h2 class="font-semibold">{{ $unit->order }}. {{ $unit->title }}</h2>
                             @if ($isCompleted)
                                 <flux:badge color="green" size="sm">Tuntas</flux:badge>
-                            @elseif (! $isUnlocked)
-                                <flux:badge color="zinc" size="sm">Terkunci</flux:badge>
                             @endif
                         </div>
                         <p class="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $unit->objectives ?: $unit->description }}</p>
                     </div>
-                    @if ($isUnlocked)
-                        <flux:button size="sm" :href="route('murid.learning-units.show', $unit)" wire:navigate>Buka Kegiatan</flux:button>
-                    @else
-                        <flux:button size="sm" disabled>Selesaikan KB Sebelumnya</flux:button>
-                    @endif
+                    <flux:button size="sm" :href="route('murid.learning-units.show', $unit)" wire:navigate>Buka Kegiatan</flux:button>
                 </div>
 
                 <div class="grid gap-3 md:grid-cols-3">
@@ -66,11 +59,7 @@
 
                 <div class="flex flex-wrap gap-2">
                     @foreach ($unit->activities as $activity)
-                        @if ($isUnlocked && in_array($activity->id, $activityUnlockedIds, true))
-                            <flux:button size="sm" :href="route('murid.activities.show', $activity)" wire:navigate>{{ \Illuminate\Support\Str::headline($activity->phase) }}</flux:button>
-                        @else
-                            <flux:button size="sm" disabled>{{ \Illuminate\Support\Str::headline($activity->phase) }}</flux:button>
-                        @endif
+                        <flux:button size="sm" :href="route('murid.activities.show', $activity)" wire:navigate>{{ \Illuminate\Support\Str::headline($activity->phase) }}</flux:button>
                     @endforeach
                 </div>
             </flux:card>
@@ -84,11 +73,7 @@
                 <flux:card wire:key="murid-module-assessment-{{ $assessment->id }}">
                     <div class="font-semibold">{{ $assessment->title }}</div>
                     <flux:text>KKTP {{ $assessment->kktp }}. Maks {{ $assessment->max_attempts }} percobaan.</flux:text>
-                    @if ($allUnitsCompleted)
-                        <flux:button class="mt-3" size="sm" variant="primary" :href="route('murid.assessments.show', $assessment)" wire:navigate>Kerjakan</flux:button>
-                    @else
-                        <flux:button class="mt-3" size="sm" variant="primary" disabled>Selesaikan semua KB</flux:button>
-                    @endif
+                    <flux:button class="mt-3" size="sm" variant="primary" :href="route('murid.assessments.show', $assessment)" wire:navigate>Kerjakan</flux:button>
                 </flux:card>
             @empty
                 <flux:text>Belum ada asesmen modul.</flux:text>

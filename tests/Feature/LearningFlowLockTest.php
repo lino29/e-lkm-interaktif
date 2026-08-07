@@ -1,105 +1,63 @@
 <?php
 
 use App\Models\Activity;
-use App\Models\ActivityAnswer;
 use App\Models\Assessment;
-use App\Models\AssessmentAttempt;
 use App\Models\LearningUnit;
 use App\Models\Module;
-use App\Models\Progress;
 use App\Models\Question;
 use App\Models\Subject;
 use App\Models\User;
-use App\Services\Learning\ProgressService;
 use Database\Seeders\RoleSeeder;
 
 beforeEach(function () {
     $this->seed(RoleSeeder::class);
 });
 
-test('learning unit one is open and next unit is locked until previous unit is complete', function () {
-    [$student, $module, $firstUnit, $secondUnit, $activity, $assessment] = createLearningLockFixture();
-
-    $this->actingAs($student)
-        ->get(route('murid.learning-units.show', $firstUnit))
-        ->assertOk();
-
-    $this->actingAs($student)
-        ->get(route('murid.learning-units.show', $secondUnit))
-        ->assertForbidden();
-
-    ActivityAnswer::create([
-        'activity_id' => $activity->id,
-        'user_id' => $student->id,
-        'answer_text' => 'Jawaban aktivitas lengkap.',
-        'status' => 'submitted',
-        'submitted_at' => now(),
-    ]);
-    AssessmentAttempt::create([
-        'assessment_id' => $assessment->id,
-        'student_id' => $student->id,
-        'attempt_number' => 1,
-        'total_score' => 10,
-        'max_score' => 10,
-        'status' => 'tuntas',
-        'started_at' => now()->subMinute(),
-        'submitted_at' => now(),
-    ]);
-
-    app(ProgressService::class)->refreshLearningUnitProgress($student, $firstUnit);
+test('students can access a later learning unit without completing previous content', function () {
+    [$student, , , $secondUnit] = createOpenLearningFixture();
 
     $this->actingAs($student)
         ->get(route('murid.learning-units.show', $secondUnit))
         ->assertOk();
+});
+
+test('module detail exposes every learning unit without lock messaging', function () {
+    [$student, $module, $firstUnit, $secondUnit] = createOpenLearningFixture();
 
     $this->actingAs($student)
         ->get(route('murid.modules.show', $module))
         ->assertOk()
-        ->assertSee('50%')
-        ->assertSee('Tuntas');
+        ->assertSee($firstUnit->title)
+        ->assertSee($secondUnit->title)
+        ->assertDontSee('Terkunci')
+        ->assertDontSee('Selesaikan KB Sebelumnya');
 
-    $this->actingAs($student)
-        ->get(route('murid.dashboard'))
-        ->assertOk()
-        ->assertSee('Progress Rata-rata')
-        ->assertSee('50%');
 });
 
-test('failed formative assessment marks the learning unit as remedial and keeps next unit locked', function () {
-    [$student, , $firstUnit, $secondUnit, $activity, $assessment] = createLearningLockFixture();
-
-    ActivityAnswer::create([
-        'activity_id' => $activity->id,
-        'user_id' => $student->id,
-        'answer_text' => 'Jawaban aktivitas lengkap.',
-        'status' => 'submitted',
-        'submitted_at' => now(),
-    ]);
-    AssessmentAttempt::create([
-        'assessment_id' => $assessment->id,
-        'student_id' => $student->id,
-        'attempt_number' => 1,
-        'total_score' => 0,
-        'max_score' => 10,
-        'status' => 'remedial',
-        'started_at' => now()->subMinute(),
-        'submitted_at' => now(),
-    ]);
-
-    $progress = app(ProgressService::class)->refreshLearningUnitProgress($student, $firstUnit);
-
-    expect($progress->status)->toBe('remedial')
-        ->and(Progress::where('user_id', $student->id)->where('learning_unit_id', $firstUnit->id)->first()?->status)->toBe('remedial');
+test('module quick navigation exposes later learning units without lock messaging', function () {
+    [$student, , , $secondUnit] = createOpenLearningFixture();
 
     $this->actingAs($student)
-        ->get(route('murid.learning-units.show', $secondUnit))
-        ->assertForbidden();
+        ->get(route('murid.modules'))
+        ->assertOk()
+        ->assertSee($secondUnit->title)
+        ->assertDontSee('Terkunci');
+
+});
+
+test('students can access assessments without completing earlier content', function () {
+    [$student, , , $secondUnit] = createOpenLearningFixture();
+    $secondAssessment = $secondUnit->assessments()->firstOrFail();
+
+    $this->actingAs($student)
+        ->get(route('murid.assessments.show', $secondAssessment))
+        ->assertOk();
 });
 
 /**
  * @return array{0: User, 1: Module, 2: LearningUnit, 3: LearningUnit, 4: Activity, 5: Assessment}
  */
-function createLearningLockFixture(): array
+function createOpenLearningFixture(): array
 {
     $teacher = User::factory()->create();
     $teacher->assignRole('guru');

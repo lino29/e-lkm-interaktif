@@ -5,9 +5,8 @@
 
 @php
     $activity = $section->linkedModel();
-    $statusData = $activity ? ($activityStatuses[$activity->id] ?? ['status' => 'belum_mulai', 'is_locked' => false]) : [];
+    $statusData = $activity ? ($activityStatuses[$activity->id] ?? ['status' => 'belum_mulai']) : [];
     $status = $statusData['status'] ?? 'not_found';
-    $isLocked = $statusData['is_locked'] ?? false;
 @endphp
 
 @if (! $activity)
@@ -21,16 +20,9 @@
                 <div class="mt-2 text-xs text-elkm-muted">Status: {{ \Illuminate\Support\Str::headline($status) }}</div>
             </div>
 
-            @if ($isLocked)
-                <div class="flex flex-col gap-2 mt-4 md:mt-0">
-                    <div class="text-[11px] text-orange-700 bg-orange-50 px-2.5 py-1.5 rounded-lg border border-orange-200 flex items-center gap-1"><flux:icon.lock-closed class="size-3" /> Selesaikan tahap sebelumnya</div>
-                    <button class="btn-elkm btn-elkm-outline opacity-50 cursor-not-allowed" disabled>Terkunci</button>
-                </div>
-            @else
-                <a href="{{ route('murid.activities.show', $activity) }}" wire:navigate class="btn-elkm btn-elkm-primary mt-4 md:mt-0">
-                    {{ $status === 'reviewed' ? 'Lihat Hasil' : 'Kerjakan' }}
-                </a>
-            @endif
+            <a href="{{ route('murid.activities.show', $activity) }}" wire:navigate class="btn-elkm btn-elkm-primary mt-4 md:mt-0">
+                {{ $status === 'reviewed' ? 'Lihat Hasil' : 'Kerjakan' }}
+            </a>
         </div>
     </div>
 @endif
