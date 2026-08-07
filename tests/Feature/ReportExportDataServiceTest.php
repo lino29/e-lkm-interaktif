@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\Report\ReportExportDataService;
 use App\Services\Report\ReportExportService;
 use Database\Seeders\RoleSeeder;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 beforeEach(function () {
     $this->seed(RoleSeeder::class);
@@ -143,7 +144,12 @@ test('PDF export returns a valid downloadable document', function () {
 
     $response = app(ReportExportService::class)->exportToPdf($module->id);
 
-    expect($response->headers->get('content-type'))->toBe('application/pdf')
+    ob_start();
+    $response->sendContent();
+    $content = ob_get_clean();
+
+    expect($response)->toBeInstanceOf(StreamedResponse::class)
+        ->and($response->headers->get('content-type'))->toBe('application/pdf')
         ->and($response->headers->get('content-disposition'))->toContain('modul-pdf-export.pdf')
-        ->and($response->getContent())->toStartWith('%PDF');
+        ->and($content)->toStartWith('%PDF');
 });
