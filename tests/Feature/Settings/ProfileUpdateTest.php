@@ -1,12 +1,21 @@
 <?php
 
 use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Livewire\Livewire;
 
 test('profile page is displayed', function () {
-    $this->actingAs($user = User::factory()->create());
+    $this->seed(RoleSeeder::class);
+    $user = User::factory()->create();
+    $user->assignRole('admin');
 
-    $this->get(route('profile.edit'))->assertOk();
+    $this->actingAs($user)
+        ->get(route('profile.edit'))
+        ->assertOk()
+        ->assertSee('Akun dan Profil')
+        ->assertSee('Dashboard Admin')
+        ->assertSee('data-test="account-widget"', false)
+        ->assertDontSee('data-flux-sidebar', false);
 });
 
 test('profile information can be updated', function () {
