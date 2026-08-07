@@ -19,19 +19,26 @@
                 <p class="text-[10px] text-elkm-muted mt-0.5 m-0">Energi Terbarukan</p>
             </div>
         </div>
-        <button @click="sidebarOpen = true" class="p-2 text-elkm-text focus:outline-none">
+        <button
+            type="button"
+            @click="sidebarOpen = true"
+            :aria-expanded="sidebarOpen"
+            aria-controls="app-sidebar"
+            aria-label="Buka menu navigasi"
+            class="rounded-lg p-2 text-elkm-text transition hover:bg-elkm-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-elkm-primary"
+        >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
     </div>
 
     <!-- Mobile Backdrop -->
-    <div x-show="sidebarOpen" x-transition.opacity style="display: none;" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden" @click="sidebarOpen = false"></div>
+    <div x-show="sidebarOpen" x-transition.opacity style="display: none;" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden" @click="sidebarOpen = false" aria-hidden="true"></div>
 
     <!-- Sidebar -->
-    <aside class="canvas-sidebar fixed lg:sticky top-0 left-0 h-screen overflow-auto w-[280px] shrink-0 p-7 border-r border-elkm-line z-40 transition-transform duration-300 lg:translate-x-0 bg-white/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none"
+    <aside id="app-sidebar" class="canvas-sidebar fixed lg:sticky top-0 left-0 h-screen overflow-auto w-[280px] shrink-0 p-7 border-r border-elkm-line z-40 transition-transform duration-300 lg:translate-x-0 bg-white/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none"
            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
         
-        <button @click="sidebarOpen = false" class="lg:hidden absolute top-6 right-6 p-1 text-elkm-muted hover:text-elkm-text focus:outline-none">
+        <button type="button" @click="sidebarOpen = false" aria-label="Tutup menu navigasi" class="lg:hidden absolute top-6 right-6 rounded-lg p-1 text-elkm-muted transition hover:bg-elkm-surface hover:text-elkm-text focus-visible:outline-2 focus-visible:outline-elkm-primary">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
 
@@ -71,14 +78,36 @@
             @endif
         </nav>
         
-        <div class="mt-8">
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="w-full text-left p-3 text-sm font-bold text-elkm-danger bg-[#fff1f1] rounded-2xl flex items-center gap-2">
-                    <span class="w-7 h-7 rounded-lg grid place-items-center bg-white/50 text-sm">🚪</span>
-                    Keluar
-                </button>
-            </form>
+        <div class="mt-8 border-t border-elkm-line pt-6">
+            <div class="section-label mb-3 text-[11px] font-extrabold uppercase tracking-widest text-elkm-muted">Akun</div>
+            <div class="mb-3 flex items-center gap-3 rounded-2xl bg-white/70 p-3">
+                <div class="grid size-10 shrink-0 place-items-center rounded-xl bg-elkm-primary text-sm font-black text-white" aria-hidden="true">
+                    {{ auth()->user()->initials() }}
+                </div>
+                <div class="min-w-0">
+                    <div class="truncate text-sm font-bold text-elkm-text">{{ auth()->user()->name }}</div>
+                    <div class="truncate text-xs text-elkm-muted">{{ auth()->user()->email }}</div>
+                </div>
+            </div>
+
+            <div class="grid gap-2">
+                <a
+                    href="{{ route('profile.edit') }}"
+                    wire:navigate
+                    class="flex w-full items-center gap-2 rounded-2xl border border-elkm-line bg-white px-3 py-2.5 text-sm font-bold text-elkm-text transition hover:border-elkm-primary hover:text-elkm-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-elkm-primary"
+                >
+                    <span class="grid size-7 place-items-center rounded-lg bg-elkm-primary/10 text-xs text-elkm-primary" aria-hidden="true">PR</span>
+                    Lihat Profil
+                </a>
+
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" data-test="logout-button" class="flex w-full items-center gap-2 rounded-2xl bg-[#fff1f1] px-3 py-2.5 text-left text-sm font-bold text-elkm-danger transition hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-elkm-danger">
+                        <span class="grid size-7 place-items-center rounded-lg bg-white/70 text-xs" aria-hidden="true">OUT</span>
+                        Logout
+                    </button>
+                </form>
+            </div>
         </div>
     </aside>
 
