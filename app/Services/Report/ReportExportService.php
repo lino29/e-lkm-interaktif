@@ -6,6 +6,7 @@ use App\Exports\ReportExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportExportService
 {
@@ -21,7 +22,7 @@ class ReportExportService
         );
     }
 
-    public function exportToPdf(int $moduleId)
+    public function exportToPdf(int $moduleId): StreamedResponse
     {
         $exportData = app(ReportExportDataService::class)->getModuleExportData($moduleId);
         $moduleSummary = $exportData['module_summary'];
@@ -32,6 +33,14 @@ class ReportExportService
             'data' => $students,
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('Laporan_E-LKM_'.Str::slug($moduleSummary['module_title']).'.pdf');
+        $filename = 'Laporan_E-LKM_'.Str::slug($moduleSummary['module_title']).'.pdf';
+
+        return response()->streamDownload(
+            static function () use ($pdf): void {
+                echo $pdf->output();
+            },
+            $filename,
+            ['Content-Type' => 'application/pdf']
+        );
     }
 }
