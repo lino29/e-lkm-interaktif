@@ -20,26 +20,36 @@ class Reports extends Component
 
     public string $search = '';
 
+    public function resetFilters(): void
+    {
+        $this->reset('module_id', 'attempt_status', 'project_status', 'search');
+        $this->resetErrorBag();
+    }
+
     public function exportExcel(ReportExportService $exportService)
     {
-        if (! $this->module_id) {
-            $this->addError('module_id', 'Pilih modul terlebih dahulu.');
+        $moduleId = $this->selectedModuleId();
+
+        if ($moduleId === null) {
+            $this->addError('module_id', 'Pilih modul yang Anda kelola terlebih dahulu.');
 
             return;
         }
 
-        return $exportService->exportToExcel($this->module_id);
+        return $exportService->exportToExcel($moduleId);
     }
 
     public function exportPdf(ReportExportService $exportService)
     {
-        if (! $this->module_id) {
-            $this->addError('module_id', 'Pilih modul terlebih dahulu.');
+        $moduleId = $this->selectedModuleId();
+
+        if ($moduleId === null) {
+            $this->addError('module_id', 'Pilih modul yang Anda kelola terlebih dahulu.');
 
             return;
         }
 
-        return $exportService->exportToPdf($this->module_id);
+        return $exportService->exportToPdf($moduleId);
     }
 
     public function render()
@@ -48,13 +58,13 @@ class Reports extends Component
         $moduleIds = $this->module_id && $teacherModuleIds->contains($this->module_id)
             ? collect([$this->module_id])
             : $teacherModuleIds;
+        $search = trim($this->search);
 
         $attemptsQuery = AssessmentAttempt::with('student', 'assessment.module')
             ->whereHas('assessment', fn ($query) => $query->whereIn('module_id', $moduleIds));
 
         $tuntasCount = (clone $attemptsQuery)->where('status', 'tuntas')->count();
         $remedialCount = (clone $attemptsQuery)->where('status', 'remedial')->count();
-        $submittedProjectCount = Project::whereIn('module_id', $moduleIds)->where('status', 'submitted')->count();
         $reviewedProjectCount = Project::whereIn('module_id', $moduleIds)->where('status', 'reviewed')->count();
         $reviewedProjectAverageScore = Project::whereIn('module_id', $moduleIds)
             ->where('status', 'reviewed')
@@ -76,31 +86,43 @@ class Reports extends Component
 
         $filteredAttemptsQuery = (clone $attemptsQuery)
             ->when($this->attempt_status !== '', fn ($query) => $query->where('status', $this->attempt_status))
-            ->when($this->search !== '', fn ($query) => $query->whereHas('student', fn ($studentQuery) => $studentQuery->where('name', 'like', '%'.$this->search.'%')));
+            ->when($search !== '', fn ($query) => $query->where(function ($attemptQuery) use ($search) {
+                $attemptQuery
+                    ->whereHas('student', fn ($studentQuery) => $studentQuery->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('assessment', fn ($assessmentQuery) => $assessmentQuery->where('title', 'like', '%'.$search.'%'));
+            }));
 
         $filteredProjectsQuery = Project::with('user', 'module', 'rubricScores')
             ->whereIn('module_id', $moduleIds)
             ->when($this->project_status !== '', fn ($query) => $query->where('status', $this->project_status))
-            ->when($this->search !== '', fn ($query) => $query->where(function ($projectQuery) {
+            ->when($search !== '', fn ($query) => $query->where(function ($projectQuery) use ($search) {
                 $projectQuery
-                    ->where('project_title', 'like', '%'.$this->search.'%')
-                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$this->search.'%'));
+                    ->where('project_title', 'like', '%'.$search.'%')
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%'));
             }));
 
-        $filteredDiscussionsQuery = Discussion::with('user', 'learningUnit.module', 'replies.user')
+        $filteredDiscussionsQuery = Discussion::with('user', 'learningUnit.module', 'replies.user.roles')
             ->whereNull('parent_id')
             ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
-            ->when($this->search !== '', fn ($query) => $query->where(function ($discussionQuery) {
+            ->when($search !== '', fn ($query) => $query->where(function ($discussionQuery) use ($search) {
                 $discussionQuery
-                    ->where('body', 'like', '%'.$this->search.'%')
-                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$this->search.'%'));
+                    ->where('body', 'like', '%'.$search.'%')
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%'));
+            }));
+
+        $filteredProgressQuery = Progress::with('user', 'module', 'learningUnit')
+            ->whereIn('module_id', $moduleIds)
+            ->when($search !== '', fn ($query) => $query->where(function ($progressQuery) use ($search) {
+                $progressQuery
+                    ->whereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('module', fn ($moduleQuery) => $moduleQuery->where('title', 'like', '%'.$search.'%'))
+                    ->orWhereHas('learningUnit', fn ($unitQuery) => $unitQuery->where('title', 'like', '%'.$search.'%'));
             }));
 
         return view('livewire.guru.reports', [
             'modules' => Module::whereIn('id', $teacherModuleIds)->orderBy('title')->get(),
             'tuntasCount' => $tuntasCount,
             'remedialCount' => $remedialCount,
-            'submittedProjectCount' => $submittedProjectCount,
             'reviewedProjectCount' => $reviewedProjectCount,
             'reviewedProjectAverageScore' => $reviewedProjectAverageScore === null ? null : round((float) $reviewedProjectAverageScore, 2),
             'discussionCount' => Discussion::whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))->count(),
@@ -109,18 +131,22 @@ class Reports extends Component
             'unrespondedDiscussionCount' => max(0, $discussionThreadCount - $respondedDiscussionCount),
             'averageParticipationScore' => $averageParticipationScore === null ? null : round((float) $averageParticipationScore, 2),
             'assessmentAverageScore' => $assessmentAverageScore === null ? null : round((float) $assessmentAverageScore, 2),
+            'activeFilterCount' => collect([$this->module_id, $this->attempt_status, $this->project_status, $search])
+                ->filter(fn ($value): bool => $value !== null && $value !== '')
+                ->count(),
             'attempts' => $filteredAttemptsQuery
                 ->latest()
                 ->limit(20)
                 ->get(),
-            'progressRecords' => Progress::with('user', 'module', 'learningUnit')
-                ->whereIn('module_id', $moduleIds)
-                ->latest()
-                ->limit(20)
-                ->get(),
+            'progressRecords' => $filteredProgressQuery->latest()->limit(20)->get(),
             'projects' => (clone $filteredProjectsQuery)->latest()->limit(20)->get(),
             'remedialAttempts' => (clone $attemptsQuery)
                 ->where('status', 'remedial')
+                ->when($search !== '', fn ($query) => $query->where(function ($attemptQuery) use ($search) {
+                    $attemptQuery
+                        ->whereHas('student', fn ($studentQuery) => $studentQuery->where('name', 'like', '%'.$search.'%'))
+                        ->orWhereHas('assessment', fn ($assessmentQuery) => $assessmentQuery->where('title', 'like', '%'.$search.'%'));
+                }))
                 ->latest()
                 ->limit(20)
                 ->get(),
@@ -132,6 +158,7 @@ class Reports extends Component
                 ->selectRaw('avg(participation_score) as average_participation_score')
                 ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
                 ->whereHas('user', fn ($query) => $query->role('murid'))
+                ->when($search !== '', fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%')))
                 ->groupBy('user_id')
                 ->orderByDesc('total_discussions')
                 ->limit(10)
@@ -144,5 +171,17 @@ class Reports extends Component
                 ->orderBy('status')
                 ->get(),
         ]);
+    }
+
+    private function selectedModuleId(): ?int
+    {
+        if ($this->module_id === null) {
+            return null;
+        }
+
+        return Module::query()
+            ->whereKey($this->module_id)
+            ->where('created_by', auth()->id())
+            ->value('id');
     }
 }

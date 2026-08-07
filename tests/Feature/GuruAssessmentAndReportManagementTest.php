@@ -27,7 +27,11 @@ test('guru shell links assessment and report menus to real pages', function () {
         ->get(route('guru.dashboard'))
         ->assertOk()
         ->assertSee(route('guru.assessments'), false)
-        ->assertSee(route('guru.reports'), false);
+        ->assertSee(route('guru.reports'), false)
+        ->assertSee(route('profile.edit'), false)
+        ->assertSee(route('logout'), false)
+        ->assertSee('Lihat Profil')
+        ->assertSee('Logout');
 });
 
 test('guru can create edit publish and delete assessments', function () {
@@ -136,6 +140,8 @@ test('guru reports can filter attempts by status and student search', function (
     $tuntasStudent->assignRole('murid');
     $remedialStudent = User::factory()->create(['name' => 'Murid Remedial']);
     $remedialStudent->assignRole('murid');
+    $inProgressStudent = User::factory()->create(['name' => 'Murid Sedang Belajar']);
+    $inProgressStudent->assignRole('murid');
 
     AssessmentAttempt::create([
         'assessment_id' => $assessment->id,
@@ -159,14 +165,60 @@ test('guru reports can filter attempts by status and student search', function (
         'submitted_at' => now(),
     ]);
 
+    AssessmentAttempt::create([
+        'assessment_id' => $assessment->id,
+        'student_id' => $inProgressStudent->id,
+        'attempt_number' => 1,
+        'total_score' => 0,
+        'max_score' => 100,
+        'status' => 'sedang_dikerjakan',
+        'started_at' => now()->subMinutes(5),
+    ]);
+
     Livewire::actingAs($teacher)
         ->test(Reports::class)
+        ->assertSee('Filter laporan')
+        ->assertSee('Daftar attempt asesmen berdasarkan filter laporan saat ini')
+        ->assertDontSee('>Submit</th>', false)
         ->assertSee('Murid Tuntas')
         ->assertSee('Murid Remedial')
+        ->assertSee('Murid Sedang Belajar')
+        ->set('attempt_status', 'sedang_dikerjakan')
+        ->assertSee('Murid Sedang Belajar')
+        ->assertViewHas('attempts', fn ($attempts): bool => $attempts->count() === 1
+            && $attempts->first()->student->is($inProgressStudent))
         ->set('attempt_status', 'remedial')
         ->set('search', 'Remedial')
         ->assertSee('Murid Remedial')
-        ->assertDontSee('Murid Tuntas');
+        ->assertViewHas('attempts', fn ($attempts): bool => $attempts->count() === 1
+            && $attempts->first()->student->is($remedialStudent))
+        ->assertDontSee('Murid Tuntas')
+        ->set('module_id', $module->id)
+        ->set('project_status', 'submitted')
+        ->call('resetFilters')
+        ->assertSet('module_id', null)
+        ->assertSet('attempt_status', '')
+        ->assertSet('project_status', '')
+        ->assertSet('search', '');
+});
+
+test('guru report exports reject modules owned by another teacher', function () {
+    [$teacher, $module] = createTeacherAssessmentFixture();
+    $otherTeacher = User::factory()->create();
+    $otherTeacher->assignRole('guru');
+    $otherTeacherModule = Module::create([
+        'subject_id' => $module->subject_id,
+        'created_by' => $otherTeacher->id,
+        'title' => 'Modul Guru Lain',
+        'slug' => 'modul-guru-lain',
+        'status' => 'published',
+    ]);
+
+    Livewire::actingAs($teacher)
+        ->test(Reports::class)
+        ->set('module_id', $otherTeacherModule->id)
+        ->call('exportExcel')
+        ->assertHasErrors(['module_id']);
 });
 
 /**
