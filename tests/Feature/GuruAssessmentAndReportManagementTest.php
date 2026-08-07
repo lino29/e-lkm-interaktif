@@ -10,6 +10,7 @@ use App\Models\LearningUnit;
 use App\Models\Module;
 use App\Models\Question;
 use App\Models\Rubric;
+use App\Models\StudentAnswer;
 use App\Models\Subject;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -143,7 +144,7 @@ test('guru reports can filter attempts by status and student search', function (
     $inProgressStudent = User::factory()->create(['name' => 'Murid Sedang Belajar']);
     $inProgressStudent->assignRole('murid');
 
-    AssessmentAttempt::create([
+    $tuntasAttempt = AssessmentAttempt::create([
         'assessment_id' => $assessment->id,
         'student_id' => $tuntasStudent->id,
         'attempt_number' => 1,
@@ -175,14 +176,49 @@ test('guru reports can filter attempts by status and student search', function (
         'started_at' => now()->subMinutes(5),
     ]);
 
+    $question = Question::create([
+        'assessment_id' => $assessment->id,
+        'question_type' => 'short_answer',
+        'question_text' => 'Sebutkan satu sumber energi terbarukan.',
+        'reference_answer' => 'Matahari.',
+        'weight' => 10,
+        'order' => 1,
+    ]);
+
+    StudentAnswer::create([
+        'assessment_attempt_id' => $tuntasAttempt->id,
+        'question_id' => $question->id,
+        'student_id' => $tuntasStudent->id,
+        'answer_text' => 'Energi matahari.',
+        'score' => 10,
+        'feedback' => 'Jawaban benar.',
+    ]);
+
     Livewire::actingAs($teacher)
         ->test(Reports::class)
+        ->assertSet('activeSection', 'summary')
         ->assertSee('Filter laporan')
+        ->assertSee('Ringkasan kinerja')
+        ->assertDontSee('Daftar attempt asesmen berdasarkan filter laporan saat ini')
+        ->call('showSection', 'assessments')
+        ->assertSet('activeSection', 'assessments')
         ->assertSee('Daftar attempt asesmen berdasarkan filter laporan saat ini')
         ->assertDontSee('>Submit</th>', false)
         ->assertSee('Murid Tuntas')
         ->assertSee('Murid Remedial')
         ->assertSee('Murid Sedang Belajar')
+        ->call('showAttemptDetail', $tuntasAttempt->id)
+        ->assertSet('showAttemptDetailModal', true)
+        ->assertSet('selectedAttemptId', $tuntasAttempt->id)
+        ->assertSee('Detail Attempt Asesmen')
+        ->assertSee('Sebutkan satu sumber energi terbarukan.')
+        ->assertSee('Energi matahari.')
+        ->assertSee('Jawaban benar.')
+        ->call('closeAttemptDetail')
+        ->assertSet('showAttemptDetailModal', false)
+        ->assertSet('selectedAttemptId', null)
+        ->call('showSection', 'tidak-valid')
+        ->assertSet('activeSection', 'assessments')
         ->set('attempt_status', 'sedang_dikerjakan')
         ->assertSee('Murid Sedang Belajar')
         ->assertViewHas('attempts', fn ($attempts): bool => $attempts->count() === 1
@@ -213,12 +249,29 @@ test('guru report exports reject modules owned by another teacher', function () 
         'slug' => 'modul-guru-lain',
         'status' => 'published',
     ]);
+    $otherAssessment = Assessment::create([
+        'module_id' => $otherTeacherModule->id,
+        'title' => 'Asesmen Guru Lain',
+        'is_published' => true,
+    ]);
+    $otherStudent = User::factory()->create();
+    $otherStudent->assignRole('murid');
+    $otherAttempt = AssessmentAttempt::create([
+        'assessment_id' => $otherAssessment->id,
+        'student_id' => $otherStudent->id,
+        'attempt_number' => 1,
+        'status' => 'tuntas',
+    ]);
 
     Livewire::actingAs($teacher)
         ->test(Reports::class)
         ->set('module_id', $otherTeacherModule->id)
         ->call('exportExcel')
-        ->assertHasErrors(['module_id']);
+        ->assertHasErrors(['module_id'])
+        ->call('showAttemptDetail', $otherAttempt->id)
+        ->assertSet('showAttemptDetailModal', false)
+        ->assertSet('selectedAttemptId', null)
+        ->assertDontSee('Asesmen Guru Lain');
 });
 
 /**

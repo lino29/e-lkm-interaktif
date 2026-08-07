@@ -8,10 +8,19 @@ use App\Models\Module;
 use App\Models\Progress;
 use App\Models\Project;
 use App\Services\Report\ReportExportService;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Locked;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Reports extends Component
 {
+    private const REPORT_SECTIONS = ['summary', 'assessments', 'progress', 'projects', 'discussions'];
+
+    #[Url(as: 'bagian')]
+    public string $activeSection = 'summary';
+
     public ?int $module_id = null;
 
     public string $attempt_status = '';
@@ -19,6 +28,57 @@ class Reports extends Component
     public string $project_status = '';
 
     public string $search = '';
+
+    public bool $showAttemptDetailModal = false;
+
+    #[Locked]
+    public ?int $selectedAttemptId = null;
+
+    public function mount(): void
+    {
+        if (! in_array($this->activeSection, self::REPORT_SECTIONS, true)) {
+            $this->activeSection = 'summary';
+        }
+    }
+
+    public function showSection(string $section): void
+    {
+        if (! in_array($section, self::REPORT_SECTIONS, true)) {
+            return;
+        }
+
+        if ($this->activeSection !== $section) {
+            $this->reset('attempt_status', 'project_status', 'search');
+        }
+
+        $this->activeSection = $section;
+        $this->closeAttemptDetail();
+    }
+
+    public function showAttemptDetail(int $attemptId): void
+    {
+        $attempt = $this->teacherAttemptQuery()
+            ->with('assessment.module')
+            ->whereKey($attemptId)
+            ->first();
+
+        if ($attempt === null) {
+            $this->closeAttemptDetail();
+
+            return;
+        }
+
+        Gate::authorize('view', $attempt->assessment);
+
+        $this->selectedAttemptId = $attempt->id;
+        $this->showAttemptDetailModal = true;
+    }
+
+    public function closeAttemptDetail(): void
+    {
+        $this->showAttemptDetailModal = false;
+        $this->selectedAttemptId = null;
+    }
 
     public function resetFilters(): void
     {
@@ -134,43 +194,66 @@ class Reports extends Component
             'activeFilterCount' => collect([$this->module_id, $this->attempt_status, $this->project_status, $search])
                 ->filter(fn ($value): bool => $value !== null && $value !== '')
                 ->count(),
-            'attempts' => $filteredAttemptsQuery
-                ->latest()
-                ->limit(20)
-                ->get(),
-            'progressRecords' => $filteredProgressQuery->latest()->limit(20)->get(),
-            'projects' => (clone $filteredProjectsQuery)->latest()->limit(20)->get(),
-            'remedialAttempts' => (clone $attemptsQuery)
-                ->where('status', 'remedial')
-                ->when($search !== '', fn ($query) => $query->where(function ($attemptQuery) use ($search) {
-                    $attemptQuery
-                        ->whereHas('student', fn ($studentQuery) => $studentQuery->where('name', 'like', '%'.$search.'%'))
-                        ->orWhereHas('assessment', fn ($assessmentQuery) => $assessmentQuery->where('title', 'like', '%'.$search.'%'));
-                }))
-                ->latest()
-                ->limit(20)
-                ->get(),
-            'discussions' => $filteredDiscussionsQuery->latest()->limit(10)->get(),
-            'discussionParticipation' => Discussion::query()
-                ->with('user')
-                ->select('user_id')
-                ->selectRaw('count(*) as total_discussions')
-                ->selectRaw('avg(participation_score) as average_participation_score')
-                ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
-                ->whereHas('user', fn ($query) => $query->role('murid'))
-                ->when($search !== '', fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%')))
-                ->groupBy('user_id')
-                ->orderByDesc('total_discussions')
-                ->limit(10)
-                ->get(),
-            'projectStatusSummary' => Project::query()
-                ->select('status')
-                ->selectRaw('count(*) as total')
-                ->whereIn('module_id', $moduleIds)
-                ->groupBy('status')
-                ->orderBy('status')
-                ->get(),
+            'attempts' => $this->activeSection === 'assessments'
+                ? $filteredAttemptsQuery->latest()->limit(20)->get()
+                : collect(),
+            'progressRecords' => $this->activeSection === 'progress'
+                ? $filteredProgressQuery->latest()->limit(20)->get()
+                : collect(),
+            'projects' => $this->activeSection === 'projects'
+                ? (clone $filteredProjectsQuery)->latest()->limit(20)->get()
+                : collect(),
+            'remedialAttempts' => $this->activeSection === 'progress'
+                ? (clone $attemptsQuery)
+                    ->where('status', 'remedial')
+                    ->when($search !== '', fn ($query) => $query->where(function ($attemptQuery) use ($search) {
+                        $attemptQuery
+                            ->whereHas('student', fn ($studentQuery) => $studentQuery->where('name', 'like', '%'.$search.'%'))
+                            ->orWhereHas('assessment', fn ($assessmentQuery) => $assessmentQuery->where('title', 'like', '%'.$search.'%'));
+                    }))
+                    ->latest()
+                    ->limit(20)
+                    ->get()
+                : collect(),
+            'discussions' => $this->activeSection === 'discussions'
+                ? $filteredDiscussionsQuery->latest()->limit(10)->get()
+                : collect(),
+            'discussionParticipation' => $this->activeSection === 'discussions'
+                ? Discussion::query()
+                    ->with('user')
+                    ->select('user_id')
+                    ->selectRaw('count(*) as total_discussions')
+                    ->selectRaw('avg(participation_score) as average_participation_score')
+                    ->whereHas('learningUnit', fn ($query) => $query->whereIn('module_id', $moduleIds))
+                    ->whereHas('user', fn ($query) => $query->role('murid'))
+                    ->when($search !== '', fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%'.$search.'%')))
+                    ->groupBy('user_id')
+                    ->orderByDesc('total_discussions')
+                    ->limit(10)
+                    ->get()
+                : collect(),
+            'projectStatusSummary' => $this->activeSection === 'summary'
+                ? Project::query()
+                    ->select('status')
+                    ->selectRaw('count(*) as total')
+                    ->whereIn('module_id', $moduleIds)
+                    ->groupBy('status')
+                    ->orderBy('status')
+                    ->get()
+                : collect(),
+            'selectedAttempt' => $this->showAttemptDetailModal
+                ? $this->teacherAttemptQuery()
+                    ->with('student', 'assessment.module', 'studentAnswers.question')
+                    ->whereKey($this->selectedAttemptId)
+                    ->first()
+                : null,
         ]);
+    }
+
+    private function teacherAttemptQuery(): Builder
+    {
+        return AssessmentAttempt::query()
+            ->whereHas('assessment.module', fn ($query) => $query->where('created_by', auth()->id()));
     }
 
     private function selectedModuleId(): ?int
