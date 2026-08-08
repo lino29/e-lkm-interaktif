@@ -39,7 +39,11 @@ case "$ARCHIVE_PATH" in
 esac
 
 [[ -f "$ARCHIVE_PATH" ]] || fail "deployment archive does not exist"
-[[ -d "$PUBLIC_DIR" ]] || fail "public_html directory does not exist"
+if [[ ! -d "$PUBLIC_DIR" ]]; then
+    echo "Available public_html directories beneath the configured domain root:" >&2
+    find "$DOMAIN_ROOT" -mindepth 1 -maxdepth 3 -type d -name public_html -print >&2 || true
+    fail "public_html directory does not exist beneath the configured domain root"
+fi
 
 mkdir -p "$RELEASES_DIR" "$SHARED_DIR"
 exec 9>"$DOMAIN_ROOT/.deployment.lock"
