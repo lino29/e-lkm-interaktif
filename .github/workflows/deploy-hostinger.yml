@@ -79,11 +79,17 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Run PHP checks and tests
-        run: composer ci:check
+      - name: Prepare test environment
+        shell: bash
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
 
       - name: Build frontend assets
         run: npm run build
+
+      - name: Run PHP checks and tests
+        run: composer ci:check
 
       - name: Install production Composer dependencies
         run: composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-progress
