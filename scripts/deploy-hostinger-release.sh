@@ -20,6 +20,14 @@ fail() {
 [[ "$APP_URL" =~ ^https://[^/]+$ ]] || fail "application URL must be an HTTPS origin"
 
 DOMAIN_ROOT="$(cd "$DOMAIN_ROOT" && pwd -P)"
+APP_HOST="${APP_URL#https://}"
+[[ "$APP_HOST" =~ ^[A-Za-z0-9.-]+$ ]] || fail "application URL contains an invalid hostname"
+
+APP_DOMAIN_ROOT="$HOME/domains/$APP_HOST"
+if [[ ! -d "$DOMAIN_ROOT/public_html" ]] && [[ -d "$APP_DOMAIN_ROOT/public_html" ]]; then
+    DOMAIN_ROOT="$(cd "$APP_DOMAIN_ROOT" && pwd -P)"
+fi
+
 RELEASES_DIR="$DOMAIN_ROOT/releases"
 SHARED_DIR="$DOMAIN_ROOT/shared"
 PUBLIC_DIR="$DOMAIN_ROOT/public_html"
