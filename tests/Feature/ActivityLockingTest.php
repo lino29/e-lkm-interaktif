@@ -6,6 +6,7 @@ use App\Models\LearningUnit;
 use App\Models\Module;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\Learning\LearningUnitOutlineService;
 use Database\Seeders\RoleSeeder;
 
 test('student cannot bypass activity order through direct route', function () {
@@ -45,6 +46,8 @@ test('student cannot bypass activity order through direct route', function () {
         'is_required' => true,
         'order' => 2,
     ]);
+
+    app(LearningUnitOutlineService::class)->ensureDefaultOutline($unit);
 
     $this->actingAs($student)
         ->get(route('murid.activities.show', $second))
