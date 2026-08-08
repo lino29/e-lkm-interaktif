@@ -4,6 +4,7 @@ use App\Livewire\Guru\ReviewActivityAnswers;
 use App\Models\Activity;
 use App\Models\ActivityAnswer;
 use App\Models\LearningUnit;
+use App\Models\LearningUnitGrade;
 use App\Models\Module;
 use App\Models\Subject;
 use App\Models\User;
@@ -14,7 +15,7 @@ beforeEach(function () {
     $this->seed(RoleSeeder::class);
 });
 
-test('teacher can review submitted activity answer', function () {
+test('teacher can review submitted activity answers as one learning unit grade', function () {
     $teacher = User::factory()->create();
     $teacher->assignRole('guru');
 
@@ -53,17 +54,24 @@ test('teacher can review submitted activity answer', function () {
         'submitted_at' => now(),
     ]);
 
+    $grade = LearningUnitGrade::create([
+        'learning_unit_id' => $learningUnit->id,
+        'student_id' => $student->id,
+    ]);
+
     Livewire::actingAs($teacher)
         ->test(ReviewActivityAnswers::class)
+        ->call('selectSubmission', $grade->id)
         ->assertSee('Ini jawaban menalar.')
-        ->call('saveReview', $answer->id, 85, 'Bagus sekali.')
+        ->set('gradeScore', '20')
+        ->set('gradeFeedback', 'Bagus sekali.')
+        ->call('saveGrade')
         ->assertHasNoErrors();
 
-    $this->assertDatabaseHas('activity_answers', [
-        'id' => $answer->id,
-        'status' => 'reviewed',
-        'score' => 85,
-        'teacher_feedback' => 'Bagus sekali.',
+    $this->assertDatabaseHas('learning_unit_grades', [
+        'id' => $grade->id,
+        'score' => 20,
+        'feedback' => 'Bagus sekali.',
         'reviewed_by' => $teacher->id,
     ]);
 });

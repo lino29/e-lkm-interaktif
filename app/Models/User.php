@@ -69,6 +69,16 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(AssessmentAttempt::class, 'student_id');
     }
 
+    public function learningUnitGrades(): HasMany
+    {
+        return $this->hasMany(LearningUnitGrade::class, 'student_id');
+    }
+
+    public function reviewedLearningUnitGrades(): HasMany
+    {
+        return $this->hasMany(LearningUnitGrade::class, 'reviewed_by');
+    }
+
     public function gameAttempts(): HasMany
     {
         return $this->hasMany(GameAttempt::class);

@@ -15,6 +15,7 @@ class Progress extends Model
             'score' => 'decimal:2',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'review_notification_sent_at' => 'datetime',
         ];
     }
 

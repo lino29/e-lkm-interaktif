@@ -7,9 +7,11 @@ use App\Models\ActivityAnswer;
 use App\Models\Assessment;
 use App\Models\AssessmentAttempt;
 use App\Models\LearningUnit;
+use App\Models\LearningUnitGrade;
 use App\Models\Module;
 use App\Models\Progress;
 use App\Models\User;
+use App\Notifications\LearningUnitReadyForReview;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -195,7 +197,7 @@ class ProgressService
             $status = 'remedial';
         }
 
-        return Progress::updateOrCreate(
+        $progress = Progress::updateOrCreate(
             [
                 'user_id' => $student->id,
                 'module_id' => $learningUnit->module_id,
@@ -207,6 +209,17 @@ class ProgressService
                 'completed_at' => $status === 'tuntas' ? now() : null,
             ],
         );
+
+        if (
+            $status === 'tuntas'
+            && $learningUnit->order >= 1
+            && $learningUnit->order <= 5
+            && $this->hasCompletedRequiredActivities($student, $learningUnit)
+        ) {
+            $this->prepareLearningUnitReview($student, $learningUnit, $progress);
+        }
+
+        return $progress;
     }
 
     public function moduleCompletionPercentage(User $student, Module $module): int
@@ -239,5 +252,54 @@ class ProgressService
             ->where('status', 'remedial')
             ->whereNotNull('submitted_at')
             ->exists();
+    }
+
+    private function prepareLearningUnitReview(User $student, LearningUnit $learningUnit, Progress $progress): void
+    {
+        $learningUnit->loadMissing('module.creator');
+
+        $teacher = $learningUnit->module->creator;
+
+        if (! $teacher) {
+            return;
+        }
+
+        $grade = LearningUnitGrade::firstOrCreate([
+            'learning_unit_id' => $learningUnit->id,
+            'student_id' => $student->id,
+        ]);
+
+        if ($progress->review_notification_sent_at !== null) {
+            return;
+        }
+
+        $teacher->notify(new LearningUnitReadyForReview(
+            learningUnitGradeId: $grade->id,
+            studentId: $student->id,
+            studentName: $student->name,
+            learningUnitId: $learningUnit->id,
+            learningUnitTitle: $learningUnit->title,
+            moduleTitle: $learningUnit->module->title,
+        ));
+
+        $progress->update(['review_notification_sent_at' => now()]);
+    }
+
+    private function hasCompletedRequiredActivities(User $student, LearningUnit $learningUnit): bool
+    {
+        $requiredActivityIds = $learningUnit->activities()
+            ->where('is_required', true)
+            ->pluck('id');
+
+        if ($requiredActivityIds->isEmpty()) {
+            return false;
+        }
+
+        return ActivityAnswer::query()
+            ->where('user_id', $student->id)
+            ->whereIn('activity_id', $requiredActivityIds)
+            ->whereIn('status', ['submitted', 'reviewed'])
+            ->distinct('activity_id')
+            ->count('activity_id') === $requiredActivityIds->count();
     }
 }
