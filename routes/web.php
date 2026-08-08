@@ -99,7 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('games', 'dashboard.page', ['livewireComponent' => GameReports::class, 'title' => 'Kelola Games'])->name('games.manage');
         Route::view('reports', 'dashboard.page', ['livewireComponent' => GuruReports::class, 'title' => 'Laporan Guru'])->name('reports');
         Route::view('games/reports', 'dashboard.page', ['livewireComponent' => GameReports::class, 'title' => 'Laporan Games'])->name('games.reports');
-        Route::view('activity-reviews', 'dashboard.page', ['livewireComponent' => ReviewActivityAnswers::class, 'title' => 'Review Jawaban Aktivitas'])->name('activity-reviews');
+        Route::view('activity-reviews', 'dashboard.page', ['livewireComponent' => ReviewActivityAnswers::class, 'title' => 'Penilaian KB'])->name('activity-reviews');
     });
 
     Route::middleware('role:murid')->prefix('murid')->name('murid.')->group(function () {

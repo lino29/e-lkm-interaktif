@@ -65,7 +65,11 @@
                     <x-elkm.nav-link href="{{ route('guru.dashboard') }}" :active="request()->routeIs('guru.dashboard')" icon="🏠">Dashboard Guru</x-elkm.nav-link>
                     <x-elkm.nav-link href="{{ route('guru.modules') }}" :active="request()->routeIs('guru.modules')" icon="📚">Modul E-LKM</x-elkm.nav-link>
                     <x-elkm.nav-link href="{{ route('guru.learning-units') }}" :active="request()->routeIs('guru.learning-units', 'guru.activities')" icon="📝">Kegiatan</x-elkm.nav-link>
-                    <x-elkm.nav-link href="{{ route('guru.assessments') }}" :active="request()->routeIs('guru.assessments', 'guru.questions', 'guru.rubrics')" icon="📋">Asesmen</x-elkm.nav-link>
+                    <x-elkm.nav-link href="{{ route('guru.assessments') }}" :active="request()->routeIs('guru.assessments', 'guru.questions', 'guru.rubrics')" icon="AF">Asesmen Formatif</x-elkm.nav-link>
+                    <x-elkm.nav-link href="{{ route('guru.activity-reviews') }}" :active="request()->routeIs('guru.activity-reviews')" icon="KB">
+                        <span>Penilaian KB</span>
+                        <livewire:guru.review-notification-badge />
+                    </x-elkm.nav-link>
                     <x-elkm.nav-link href="{{ route('guru.remedials') }}" :active="request()->routeIs('guru.remedials')" icon="🔄">Remedial</x-elkm.nav-link>
                     <x-elkm.nav-link href="{{ route('guru.reports') }}" :active="request()->routeIs('guru.reports')" icon="📈">Laporan</x-elkm.nav-link>
                 @elseif($sidebarRole === 'murid')

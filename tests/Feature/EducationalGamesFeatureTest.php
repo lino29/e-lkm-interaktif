@@ -69,6 +69,44 @@ test('guru can create a game without filling technical identifiers', function ()
     expect($game->code)->toBe('kuis_hemat_energi')
         ->and($game->slug)->toBe('kuis-hemat-energi')
         ->and($game->is_active)->toBeTrue();
+
+    GameItem::create([
+        'educational_game_id' => $game->id,
+        'item_type' => 'question',
+        'question_text' => 'Kebiasaan mana yang paling hemat energi?',
+        'options' => ['A' => 'Mematikan lampu', 'B' => 'Membiarkan lampu menyala'],
+        'correct_answer' => ['key' => 'A'],
+        'score' => 20,
+        'sort_order' => 1,
+        'is_active' => true,
+    ]);
+
+    Livewire::actingAs($this->student)
+        ->test(GameHub::class)
+        ->assertSee('Kuis Hemat Energi')
+        ->call('startGame', $game->id)
+        ->assertRedirect(route('murid.games.play', [
+            'game' => $game->slug,
+            'attempt' => GameAttempt::where('educational_game_id', $game->id)
+                ->where('user_id', $this->student->id)
+                ->firstOrFail()
+                ->id,
+        ]));
+});
+
+test('student hub hides active games that do not have playable items', function () {
+    EducationalGame::create([
+        'code' => 'empty_teacher_game',
+        'slug' => 'empty-teacher-game',
+        'title' => 'Game Belum Siap',
+        'type' => 'timed_quiz',
+        'is_active' => true,
+        'sort_order' => 999,
+    ]);
+
+    Livewire::actingAs($this->student)
+        ->test(GameHub::class)
+        ->assertDontSee('Game Belum Siap');
 });
 
 test('starting a game from hub creates a new attempt', function () {

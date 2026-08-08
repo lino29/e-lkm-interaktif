@@ -42,6 +42,11 @@ class LearningUnit extends Model
         return $this->hasMany(Assessment::class)->orderBy('order');
     }
 
+    public function grades(): HasMany
+    {
+        return $this->hasMany(LearningUnitGrade::class);
+    }
+
     public function discussions(): HasMany
     {
         return $this->hasMany(Discussion::class);
