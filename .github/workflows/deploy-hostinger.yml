@@ -6,23 +6,69 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: hostinger-production
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  verify-and-deploy:
+    name: Verify and deploy production
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+
+    env:
+      DEPLOY_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+      DEPLOY_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+      DEPLOY_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+      DEPLOY_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
+      DEPLOY_HOST_FINGERPRINT: ${{ secrets.HOSTINGER_SSH_HOST_FINGERPRINT }}
+      DEPLOY_DOMAIN_ROOT: ${{ secrets.HOSTINGER_DOMAIN_ROOT }}
+      DEPLOY_APP_URL: ${{ secrets.HOSTINGER_APP_URL }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required_variables=(
+            DEPLOY_HOST
+            DEPLOY_PORT
+            DEPLOY_USER
+            DEPLOY_PRIVATE_KEY
+            DEPLOY_HOST_FINGERPRINT
+            DEPLOY_DOMAIN_ROOT
+            DEPLOY_APP_URL
+          )
+
+          for variable_name in "${required_variables[@]}"; do
+            if [[ -z "${!variable_name:-}" ]]; then
+              echo "Missing required GitHub secret: ${variable_name}" >&2
+              exit 1
+            fi
+          done
+
+          [[ "$DEPLOY_PORT" =~ ^[0-9]+$ ]] || { echo "Invalid SSH port." >&2; exit 1; }
+          [[ "$DEPLOY_DOMAIN_ROOT" == /* ]] || { echo "Domain root must be an absolute path." >&2; exit 1; }
+          [[ "$DEPLOY_APP_URL" =~ ^https://[^/]+/?$ ]] || { echo "Application URL must be an HTTPS origin." >&2; exit 1; }
+          [[ "$DEPLOY_HOST_FINGERPRINT" =~ ^SHA256: ]] || { echo "Invalid SSH host fingerprint." >&2; exit 1; }
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, pdo_mysql, fileinfo, gd, zip
+          extensions: bcmath, curl, dom, fileinfo, gd, intl, mbstring, pdo_mysql, sqlite, xml, zip
           coverage: none
 
-      - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+      - name: Install Composer dependencies for verification
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -30,73 +76,103 @@ jobs:
           node-version: '22'
           cache: npm
 
-      - name: Install NPM dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run PHP checks and tests
+        run: composer ci:check
 
       - name: Build frontend assets
         run: npm run build
 
-      - name: Prepare Hostinger release
+      - name: Install production Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-progress
+
+      - name: Build deployment artifact
+        id: artifact
+        shell: bash
         run: |
           set -euo pipefail
-          RELEASE_DIR="build/hostinger-release"
-          APP_DIR="$RELEASE_DIR/elkm-app"
-          PUBLIC_DIR="$RELEASE_DIR/public_html"
 
-          rm -rf "$RELEASE_DIR"
-          mkdir -p "$APP_DIR" "$PUBLIC_DIR"
+          release_id="${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          archive_path="build/hostinger-release/${release_id}.tar.gz"
 
-          cp -R app bootstrap config database resources routes storage vendor artisan composer.json composer.lock "$APP_DIR/"
-          rm -rf "$APP_DIR/storage/logs"
-          mkdir -p "$APP_DIR/storage/logs" "$APP_DIR/storage/framework/cache" "$APP_DIR/storage/framework/sessions" "$APP_DIR/storage/framework/views"
-          touch "$APP_DIR/storage/logs/.gitkeep"
+          bash scripts/build-hostinger-artifact.sh "$archive_path"
 
-          cp -R public/. "$PUBLIC_DIR/"
-          rm -rf "$PUBLIC_DIR/uploads"
-          mkdir -p "$PUBLIC_DIR/uploads"
-          touch "$PUBLIC_DIR/uploads/.gitkeep"
+          echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
+          echo "archive_path=$archive_path" >> "$GITHUB_OUTPUT"
+          echo "archive_checksum=$(sha256sum "$archive_path" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
-          cat > "$PUBLIC_DIR/index.php" <<'PHP'
-          <?php
+      - name: Configure verified SSH connection
+        shell: bash
+        run: |
+          set -euo pipefail
 
-          use Illuminate\Foundation\Application;
-          use Illuminate\Http\Request;
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_PRIVATE_KEY" > "$HOME/.ssh/hostinger_deploy"
+          chmod 600 "$HOME/.ssh/hostinger_deploy"
 
-          define('LARAVEL_START', microtime(true));
+          ssh-keyscan -T 15 -t ed25519 -p "$DEPLOY_PORT" "$DEPLOY_HOST" > "$HOME/.ssh/known_hosts.candidate"
+          actual_fingerprint="$(ssh-keygen -lf "$HOME/.ssh/known_hosts.candidate" -E sha256 | awk 'NR == 1 {print $2}')"
 
-          if (file_exists($maintenance = __DIR__.'/../elkm-app/storage/framework/maintenance.php')) {
-              require $maintenance;
-          }
+          if [[ "$actual_fingerprint" != "$DEPLOY_HOST_FINGERPRINT" ]]; then
+            echo "SSH host fingerprint mismatch." >&2
+            echo "Expected: $DEPLOY_HOST_FINGERPRINT" >&2
+            echo "Received: $actual_fingerprint" >&2
+            exit 1
+          fi
 
-          require __DIR__.'/../elkm-app/vendor/autoload.php';
+          mv "$HOME/.ssh/known_hosts.candidate" "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
 
-          /** @var Application $app */
-          $app = require_once __DIR__.'/../elkm-app/bootstrap/app.php';
+      - name: Upload and activate release
+        shell: bash
+        env:
+          RELEASE_ID: ${{ steps.artifact.outputs.release_id }}
+          ARCHIVE_PATH: ${{ steps.artifact.outputs.archive_path }}
+          ARCHIVE_CHECKSUM: ${{ steps.artifact.outputs.archive_checksum }}
+        run: |
+          set -euo pipefail
 
-          $app->handleRequest(Request::capture());
-          PHP
+          ssh_options=(
+            -i "$HOME/.ssh/hostinger_deploy"
+            -p "$DEPLOY_PORT"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+          )
+          scp_options=(
+            -i "$HOME/.ssh/hostinger_deploy"
+            -P "$DEPLOY_PORT"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+          )
+          ssh_target="${DEPLOY_USER}@${DEPLOY_HOST}"
+          remote_incoming=".elkm-deploy/incoming"
+          remote_archive="${remote_incoming}/${RELEASE_ID}.tar.gz"
 
-      # FTP_SERVER_DIR must point to the domain root folder that contains public_html.
-      # Example: /domains/domain-anda.com/
-      - name: Upload release via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
-          local-dir: build/hostinger-release/
-          protocol: ftps
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/tests/**
-            **/.env
-            public_html/uploads/**
+          ssh "${ssh_options[@]}" "$ssh_target" "mkdir -p '$remote_incoming'"
+          scp "${scp_options[@]}" "$ARCHIVE_PATH" "${ssh_target}:${remote_archive}"
+
+          printf -v remote_command 'bash -s -- %q %q %q %q %q' \
+            "$remote_archive" \
+            "$ARCHIVE_CHECKSUM" \
+            "$RELEASE_ID" \
+            "$DEPLOY_DOMAIN_ROOT" \
+            "${DEPLOY_APP_URL%/}"
+
+          ssh "${ssh_options[@]}" "$ssh_target" "$remote_command" < scripts/deploy-hostinger-release.sh
+
+      - name: Deployment summary
+        if: success()
+        env:
+          RELEASE_ID: ${{ steps.artifact.outputs.release_id }}
+        run: |
+          {
+            echo '## Hostinger deployment succeeded'
+            echo
+            echo "- Release: \`$RELEASE_ID\`"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- URL: $DEPLOY_APP_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
