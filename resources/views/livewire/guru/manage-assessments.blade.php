@@ -12,11 +12,30 @@
             <flux:button type="button" :href="route('guru.questions')" wire:navigate>Kelola Soal</flux:button>
             <flux:button type="button" variant="ghost" :href="route('guru.rubrics')" wire:navigate>Rubrik Uraian</flux:button>
             <flux:button type="button" variant="ghost" :href="route('guru.reports')" wire:navigate>Lihat Laporan</flux:button>
+            <flux:modal.trigger name="import-questions-modal">
+                <flux:button type="button" variant="primary" icon="arrow-up-tray">Import Soal Excel</flux:button>
+            </flux:modal.trigger>
+            <flux:button type="button" variant="ghost" icon="arrow-down-tray" :href="route('guru.downloads.question-template')">Download Template</flux:button>
         </div>
     </div>
 
     @if (session('status'))
         <flux:callout variant="success">{{ session('status') }}</flux:callout>
+    @endif
+
+    @if (session('error'))
+        <flux:callout variant="danger">{{ session('error') }}</flux:callout>
+    @endif
+
+    @if ($importErrors)
+        <flux:card class="space-y-2">
+            <flux:heading size="sm">Detail Error Import</flux:heading>
+            <div class="max-h-48 space-y-1 overflow-y-auto text-sm">
+                @foreach ($importErrors as $error)
+                    <div class="rounded bg-red-50 px-3 py-1.5 text-red-700 dark:bg-red-950/30 dark:text-red-300">{{ $error }}</div>
+                @endforeach
+            </div>
+        </flux:card>
     @endif
 
     <div class="grid gap-4 md:grid-cols-4">
@@ -171,4 +190,39 @@
             @endforelse
         </section>
     </div>
+    <flux:modal name="import-questions-modal" class="space-y-6">
+        <div>
+            <flux:heading size="lg">Import Soal dari Excel/CSV</flux:heading>
+            <flux:text>Upload file Excel (.xlsx) atau CSV sesuai template. Soal akan otomatis dipetakan ke Kegiatan Belajar berdasarkan kolom KB.</flux:text>
+        </div>
+
+        <form wire:submit="importQuestions" class="space-y-4">
+            <flux:field>
+                <flux:label>Modul Tujuan</flux:label>
+                <flux:select wire:model="importModuleId">
+                    <flux:select.option value="">Pilih modul</flux:select.option>
+                    @foreach ($modules as $module)
+                        <flux:select.option value="{{ $module->id }}">{{ $module->title }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="importModuleId" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>File Excel/CSV</flux:label>
+                <flux:input type="file" wire:model="importFile" accept=".xlsx,.xls,.csv" />
+                <flux:description>Format: .xlsx, .xls, atau .csv. Maksimal 5MB.</flux:description>
+                <flux:error name="importFile" />
+            </flux:field>
+
+            <div class="flex items-center justify-between gap-3">
+                <flux:button type="button" variant="ghost" :href="route('guru.downloads.question-template')">
+                    Download Template
+                </flux:button>
+                <flux:button type="submit" variant="primary" icon="arrow-up-tray">
+                    Import Soal
+                </flux:button>
+            </div>
+        </form>
+    </flux:modal>
 </div>

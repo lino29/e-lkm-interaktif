@@ -5,12 +5,16 @@ namespace App\Livewire\Guru;
 use App\Models\Assessment;
 use App\Models\LearningUnit;
 use App\Models\Module;
+use App\Services\Assessment\QuestionImportService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class ManageAssessments extends Component
 {
+    use WithFileUploads;
+
     public ?int $editingAssessmentId = null;
 
     public ?int $module_id = null;
@@ -30,6 +34,15 @@ class ManageAssessments extends Component
     public bool $is_published = false;
 
     public int $order = 1;
+
+    public ?int $importModuleId = null;
+
+    public $importFile;
+
+    /** @var array<int, string> */
+    public array $importErrors = [];
+
+    public ?string $importStatus = null;
 
     public function updatedModuleId(): void
     {
@@ -103,6 +116,46 @@ class ManageAssessments extends Component
         $this->resetForm();
 
         session()->flash('status', 'Asesmen berhasil dihapus.');
+    }
+
+    public function importQuestions(QuestionImportService $importer): void
+    {
+        $this->importErrors = [];
+        $this->importStatus = null;
+
+        $moduleIds = Module::where('created_by', auth()->id())->pluck('id')->all();
+
+        $this->validate([
+            'importModuleId' => ['required', Rule::in($moduleIds)],
+            'importFile' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:5120'],
+        ], [
+            'importModuleId.required' => 'Pilih modul tujuan import.',
+            'importFile.required' => 'Pilih file Excel/CSV untuk diimport.',
+            'importFile.mimes' => 'Format file harus .xlsx, .xls, atau .csv.',
+            'importFile.max' => 'Ukuran file maksimal 5MB.',
+        ]);
+
+        $result = $importer->import($this->importFile, $this->importModuleId);
+
+        $this->reset('importFile');
+        $this->dispatch('close-modal', 'import-questions-modal');
+
+        if ($result['errors'] !== []) {
+            $this->importErrors = $result['errors'];
+        }
+
+        $perKbSummary = collect($result['per_kb'])
+            ->map(fn (int $count, int $kb) => "KB {$kb}: {$count} soal")
+            ->implode(', ');
+
+        if ($result['created'] > 0) {
+            $this->importStatus = "{$result['created']} soal berhasil diimport.".($perKbSummary ? " ({$perKbSummary})" : '');
+            session()->flash('status', $this->importStatus);
+        } elseif ($result['errors'] !== []) {
+            session()->flash('error', 'Import gagal. Periksa daftar error di bawah.');
+        } else {
+            session()->flash('error', 'Tidak ada soal yang berhasil diimport.');
+        }
     }
 
     public function render()

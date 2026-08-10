@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Guru\EditorImageUploadController;
+use App\Http\Controllers\Guru\QuestionTemplateDownloadController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Games\ManageGames as AdminManageGames;
 use App\Livewire\Admin\ManageClasses;
@@ -88,6 +89,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('learning-units/{learningUnit}/outline', 'dashboard.page', ['livewireComponent' => ManageLearningUnitOutline::class, 'title' => 'Kelola Outline KB'])->name('learning-units.outline');
         Route::view('learning-units/{learningUnit}/preview', 'dashboard.page', ['livewireComponent' => PreviewLearningUnit::class, 'title' => 'Preview Kegiatan Belajar'])->name('learning-units.preview');
         Route::post('uploads/editor-image', EditorImageUploadController::class)->name('uploads.editor-image');
+        Route::get('downloads/question-template', QuestionTemplateDownloadController::class)->name('downloads.question-template');
         Route::view('materials', 'dashboard.page', ['livewireComponent' => ManageMaterials::class, 'title' => 'Kelola Materi'])->name('materials');
         Route::view('activities', 'dashboard.page', ['livewireComponent' => ManageActivities::class, 'title' => 'Kelola Aktivitas'])->name('activities');
         Route::view('discussions', 'dashboard.page', ['livewireComponent' => ManageDiscussions::class, 'title' => 'Kelola Diskusi'])->name('discussions');
