@@ -15,6 +15,7 @@ class Question extends Model
         return [
             'options' => 'array',
             'correct_answer' => 'array',
+            'metadata' => 'array',
             'weight' => 'decimal:2',
             'order' => 'integer',
         ];

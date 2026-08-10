@@ -26,3 +26,5 @@ yarn-error.log
 .code-review-graph/
 docs/.obsidian/
 .zip
+docs/ssh
+~$*
