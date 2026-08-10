@@ -59,7 +59,7 @@ test('murid can submit table array data to ayo mencoba activity', function () {
 
     Livewire::actingAs($student)
         ->test(ActivityPage::class, ['activity' => $activity->id])
-        ->set('table_data', $tableData)
+        ->set('answer_json', $tableData)
         ->call('submit')
         ->assertStatus(200)
         ->assertHasNoErrors();

@@ -10,8 +10,8 @@
  * Resolve the status icon for a given section node.
  * Returns one of: 'done', 'draft', 'open', 'none'
  */
-function sectionStatus(
-    $section,
+$sectionStatus = static function (
+    mixed $section,
     array $activityStatuses,
     array $assessmentStatuses
 ): string {
@@ -47,7 +47,7 @@ function sectionStatus(
     }
 
     return 'none'; // sections like material, key_points: no icon needed
-}
+};
 @endphp
 
 <div class="card-elkm p-4">
@@ -57,7 +57,7 @@ function sectionStatus(
         @foreach ($sections->where('is_visible', true) as $section)
             @php
                 $isActive  = $activeSectionId === $section->id;
-                $status    = sectionStatus($section, $activityStatuses, $assessmentStatuses);
+                $status    = $sectionStatus($section, $activityStatuses, $assessmentStatuses);
             @endphp
 
             <button
@@ -80,7 +80,7 @@ function sectionStatus(
                     @foreach ($section->children->where('is_visible', true) as $child)
                         @php
                             $childActive = $activeSectionId === $child->id;
-                            $childStatus = sectionStatus($child, $activityStatuses, $assessmentStatuses);
+                            $childStatus = $sectionStatus($child, $activityStatuses, $assessmentStatuses);
                         @endphp
 
                         <button

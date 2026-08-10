@@ -1,24 +1,26 @@
-name: Deploy to Hostinger
+name: Deploy Open Material Access to Hostinger
 
 on:
   push:
     branches:
-      - main
+      - feature/open-material-access
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: hostinger-production
+  group: hostinger-open-material-access
   cancel-in-progress: false
 
 jobs:
   verify-and-deploy:
-    name: Verify and deploy production
+    name: Verify and deploy open material access
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
+    environment:
+      name: open-material-access
+      url: https://open.e-lkminteraktif.xyz
 
     env:
       DEPLOY_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
@@ -26,8 +28,8 @@ jobs:
       DEPLOY_USER: ${{ secrets.HOSTINGER_SSH_USER }}
       DEPLOY_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
       DEPLOY_HOST_FINGERPRINT: ${{ secrets.HOSTINGER_SSH_HOST_FINGERPRINT }}
-      DEPLOY_DOMAIN_ROOT: ${{ secrets.HOSTINGER_DOMAIN_ROOT }}
-      DEPLOY_APP_URL: ${{ secrets.HOSTINGER_APP_URL }}
+      DEPLOY_DOMAIN_ROOT: /home/u847462264/domains/open.e-lkminteraktif.xyz
+      DEPLOY_APP_URL: https://open.e-lkminteraktif.xyz
 
     steps:
       - name: Checkout repository
@@ -189,7 +191,7 @@ jobs:
           RELEASE_ID: ${{ steps.artifact.outputs.release_id }}
         run: |
           {
-            echo '## Hostinger deployment succeeded'
+            echo '## Open Material Access deployment succeeded'
             echo
             echo "- Release: \`$RELEASE_ID\`"
             echo "- Commit: \`$GITHUB_SHA\`"
