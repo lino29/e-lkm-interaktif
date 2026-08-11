@@ -148,8 +148,15 @@ class ManageAssessments extends Component
             ->map(fn (int $count, int $kb) => "KB {$kb}: {$count} soal")
             ->implode(', ');
 
-        if ($result['created'] > 0) {
-            $this->importStatus = "{$result['created']} soal berhasil diimport.".($perKbSummary ? " ({$perKbSummary})" : '');
+        $processed = $result['created'] + $result['updated'];
+
+        if ($processed > 0) {
+            $statusParts = collect([
+                $result['created'] > 0 ? "{$result['created']} soal baru" : null,
+                $result['updated'] > 0 ? "{$result['updated']} soal diperbarui" : null,
+            ])->filter()->implode(', ');
+
+            $this->importStatus = "Import berhasil: {$statusParts}.".($perKbSummary ? " ({$perKbSummary})" : '');
             session()->flash('status', $this->importStatus);
         } elseif ($result['errors'] !== []) {
             session()->flash('error', 'Import gagal. Periksa daftar error di bawah.');
