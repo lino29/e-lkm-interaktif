@@ -37,14 +37,13 @@ beforeEach(function () {
             'order' => $i,
         ]);
     }
+
+    $this->templatePath = resource_path('templates/contoh_template_import.xlsx');
+    $this->assertFileExists($this->templatePath);
 });
 
 test('imports questions from contoh_template_import.xlsx into correct KBs', function () {
-    $templatePath = base_path('docs/contoh_template_import.xlsx');
-
-    if (! file_exists($templatePath)) {
-        $this->markTestSkipped('Template file not found at docs/contoh_template_import.xlsx');
-    }
+    $templatePath = $this->templatePath;
 
     $file = new UploadedFile($templatePath, 'contoh_template_import.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
@@ -65,11 +64,7 @@ test('imports questions from contoh_template_import.xlsx into correct KBs', func
 });
 
 test('maps question types correctly from template', function () {
-    $templatePath = base_path('docs/contoh_template_import.xlsx');
-
-    if (! file_exists($templatePath)) {
-        $this->markTestSkipped('Template file not found at docs/contoh_template_import.xlsx');
-    }
+    $templatePath = $this->templatePath;
 
     $file = new UploadedFile($templatePath, 'contoh_template_import.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
@@ -88,11 +83,7 @@ test('maps question types correctly from template', function () {
 });
 
 test('parses correct answer for multiple choice', function () {
-    $templatePath = base_path('docs/contoh_template_import.xlsx');
-
-    if (! file_exists($templatePath)) {
-        $this->markTestSkipped('Template file not found at docs/contoh_template_import.xlsx');
-    }
+    $templatePath = $this->templatePath;
 
     $file = new UploadedFile($templatePath, 'contoh_template_import.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
@@ -110,11 +101,7 @@ test('parses correct answer for multiple choice', function () {
 });
 
 test('parses complex multiple choice answers', function () {
-    $templatePath = base_path('docs/contoh_template_import.xlsx');
-
-    if (! file_exists($templatePath)) {
-        $this->markTestSkipped('Template file not found at docs/contoh_template_import.xlsx');
-    }
+    $templatePath = $this->templatePath;
 
     $file = new UploadedFile($templatePath, 'contoh_template_import.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
@@ -137,11 +124,7 @@ test('parses complex multiple choice answers', function () {
 });
 
 test('creates keywords for short answer questions', function () {
-    $templatePath = base_path('docs/contoh_template_import.xlsx');
-
-    if (! file_exists($templatePath)) {
-        $this->markTestSkipped('Template file not found at docs/contoh_template_import.xlsx');
-    }
+    $templatePath = $this->templatePath;
 
     $file = new UploadedFile($templatePath, 'contoh_template_import.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
@@ -161,11 +144,7 @@ test('creates keywords for short answer questions', function () {
 });
 
 test('stores curriculum metadata', function () {
-    $templatePath = base_path('docs/contoh_template_import.xlsx');
-
-    if (! file_exists($templatePath)) {
-        $this->markTestSkipped('Template file not found at docs/contoh_template_import.xlsx');
-    }
+    $templatePath = $this->templatePath;
 
     $file = new UploadedFile($templatePath, 'contoh_template_import.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 
@@ -242,11 +221,7 @@ test('teacher can access question template download', function () {
 });
 
 test('does not duplicate assessments on second import', function () {
-    $templatePath = base_path('docs/contoh_template_import.xlsx');
-
-    if (! file_exists($templatePath)) {
-        $this->markTestSkipped('Template file not found at docs/contoh_template_import.xlsx');
-    }
+    $templatePath = $this->templatePath;
 
     $file = new UploadedFile($templatePath, 'contoh_template_import.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
 

@@ -9,7 +9,7 @@ class QuestionTemplateDownloadController extends Controller
 {
     public function __invoke(): BinaryFileResponse
     {
-        $templatePath = base_path('docs/contoh_template_import.xlsx');
+        $templatePath = resource_path('templates/contoh_template_import.xlsx');
 
         abort_unless(file_exists($templatePath), 404, 'Template tidak ditemukan.');
 
