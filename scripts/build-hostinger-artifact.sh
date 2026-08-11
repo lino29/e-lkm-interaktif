@@ -46,6 +46,11 @@ rm -rf \
     "$APPLICATION_DIR/scripts" \
     "$APPLICATION_DIR/tests"
 
+if [[ ! -f "$APPLICATION_DIR/resources/templates/contoh_template_import.xlsx" ]]; then
+    echo "Question import template is missing from the deployment artifact." >&2
+    exit 1
+fi
+
 cp -a "$ROOT_DIR/vendor" "$APPLICATION_DIR/vendor"
 mkdir -p "$APPLICATION_DIR/public/build"
 cp -a "$ROOT_DIR/public/build/." "$APPLICATION_DIR/public/build/"

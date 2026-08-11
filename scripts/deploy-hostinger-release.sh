@@ -187,6 +187,7 @@ tar -xzf "$ARCHIVE_PATH" -C "$RELEASE_DIR"
 [[ -f "$RELEASE_DIR/artisan" ]] || fail "release is missing artisan"
 [[ -f "$RELEASE_DIR/vendor/autoload.php" ]] || fail "release is missing Composer dependencies"
 [[ -f "$RELEASE_DIR/public/build/manifest.json" ]] || fail "release is missing Vite assets"
+[[ -f "$RELEASE_DIR/resources/templates/contoh_template_import.xlsx" ]] || fail "release is missing the question import template"
 
 rm -rf "$RELEASE_DIR/storage" "$RELEASE_DIR/public/uploads" "$RELEASE_DIR/public/storage"
 ln -s "$SHARED_STORAGE" "$RELEASE_DIR/storage"
